@@ -7,13 +7,18 @@ import { LeadMetrics } from '@/components/features/leads/LeadMetrics'
 import { AppointmentSetters } from '@/components/features/leads/AppointmentSetters'
 import { LeadsTable } from '@/components/features/leads/LeadsTable'
 import { TimePeriodFilter } from '@/components/features/leads/TimePeriodFilter'
+import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
 
 interface NewLeadsClientProps {
   businessId: string
+  userRole?: number
 }
 
-export function NewLeadsClient({ businessId }: NewLeadsClientProps) {
+export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30')
+  
+  // Get the effective business ID (user's own or selected company for superadmin)
+  const effectiveBusinessId = useEffectiveBusinessId()
   
   const {
     metrics,
@@ -24,7 +29,7 @@ export function NewLeadsClient({ businessId }: NewLeadsClientProps) {
     refetch
   } = useLeadsData({
     timePeriod,
-    businessId
+    businessId: effectiveBusinessId
   })
 
   return (

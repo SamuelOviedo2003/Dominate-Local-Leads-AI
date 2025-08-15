@@ -96,12 +96,13 @@ export function useBusinessData(userId: string, userRole?: number): UseBusinessD
 
       setBusinessData(business as BusinessClient)
 
-      // If user is Super Admin (role 0), fetch all available businesses
+      // If user is Super Admin (role 0), fetch all available businesses with dashboard=true
       if (userRole === 0) {
         const businessesStartTime = performance.now()
         const { data: businesses, error: businessesError } = await supabase
           .from('business_clients')
           .select('business_id, company_name, avatar_url, city, state')
+          .eq('dashboard', true)
           .order('company_name')
         const businessesDuration = performance.now() - businessesStartTime
 

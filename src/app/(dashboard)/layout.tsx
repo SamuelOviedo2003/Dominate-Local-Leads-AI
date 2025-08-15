@@ -1,4 +1,5 @@
 import { ReactNode } from 'react'
+import DashboardLayoutComponent from '@/components/DashboardLayout'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -6,8 +7,8 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <DashboardLayoutComponent>
       {children}
-    </div>
+    </DashboardLayoutComponent>
   )
 }
