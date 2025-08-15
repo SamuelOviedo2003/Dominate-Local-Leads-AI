@@ -276,6 +276,40 @@
     @apply min-h-[44px] min-w-[44px];
   }
 
+  /* Dynamic Theme Transitions */
+  .dynamic-theme-transition {
+    transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                background-image 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dynamic-theme-transition * {
+    transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                background-image 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* CSS Custom Properties for Dynamic Theming */
+  :root {
+    --dynamic-primary: #FF6B35;
+    --dynamic-primary-dark: #B23E1A;
+    --dynamic-primary-light: #FF9F66;
+    --dynamic-accent: #334155;
+    --dynamic-text: #FFFFFF;
+    --dynamic-is-light: 0;
+  }
+
+  /* Dynamic header styling */
+  .header-dynamic {
+    background: linear-gradient(to right, 
+      color-mix(in srgb, var(--dynamic-primary-dark) 90%, transparent),
+      color-mix(in srgb, var(--dynamic-accent) 90%, transparent),
+      color-mix(in srgb, var(--dynamic-primary) 90%, transparent)
+    );
+  }
+
   /* Print styles */
   @media print {
     .no-print {

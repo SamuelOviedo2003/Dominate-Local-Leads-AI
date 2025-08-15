@@ -5,6 +5,8 @@ import { ChevronDown, Building2, Check } from 'lucide-react'
 import { BusinessSwitcherData } from '@/types/auth'
 import ImageWithFallback from './ImageWithFallback'
 import { useCompanySwitching } from '@/hooks/useCompanySwitching'
+import { useDynamicTheme } from '@/contexts/DynamicThemeContext'
+import { ExtractedColors, invalidateColorCache } from '@/lib/color-extraction'
 
 interface BusinessSwitcherProps {
   businesses: BusinessSwitcherData[]
@@ -26,6 +28,7 @@ export default function BusinessSwitcher({
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { switchCompany, isLoading } = useCompanySwitching()
+  const { extractColors } = useDynamicTheme()
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -42,6 +45,16 @@ export default function BusinessSwitcher({
   }, [])
 
   const currentBusiness = businessData || businesses.find(b => b.business_id === currentBusinessId)
+
+  // Handle color extraction from business logo
+  const handleColorsExtracted = (colors: ExtractedColors) => {
+    console.log('[BUSINESS SWITCHER] Colors extracted for business:', currentBusiness?.business_id, colors)
+    if (currentBusiness?.business_id && currentBusiness.avatar_url) {
+      // Force fresh extraction by invalidating cache first
+      invalidateColorCache(currentBusiness.avatar_url)
+      extractColors(currentBusiness.avatar_url, currentBusiness.business_id)
+    }
+  }
 
   const handleBusinessSelect = async (businessId: string) => {
     setIsOpen(false)
@@ -72,6 +85,9 @@ export default function BusinessSwitcher({
             className="h-10 w-10 rounded-full object-cover border-2 border-brand-orange-400/50 shadow-lg transition-all duration-300 group-hover:border-brand-orange-400 group-hover:scale-105"
             fallbackBehavior="placeholder"
             fallbackText={currentBusiness.company_name?.charAt(0) || 'B'}
+            extractColors={true}
+            onColorsExtracted={handleColorsExtracted}
+            businessId={currentBusiness.business_id}
           />
         ) : (
           <div className="w-10 h-10 bg-gradient-to-r from-brand-orange-500 to-brand-orange-600 text-white rounded-full flex items-center justify-center text-lg font-bold border-2 border-brand-orange-400/50 shadow-lg transition-all duration-300 group-hover:border-brand-orange-400 group-hover:scale-105">
@@ -120,6 +136,9 @@ export default function BusinessSwitcher({
             }`}
             fallbackBehavior="placeholder"
             fallbackText={currentBusiness.company_name?.charAt(0) || 'B'}
+            extractColors={true}
+            onColorsExtracted={handleColorsExtracted}
+            businessId={currentBusiness.business_id}
           />
         ) : (
           <div className={`bg-gradient-to-r from-brand-orange-500 to-brand-orange-600 text-white rounded-full flex items-center justify-center font-bold border-2 border-brand-orange-400/50 shadow-lg transition-all duration-300 group-hover:border-brand-orange-400 group-hover:scale-105 ${

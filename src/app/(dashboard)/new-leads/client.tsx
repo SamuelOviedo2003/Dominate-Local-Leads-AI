@@ -38,10 +38,7 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">New Leads</h1>
-            <p className="text-gray-600 mt-1">
-              Track and manage your incoming leads and appointment setters performance
-            </p>
+            {/* Empty header content as requested */}
           </div>
           
           {/* Time Period Filter */}
@@ -69,20 +66,24 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
         )}
 
         {/* Lead Metrics and Appointment Setters */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-start">
           {/* Lead Metrics */}
-          <LeadMetrics 
-            metrics={metrics}
-            isLoading={isLoading}
-            error={error}
-          />
+          <div className="h-full">
+            <LeadMetrics 
+              metrics={metrics}
+              isLoading={isLoading}
+              error={error}
+            />
+          </div>
 
           {/* Appointment Setters */}
-          <AppointmentSetters 
-            setters={appointmentSetters}
-            isLoading={isLoading}
-            error={error}
-          />
+          <div className="h-full">
+            <AppointmentSetters 
+              setters={appointmentSetters}
+              isLoading={isLoading}
+              error={error}
+            />
+          </div>
         </div>
 
         {/* Recent Leads Table - Full Width */}

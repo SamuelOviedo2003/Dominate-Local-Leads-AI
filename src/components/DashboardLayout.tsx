@@ -3,6 +3,7 @@ import { getHeaderData } from '@/lib/auth-helpers'
 import UniversalHeader from './UniversalHeader'
 import { logout } from '@/app/home/actions'
 import { CompanyProvider } from '@/contexts/CompanyContext'
+import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -21,23 +22,25 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   } : null
 
   return (
-    <CompanyProvider 
-      initialCompany={initialCompany}
-      availableCompanies={availableBusinesses}
-      userBusinessId={user.businessData?.business_id.toString()}
-      userRole={user.profile?.role}
-    >
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <UniversalHeader 
-          user={user} 
-          logoutAction={logout}
-          availableBusinesses={availableBusinesses}
-        />
-        
-        <main className="flex-1">
-          {children}
-        </main>
-      </div>
-    </CompanyProvider>
+    <DynamicThemeProvider>
+      <CompanyProvider 
+        initialCompany={initialCompany}
+        availableCompanies={availableBusinesses}
+        userBusinessId={user.businessData?.business_id.toString()}
+        userRole={user.profile?.role}
+      >
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <UniversalHeader 
+            user={user} 
+            logoutAction={logout}
+            availableBusinesses={availableBusinesses}
+          />
+          
+          <main className="flex-1">
+            {children}
+          </main>
+        </div>
+      </CompanyProvider>
+    </DynamicThemeProvider>
   )
 }

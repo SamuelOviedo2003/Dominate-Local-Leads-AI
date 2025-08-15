@@ -8,6 +8,8 @@ import { AuthUser, NavigationItem, BusinessSwitcherData } from '@/types/auth'
 import ImageWithFallback from './ImageWithFallback'
 import UserDropdown from './UserDropdown'
 import BusinessSwitcher from './BusinessSwitcher'
+import { useDynamicTheme, useThemeStyles } from '@/contexts/DynamicThemeContext'
+import { ExtractedColors } from '@/lib/color-extraction'
 
 interface UniversalHeaderProps {
   user: AuthUser
@@ -30,6 +32,8 @@ export default function UniversalHeader({
 }: UniversalHeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const { state: themeState, extractColors } = useDynamicTheme()
+  const themeStyles = useThemeStyles()
 
   // Close mobile menu when pathname changes
   useEffect(() => {
@@ -61,15 +65,31 @@ export default function UniversalHeader({
     if (href === '/dashboard') {
       return pathname === '/dashboard' || pathname === '/'
     }
+    if (href === '/new-leads') {
+      return pathname === '/new-leads'
+    }
     return pathname.startsWith(href)
   }
 
   const isSuperAdmin = user.profile?.role === 0
   const hasMultipleBusinesses = availableBusinesses.length > 1
 
+  // Handle color extraction from fallback main logo
+  const handleFallbackColorsExtracted = (colors: ExtractedColors) => {
+    extractColors('/images/DominateLocalLeadsLogo.webp', 'main-logo')
+  }
+
+  // Generate dynamic header style
+  const headerStyle = {
+    background: `linear-gradient(to right, ${themeState.colors.primaryDark}e6, ${themeState.colors.accent}e6, ${themeState.colors.primary}e6)`
+  }
+
   return (
     <>
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-gradient-to-r from-brand-slate-800/90 via-brand-slate-700/90 to-brand-orange-900/90 border-b border-white/20 shadow-2xl">
+      <header 
+        className="sticky top-0 z-40 backdrop-blur-xl border-b border-white/20 shadow-2xl transition-all duration-600 ease-out"
+        style={headerStyle}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             
@@ -91,8 +111,16 @@ export default function UniversalHeader({
                     className="h-10 w-auto object-contain drop-shadow-lg transition-transform duration-300 group-hover:scale-105"
                     fallbackBehavior="placeholder"
                     fallbackText="Dominate Local Leads AI"
+                    extractColors={true}
+                    onColorsExtracted={handleFallbackColorsExtracted}
+                    businessId="main-logo"
                   />
-                  <div className="absolute inset-0 -z-10 bg-gradient-to-r from-brand-orange-500/20 via-brand-orange-400/30 to-brand-orange-300/20 rounded-full blur-lg scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <div 
+                    className="absolute inset-0 -z-10 rounded-full blur-lg scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{
+                      background: `radial-gradient(circle, ${themeState.colors.primary}33, ${themeState.colors.primaryLight}4d, ${themeState.colors.primaryDark}33)`
+                    }}
+                  ></div>
                 </div>
               )}
             </div>
@@ -150,7 +178,12 @@ export default function UniversalHeader({
           />
           
           {/* Mobile menu panel */}
-          <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-gradient-to-br from-brand-slate-800 via-brand-slate-700 to-brand-orange-900 shadow-2xl transform transition-transform lg:hidden backdrop-blur-xl border-l border-white/20">
+          <div 
+            className="fixed inset-y-0 right-0 z-50 w-full max-w-sm shadow-2xl transform transition-transform lg:hidden backdrop-blur-xl border-l border-white/20"
+            style={{
+              background: `linear-gradient(to bottom right, ${themeState.colors.primaryDark}, ${themeState.colors.accent}, ${themeState.colors.primary})`
+            }}
+          >
             {/* Mobile Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/20">
               <div className="text-lg font-semibold text-white">
