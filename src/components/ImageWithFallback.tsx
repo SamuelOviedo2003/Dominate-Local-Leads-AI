@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { ExtractedColors } from '@/lib/color-extraction'
-import { useDynamicTheme } from '@/contexts/DynamicThemeContext'
 
 interface ImageWithFallbackProps {
   src: string
@@ -47,7 +46,9 @@ export default function ImageWithFallback({
   const lastExtractedSrc = useRef<string>('')
   const extractionAbortController = useRef<AbortController | null>(null)
   
-  const { extractColors: themeExtractColors } = useDynamicTheme()
+  // For now, disable theme extraction to avoid context issues
+  // This component is used outside the dashboard where DynamicThemeProvider is not available
+  const themeExtractColors = null
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -111,8 +112,12 @@ export default function ImageWithFallback({
       try {
         console.log('[IMAGE] Starting color extraction for:', src)
         
-        // Use the theme context's enhanced extraction method
-        await themeExtractColors(src, businessId, priority)
+        // Use the theme context's enhanced extraction method if available
+        if (themeExtractColors) {
+          await themeExtractColors(src, businessId, priority)
+        } else {
+          console.debug('[IMAGE] Theme context not available, skipping color extraction')
+        }
         
         console.log('[IMAGE] Color extraction completed for:', src)
         

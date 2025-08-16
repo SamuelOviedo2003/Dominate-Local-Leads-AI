@@ -74,9 +74,18 @@ export default function UniversalHeader({
   const isSuperAdmin = user.profile?.role === 0
   const hasMultipleBusinesses = availableBusinesses.length > 1
 
+  // Initialize fallback color extraction when no business data
+  useEffect(() => {
+    if (!user.businessData?.avatar_url) {
+      console.log('[UNIVERSAL HEADER] Initializing fallback logo color extraction')
+      extractColors('/images/DominateLocalLeadsLogo.webp', 'main-logo')
+    }
+  }, [user.businessData?.avatar_url, extractColors])
+
   // Handle color extraction from fallback main logo
   const handleFallbackColorsExtracted = (colors: ExtractedColors) => {
-    extractColors('/images/DominateLocalLeadsLogo.webp', 'main-logo')
+    console.log('[UNIVERSAL HEADER] Fallback colors extracted:', colors)
+    // Colors are automatically handled by the ImageWithFallback component
   }
 
   // Generate dynamic header style

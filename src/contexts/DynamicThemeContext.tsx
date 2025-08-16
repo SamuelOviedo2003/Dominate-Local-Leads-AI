@@ -197,8 +197,8 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
     console.log('[THEME] Starting color extraction:', { logoUrl, businessId, priority, currentLogoUrl: state.currentLogoUrl, currentBusinessId: state.businessId })
     
     try {
-      // Skip if already processing the same logo and business
-      if (state.currentLogoUrl === logoUrl && state.businessId === businessId && !state.error && !state.isLoading) {
+      // Skip if already processing the same logo and business and no errors
+      if (state.currentLogoUrl === logoUrl && state.businessId === businessId && !state.error) {
         console.log('[THEME] Skipping extraction - already processed:', { logoUrl, businessId })
         return
       }
@@ -254,17 +254,13 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
       const extractionTime = performance.now() - startTime
       console.log('[THEME] Colors extracted successfully in', extractionTime.toFixed(2), 'ms:', extractedColors)
 
-      // Double-check we're still dealing with the same business before applying colors
-      // This prevents race conditions during rapid business switching
-      if (businessId === state.businessId || state.businessId === null) {
-        dispatch({ 
-          type: 'SET_COLORS', 
-          payload: { colors: extractedColors, logoUrl, businessId, extractionTime } 
-        })
-        console.log('[THEME] Colors applied to theme state')
-      } else {
-        console.log('[THEME] Skipping color application - business changed during extraction')
-      }
+      // Always apply colors from successful extraction
+      // The extraction queue already handles preventing duplicate requests
+      dispatch({ 
+        type: 'SET_COLORS', 
+        payload: { colors: extractedColors, logoUrl, businessId, extractionTime } 
+      })
+      console.log('[THEME] Colors applied to theme state for business:', businessId)
 
     } catch (error) {
       console.error('[THEME] Failed to extract colors:', error)

@@ -46,12 +46,19 @@ export default function BusinessSwitcher({
 
   const currentBusiness = businessData || businesses.find(b => b.business_id === currentBusinessId)
 
+  // Initialize color extraction on mount and when business changes
+  useEffect(() => {
+    if (currentBusiness?.business_id && currentBusiness.avatar_url) {
+      console.log('[BUSINESS SWITCHER] Initializing color extraction for:', currentBusiness.business_id)
+      extractColors(currentBusiness.avatar_url, currentBusiness.business_id)
+    }
+  }, [currentBusiness?.business_id, currentBusiness?.avatar_url, extractColors])
+
   // Handle color extraction from business logo
   const handleColorsExtracted = (colors: ExtractedColors) => {
     console.log('[BUSINESS SWITCHER] Colors extracted for business:', currentBusiness?.business_id, colors)
     if (currentBusiness?.business_id && currentBusiness.avatar_url) {
-      // Force fresh extraction by invalidating cache first
-      invalidateColorCache(currentBusiness.avatar_url)
+      // Extract colors without cache invalidation to prevent race conditions
       extractColors(currentBusiness.avatar_url, currentBusiness.business_id)
     }
   }

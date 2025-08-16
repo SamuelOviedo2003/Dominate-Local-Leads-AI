@@ -13,19 +13,20 @@ interface AppointmentSettersProps {
 function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentSettersProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
-  const itemsPerPage = 2 // Reduced to show fewer items for better height matching
+  const itemsPerPage = 2 // Show 2 items at a time for optimal space usage in compact layout
 
   const scrollToIndex = useCallback((index: number) => {
-    if (scrollContainerRef.current) {
+    if (scrollContainerRef.current && setters) {
       const container = scrollContainerRef.current
-      const itemHeight = container.scrollHeight / (setters?.length || 1)
+      const visibleItems = Math.min(setters.length, itemsPerPage)
+      const itemHeight = container.scrollHeight / Math.max(visibleItems, 1)
       const scrollTop = index * itemHeight
       container.scrollTo({
         top: scrollTop,
         behavior: 'smooth'
       })
     }
-  }, [setters?.length])
+  }, [setters, itemsPerPage])
 
   const handlePrevious = useCallback(() => {
     if (setters && currentIndex > 0) {
@@ -54,25 +55,25 @@ function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentS
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 h-fit">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+      <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-4 h-[420px] flex flex-col">
+        <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center flex-shrink-0">
           <User className="w-5 h-5 mr-3 text-purple-500" />
           Appointment Setters
         </h3>
-        <div className="text-red-500 text-sm">Error loading setters: {error}</div>
+        <div className="text-red-500 text-sm flex-1 flex items-center justify-center">Error loading setters: {error}</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 flex-1 flex flex-col">
+    <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-4 flex flex-col h-[420px]">
       {/* Fixed Header */}
-      <div className="flex items-center justify-between mb-6 sticky top-0 bg-white z-10">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center">
           <User className="w-5 h-5 mr-3 text-purple-500" />
           Appointment Setters
         </h3>
-        {setters && setters.length > itemsPerPage && (
+        {setters && setters.length > 3 && (
           <div className="flex flex-col space-y-1">
             <button
               onClick={handlePrevious}
@@ -84,7 +85,7 @@ function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentS
             </button>
             <button
               onClick={handleNext}
-              disabled={currentIndex >= (setters?.length || 0) - itemsPerPage}
+              disabled={currentIndex >= Math.max(0, (setters?.length || 0) - itemsPerPage)}
               className="p-2 rounded-lg hover:bg-purple-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 border border-purple-200 hover:border-purple-300"
               aria-label="Next appointment setters"
             >
@@ -95,40 +96,44 @@ function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentS
       </div>
       
       {isLoading ? (
-        <div className="space-y-4">
-          {[...Array(itemsPerPage)].map((_, i) => (
-            <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-4 bg-gradient-to-r from-gray-50 to-gray-100">
-              <div className="h-5 bg-gray-300 rounded w-1/3 mb-3"></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="h-4 bg-gray-300 rounded"></div>
-                <div className="h-4 bg-gray-300 rounded"></div>
-                <div className="h-4 bg-gray-300 rounded"></div>
-                <div className="h-4 bg-gray-300 rounded"></div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="space-y-2">
+            {[...Array(itemsPerPage)].map((_, i) => (
+              <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-3 bg-gradient-to-r from-gray-50 to-gray-100">
+                <div className="h-4 bg-gray-300 rounded w-1/3 mb-2"></div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="h-3 bg-gray-300 rounded"></div>
+                  <div className="h-3 bg-gray-300 rounded"></div>
+                  <div className="h-3 bg-gray-300 rounded"></div>
+                  <div className="h-3 bg-gray-300 rounded"></div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       ) : setters && setters.length > 0 ? (
-        <div 
-          ref={scrollContainerRef}
-          className="flex-1 flex flex-col"
-        >
-          <div className="space-y-4 flex-1 flex flex-col justify-evenly min-h-0">
-          {setters.slice(currentIndex, currentIndex + itemsPerPage).map((setter, index) => (
+        <div className="flex-1 flex flex-col min-h-0">
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto"
+          >
+            <div className="space-y-2">
+            {/* Show all items if 3 or fewer, otherwise use pagination */}
+            {(setters.length <= 3 ? setters : setters.slice(currentIndex, currentIndex + itemsPerPage)).map((setter, index) => (
             <div 
               key={setter.name} 
-              className="group border border-gray-200 rounded-lg p-3 sm:p-4 hover:border-purple-300 hover:bg-gradient-to-r from-purple-50 to-blue-50 transition-all duration-300 transform hover:scale-[1.02]"
+              className="group border border-gray-200 rounded-lg p-2 sm:p-3 hover:border-purple-300 hover:bg-gradient-to-r from-purple-50 to-blue-50 transition-all duration-300 transform hover:scale-[1.01]"
             >
-              <div className="flex items-center mb-3 sm:mb-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mr-2 sm:mr-3">
-                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+              <div className="flex items-center mb-2">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mr-2">
+                  <User className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
-                <div className="font-bold text-gray-900 text-base sm:text-lg group-hover:text-purple-700 transition-colors truncate">
+                <div className="font-bold text-gray-900 text-sm sm:text-base group-hover:text-purple-700 transition-colors truncate">
                   {setter.name}
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-gray-400 rounded-full flex-shrink-0"></div>
                   <div className="min-w-0">
@@ -172,18 +177,19 @@ function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentS
                 </div>
               </div>
               
-              <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-center">
+              <div className="mt-2 pt-2 border-t border-gray-200 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-xs text-gray-600 font-medium">Avg Response Speed</div>
-                  <div className="font-bold text-purple-600">{setter.avgResponseSpeed.toFixed(1)}s</div>
+                      <div className="text-xs text-gray-600 font-medium">Avg Response Speed</div>
+                      <div className="font-bold text-purple-600 text-sm">{setter.avgResponseSpeed.toFixed(1)}s</div>
                 </div>
               </div>
             </div>
           ))}
+            </div>
           </div>
           
-          {setters.length > itemsPerPage && (
-            <div className="text-center text-sm text-gray-500 mt-4 py-2 bg-gray-50 rounded-lg">
+          {setters.length > 3 && (
+            <div className="text-center text-sm text-gray-500 mt-2 py-1 bg-gray-50 rounded-lg flex-shrink-0">
               <div className="flex items-center justify-center space-x-2">
                 <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
                 <div>
@@ -195,7 +201,7 @@ function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentS
           )}
         </div>
       ) : (
-        <div className="text-gray-500 text-center py-12 bg-gradient-to-r from-gray-50 to-purple-50 rounded-lg flex-1 flex flex-col justify-center">
+        <div className="text-gray-500 text-center bg-gradient-to-r from-gray-50 to-purple-50 rounded-lg flex-1 flex flex-col justify-center">
           <User className="w-12 h-12 mx-auto text-gray-400 mb-3" />
           <div className="text-lg font-medium">No appointment setters found</div>
           <div className="text-sm mt-1">Check back later for updates</div>
