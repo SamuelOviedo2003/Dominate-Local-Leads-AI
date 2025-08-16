@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable verbose logging for debugging deployment issues
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
   // Enable standalone output for optimal Docker deployment
   output: 'standalone',
   
@@ -20,6 +26,22 @@ const nextConfig = {
   experimental: {
     // Optimize package imports
     optimizePackageImports: ['lucide-react'],
+  },
+  
+  // Turbopack configuration for better module resolution in dev/build
+  turbopack: {
+    resolveAlias: {
+      // Ensure consistent module resolution
+      '@': './src',
+    },
+    resolveExtensions: [
+      '.ts',
+      '.tsx', 
+      '.js',
+      '.jsx',
+      '.mjs',
+      '.json'
+    ],
   },
   
   // Security headers
@@ -49,20 +71,60 @@ const nextConfig = {
     ]
   },
   
-  // Webpack optimizations for production
-  webpack: (config, { dev, isServer }) => {
-    // Handle client-side only modules
+  // Webpack optimizations for production deployment
+  webpack: (config, { dev, isServer, buildId }) => {
+    // Preserve existing resolve.alias to prevent Next.js internal errors
+    config.resolve.alias = {
+      ...config.resolve.alias,
+    }
+    
+    // Add module resolution extensions for better compatibility
+    config.resolve.extensions = [
+      '.ts',
+      '.tsx', 
+      '.js',
+      '.jsx',
+      '.mjs',
+      '.json',
+      ...config.resolve.extensions
+    ]
+    
+    // Handle client-side only modules for server builds
     if (isServer) {
       config.externals = config.externals || []
       config.externals.push('colorthief')
+      
+      // Add fallbacks for Node.js modules in Edge runtime
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      }
     }
     
+    // Production optimizations for client builds
     if (!dev && !isServer) {
       // Enable tree shaking
       config.optimization.usedExports = true
       
       // Minimize bundle size
       config.optimization.sideEffects = false
+      
+      // Better module ID generation for consistent builds
+      config.optimization.moduleIds = 'deterministic'
+    }
+    
+    // Handle case sensitivity issues for Linux deployment environments
+    config.resolve.symlinks = false
+    
+    // Add better error reporting for missing modules
+    if (!dev) {
+      config.stats = {
+        ...config.stats,
+        errorDetails: true,
+        moduleTrace: true,
+      }
     }
     
     return config

@@ -472,20 +472,28 @@ export async function warmUpColorExtraction(imageUrls: string[] = []): Promise<v
 /**
  * Cleanup function for performance and memory management
  */
-export function cleanupColorExtraction(): void {
+export async function cleanupColorExtraction(): Promise<void> {
   console.log('[COLOR EXTRACTION] Cleaning up color extraction system...')
   
   try {
     // Clear debounce map
     debounceMap.clear()
     
-    // Destroy worker pool
-    const { destroyWorkerPool } = require('./worker-pool')
-    destroyWorkerPool()
+    // Destroy worker pool using dynamic import for better compatibility
+    try {
+      const { destroyWorkerPool } = await import('./worker-pool')
+      destroyWorkerPool()
+    } catch (error) {
+      console.warn('[COLOR EXTRACTION] Worker pool cleanup failed:', error)
+    }
     
-    // Destroy cache manager
-    const { destroyColorCacheManager } = require('./color-cache')
-    destroyColorCacheManager()
+    // Destroy cache manager using dynamic import for better compatibility
+    try {
+      const { destroyColorCacheManager } = await import('./color-cache')
+      destroyColorCacheManager()
+    } catch (error) {
+      console.warn('[COLOR EXTRACTION] Cache manager cleanup failed:', error)
+    }
     
     console.log('[COLOR EXTRACTION] Cleanup completed')
   } catch (error) {

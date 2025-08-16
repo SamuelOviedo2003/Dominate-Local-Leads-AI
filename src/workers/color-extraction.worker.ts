@@ -3,8 +3,17 @@
 
 // ColorThief import - only works in browser environment
 let ColorThief: any
-if (typeof window !== 'undefined') {
-  ColorThief = require('colorthief')
+
+// Use dynamic import for better module resolution in production builds
+async function loadColorThief() {
+  if (typeof window !== 'undefined' && !ColorThief) {
+    try {
+      const colorThiefModule = await import('colorthief')
+      ColorThief = colorThiefModule.default || colorThiefModule
+    } catch (error) {
+      console.warn('[WORKER] Failed to load ColorThief:', error)
+    }
+  }
 }
 
 export interface WorkerColorExtractionRequest {
@@ -143,6 +152,11 @@ async function processColorExtraction(request: WorkerColorExtractionRequest): Pr
   try {
     const { imageUrl, options } = request
     const { colorCount = 10 } = options
+
+    // Load ColorThief if not already loaded
+    if (!ColorThief) {
+      await loadColorThief()
+    }
 
     // Check if ColorThief is available (browser environment)
     if (!ColorThief) {
