@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Building2, Check } from 'lucide-react'
 import { BusinessSwitcherData } from '@/types/auth'
 import ImageWithFallback from './ImageWithFallback'
-import { useCompanySwitching } from '@/hooks/useCompanySwitching'
-import { useDynamicTheme } from '@/contexts/DynamicThemeContext'
+import { useCompanySwitching } from '@/hooks'
+import { useDynamicTheme } from '@/contexts'
 import { ExtractedColors, invalidateColorCache } from '@/lib/color-extraction'
 
 interface BusinessSwitcherProps {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useIncomingCallsData } from '@/hooks/useIncomingCallsData'
+import { useIncomingCallsData } from '@/hooks'
 import { IncomingCallsTimePeriod } from '@/types/leads'
 // Remove this import for now - will use inline component
 import { Phone, TrendingUp, Users, Calendar } from 'lucide-react'
