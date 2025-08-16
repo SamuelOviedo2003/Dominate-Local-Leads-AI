@@ -2,8 +2,8 @@ import { ReactNode } from 'react'
 import { getHeaderData } from '@/lib/auth-helpers'
 import UniversalHeader from './UniversalHeader'
 import { logout } from '@/app/home/actions'
-import { CompanyProvider } from '@/contexts'
-import { DynamicThemeProvider } from '@/contexts'
+import { CompanyProvider } from '@/contexts/CompanyContext'
+import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
 
 interface DashboardLayoutProps {
   children: ReactNode

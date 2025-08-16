@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, ReactNode } from 'react';
-import { usePerformance } from '@/hooks';
+import { usePerformance } from '@/hooks/usePerformance';
 import { PerformanceMetric } from '@/types/performance';
 
 interface PerformanceContextType {

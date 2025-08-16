@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BusinessSwitcherData } from '@/types/auth'
-import { useCompany } from '@/contexts'
-import { useDynamicTheme } from '@/contexts'
+import { useCompany } from '@/contexts/CompanyContext'
+import { useDynamicTheme } from '@/contexts/DynamicThemeContext'
 import { preloadColors } from '@/lib/color-extraction'
 
 interface UseCompanySwitchingReturn {

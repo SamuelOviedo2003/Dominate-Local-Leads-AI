@@ -8,7 +8,7 @@ import { AuthUser, NavigationItem, BusinessSwitcherData } from '@/types/auth'
 import ImageWithFallback from './ImageWithFallback'
 import UserDropdown from './UserDropdown'
 import BusinessSwitcher from './BusinessSwitcher'
-import { useDynamicTheme, useThemeStyles } from '@/contexts'
+import { useDynamicTheme, useThemeStyles } from '@/contexts/DynamicThemeContext'
 import { ExtractedColors } from '@/lib/color-extraction'
 import { logNavigation, logColorExtraction } from '@/lib/logger'
 

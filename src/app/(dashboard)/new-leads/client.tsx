@@ -2,14 +2,14 @@
 
 import { useState } from 'react'
 import { TimePeriod } from '@/types/leads'
-import { useLeadsData } from '@/hooks'
+import { useLeadsData } from '@/hooks/useLeadsData'
 import { 
   LeadMetrics, 
   AppointmentSetters, 
   LeadsTable, 
   TimePeriodFilter 
 } from '@/components/features/leads'
-import { useEffectiveBusinessId } from '@/contexts'
+import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
 
 interface NewLeadsClientProps {
   businessId: string

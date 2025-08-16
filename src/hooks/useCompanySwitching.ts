@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { BusinessSwitcherData, CompanySwitchResponse, AvailableCompaniesResponse } from '@/types/auth'
-import { useCompany } from '@/contexts'
+import { useCompany } from '@/contexts/CompanyContext'
 
 interface UseCompanySwitchingReturn {
   switchCompany: (companyId: string) => Promise<{ success: boolean; error?: string }>
