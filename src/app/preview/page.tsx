@@ -1,7 +1,6 @@
 'use client'
 
-import { LeadMetrics } from '@/components/features/leads/LeadMetrics'
-import { AppointmentSetters } from '@/components/features/leads/AppointmentSetters'
+import { LeadMetrics, AppointmentSetters } from '@/components/features/leads'
 import { LeadMetrics as LeadMetricsType, AppointmentSetter } from '@/types/leads'
 
 // Mock data for preview
