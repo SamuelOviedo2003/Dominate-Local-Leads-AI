@@ -1,6 +1,8 @@
 import { getAuthenticatedUser } from '@/lib/auth-helpers'
 import { IncomingCallsClient } from './client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function IncomingCallsPage() {
   // Get authenticated user on server side
   const user = await getAuthenticatedUser()

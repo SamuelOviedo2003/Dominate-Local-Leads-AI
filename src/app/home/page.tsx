@@ -2,6 +2,8 @@ import { getHeaderData } from '@/lib/auth-helpers'
 import UniversalHeader from '@/components/UniversalHeader'
 import { logout } from './actions'
 
+export const dynamic = 'force-dynamic'
+
 export default async function HomePage() {
   const { user, availableBusinesses } = await getHeaderData()
 

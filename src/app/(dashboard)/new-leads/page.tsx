@@ -1,6 +1,8 @@
 import { getAuthenticatedUser } from '@/lib/auth-helpers'
 import { NewLeadsClient } from './client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function NewLeadsPage() {
   // Get authenticated user on server side
   const user = await getAuthenticatedUser()

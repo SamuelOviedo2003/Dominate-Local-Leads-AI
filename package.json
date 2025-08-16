@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:verbose": "DEBUG=* next build",
+    "build:debug": "next build || (echo '========== BUILD FAILED DEBUG INFO ==========' && echo 'Node version:' && node -v && echo 'NPM version:' && npm -v && echo 'Next.js version:' && npx next --version && echo 'Files in src:' && find src -type f -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' | head -20 && echo 'Package.json dependencies:' && cat package.json | grep -A 50 'dependencies' && exit 1)",
     "start": "next start",
     "lint": "next lint",
     "test": "playwright test",

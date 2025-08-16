@@ -5,6 +5,8 @@ import { login } from './actions'
 import LoginForm from '@/components/LoginForm'
 import ImageWithFallback from '@/components/ImageWithFallback'
 
+export const dynamic = 'force-dynamic'
+
 export default async function LoginPage() {
   const supabase = await createClient()
   
