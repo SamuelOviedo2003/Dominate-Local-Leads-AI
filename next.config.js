@@ -1,3 +1,5 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable verbose logging for debugging deployment issues
@@ -57,9 +59,16 @@ const nextConfig = {
   
   // Webpack optimizations for production deployment
   webpack: (config, { dev, isServer, buildId }) => {
-    // Preserve existing resolve.alias to prevent Next.js internal errors
+    // Add explicit alias mappings for module resolution
     config.resolve.alias = {
       ...config.resolve.alias,
+      '@': path.resolve(__dirname, 'src'),
+      '@/hooks': path.resolve(__dirname, 'src/hooks'),
+      '@/contexts': path.resolve(__dirname, 'src/contexts'),
+      '@/components': path.resolve(__dirname, 'src/components'),
+      '@/types': path.resolve(__dirname, 'src/types'),
+      '@/lib': path.resolve(__dirname, 'src/lib'),
+      '@/app': path.resolve(__dirname, 'src/app'),
     }
     
     // Add module resolution extensions for better compatibility
