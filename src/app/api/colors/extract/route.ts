@@ -69,7 +69,7 @@ async function extractColorsServerSide(imageUrl: string, options: any = {}) {
   // - quantize.js for color quantization
   // - Or implement ColorThief server-side equivalent
   
-  console.log('[SERVER COLOR EXTRACTION] Processing:', imageUrl, options)
+  // Processing color extraction for production
   
   // Placeholder response - replace with actual implementation
   return {
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ cached: null })
 
   } catch (error) {
-    console.error('[COLOR API] GET error:', error)
+    // GET request error occurred
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -151,11 +151,7 @@ export async function POST(request: NextRequest) {
     
     const { imageUrl, businessId, options = {} } = validatedData
 
-    console.log('[COLOR API] Processing color extraction request:', {
-      imageUrl,
-      businessId,
-      options
-    })
+    // Processing color extraction request
 
     // Security: Validate image URL domain (optional)
     const allowedDomains = [
@@ -171,7 +167,6 @@ export async function POST(request: NextRequest) {
     )
 
     if (!isDomainAllowed) {
-      console.warn('[COLOR API] Blocked request for domain:', urlDomain)
       return NextResponse.json(
         { error: 'Image domain not allowed' },
         { status: 403 }
@@ -189,7 +184,7 @@ export async function POST(request: NextRequest) {
       //   await updateBusinessColors(businessId, extractedColors)
       // }
 
-      console.log('[COLOR API] Extraction completed in', processingTime, 'ms')
+      // Extraction completed successfully
 
       return NextResponse.json({
         success: true,
@@ -199,7 +194,7 @@ export async function POST(request: NextRequest) {
       })
 
     } catch (extractionError) {
-      console.error('[COLOR API] Color extraction failed:', extractionError)
+      // Color extraction failed, using fallback
       
       // Return fallback colors
       const fallbackColors = {
@@ -221,7 +216,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('[COLOR API] Request processing error:', error)
+    // Request processing error occurred
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -266,12 +261,12 @@ export async function PUT(request: NextRequest) {
     // Here you would update the database with the cached colors
     // await updateBusinessColors(businessId, colors, imageUrl)
 
-    console.log('[COLOR API] Updated colors for business:', businessId)
+    // Colors updated successfully
 
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('[COLOR API] PUT error:', error)
+    // PUT request error occurred
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -305,12 +300,12 @@ export async function DELETE(request: NextRequest) {
     // Here you would clear the cached colors from the database
     // await clearBusinessColors(businessId)
 
-    console.log('[COLOR API] Cleared colors for business:', businessId)
+    // Colors cleared successfully
 
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('[COLOR API] DELETE error:', error)
+    // DELETE request error occurred
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,7 +1,11 @@
 // Web Worker for color extraction
 // This runs in a separate thread to prevent blocking the main UI thread
 
-import ColorThief from 'colorthief'
+// ColorThief import - only works in browser environment
+let ColorThief: any
+if (typeof window !== 'undefined') {
+  ColorThief = require('colorthief')
+}
 
 export interface WorkerColorExtractionRequest {
   id: string
@@ -139,6 +143,11 @@ async function processColorExtraction(request: WorkerColorExtractionRequest): Pr
   try {
     const { imageUrl, options } = request
     const { colorCount = 10 } = options
+
+    // Check if ColorThief is available (browser environment)
+    if (!ColorThief) {
+      throw new Error('ColorThief not available in this environment')
+    }
 
     // Create ColorThief instance
     const colorThief = new ColorThief()

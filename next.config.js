@@ -51,6 +51,12 @@ const nextConfig = {
   
   // Webpack optimizations for production
   webpack: (config, { dev, isServer }) => {
+    // Handle client-side only modules
+    if (isServer) {
+      config.externals = config.externals || []
+      config.externals.push('colorthief')
+    }
+    
     if (!dev && !isServer) {
       // Enable tree shaking
       config.optimization.usedExports = true
