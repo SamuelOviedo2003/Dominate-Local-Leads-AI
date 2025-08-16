@@ -52,7 +52,7 @@ export default function BusinessSwitcher({
       console.log('[BUSINESS SWITCHER] Initializing color extraction for:', currentBusiness.business_id)
       extractColors(currentBusiness.avatar_url, currentBusiness.business_id)
     }
-  }, [currentBusiness?.business_id, currentBusiness?.avatar_url, extractColors])
+  }, [currentBusiness?.business_id, currentBusiness?.avatar_url]) // Removed extractColors to prevent infinite loop
 
   // Handle color extraction from business logo
   const handleColorsExtracted = (colors: ExtractedColors) => {

@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense } from 'react'
+import { useRouter } from 'next/navigation'
 import { BarChart3, Users, Phone, TrendingUp, Calendar, MessageSquare } from 'lucide-react'
 
 // Loading component for dashboard content
@@ -82,6 +83,8 @@ function PlaceholderChart({ title }: { title: string }) {
 
 // Main Dashboard Component
 function DashboardContent() {
+  const router = useRouter()
+
   // Mock data - will be replaced with real data from backend
   const stats = [
     {
@@ -178,14 +181,14 @@ function DashboardContent() {
             { name: 'Sales Reports', href: '/salesman', icon: BarChart3 },
             { name: 'FB Analytics', href: '/fb-analysis', icon: TrendingUp }
           ].map((action, index) => (
-            <a
+            <button
               key={index}
-              href={action.href}
-              className="bg-white p-4 rounded-lg hover:shadow-md transition-all duration-300 text-center group"
+              onClick={() => router.push(action.href)}
+              className="bg-white p-4 rounded-lg hover:shadow-md transition-all duration-300 text-center group cursor-pointer"
             >
               <action.icon className="w-6 h-6 text-brand-orange-600 mx-auto mb-2 group-hover:scale-110 transition-transform" />
               <p className="text-sm font-medium text-gray-900">{action.name}</p>
-            </a>
+            </button>
           ))}
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Menu, X, ChevronDown } from 'lucide-react'
 import { AuthUser, NavigationItem, BusinessSwitcherData } from '@/types/auth'
@@ -32,6 +32,7 @@ export default function UniversalHeader({
 }: UniversalHeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { state: themeState, extractColors } = useDynamicTheme()
   const themeStyles = useThemeStyles()
 
@@ -74,13 +75,48 @@ export default function UniversalHeader({
   const isSuperAdmin = user.profile?.role === 0
   const hasMultipleBusinesses = availableBusinesses.length > 1
 
+  // Handle navigation with explicit routing to ensure navigation works
+  const handleNavigation = (href: string, event?: React.MouseEvent) => {
+    console.log('[NAVIGATION] Button clicked! Navigating to:', href, 'from:', pathname)
+    
+    // Prevent any default behavior
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+      console.log('[NAVIGATION] Event prevented and stopped')
+    }
+    
+    console.log('[NAVIGATION] Executing navigation to:', href)
+    
+    // Try multiple navigation methods for maximum compatibility
+    try {
+      // Method 1: Next.js router
+      console.log('[NAVIGATION] Trying router.push...')
+      router.push(href)
+    } catch (routerError) {
+      console.error('[NAVIGATION] Router error:', routerError)
+      
+      try {
+        // Method 2: Direct window navigation
+        console.log('[NAVIGATION] Trying window.location...')
+        window.location.href = href
+      } catch (windowError) {
+        console.error('[NAVIGATION] Window navigation error:', windowError)
+        
+        // Method 3: Force page reload with new URL
+        console.log('[NAVIGATION] Force reload with new URL')
+        window.location.replace(href)
+      }
+    }
+  }
+
   // Initialize fallback color extraction when no business data
   useEffect(() => {
     if (!user.businessData?.avatar_url) {
       console.log('[UNIVERSAL HEADER] Initializing fallback logo color extraction')
       extractColors('/images/DominateLocalLeadsLogo.webp', 'main-logo')
     }
-  }, [user.businessData?.avatar_url, extractColors])
+  }, [user.businessData?.avatar_url]) // Removed extractColors to prevent infinite loop
 
   // Handle color extraction from fallback main logo
   const handleFallbackColorsExtracted = (colors: ExtractedColors) => {
@@ -137,17 +173,25 @@ export default function UniversalHeader({
             {/* Center: Navigation Buttons */}
             <nav className="hidden lg:flex items-center space-x-2">
               {navigationItems.map((item) => (
-                <Link
+                <button
                   key={item.name}
-                  href={item.href}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm touch-target ${
+                  onClick={(e) => {
+                    console.log('[NAVIGATION] Desktop button clicked:', item.name, item.href)
+                    handleNavigation(item.href, e)
+                  }}
+                  onMouseDown={(e) => {
+                    console.log('[NAVIGATION] Mouse down on:', item.name)
+                  }}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm touch-target cursor-pointer inline-block relative z-10 ${
                     isActiveLink(item.href)
                       ? 'bg-white/25 text-white shadow-lg border border-white/40 scale-105'
                       : 'text-white/85 hover:text-white hover:bg-white/15 hover:border-white/30 hover:scale-105 border border-transparent'
                   }`}
+                  type="button"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   {item.name}
-                </Link>
+                </button>
               ))}
             </nav>
 
@@ -210,18 +254,23 @@ export default function UniversalHeader({
             {/* Mobile Navigation Links */}
             <nav className="px-6 py-6 space-y-3">
               {navigationItems.map((item) => (
-                <Link
+                <button
                   key={item.name}
-                  href={item.href}
-                  className={`block px-5 py-4 rounded-xl text-base font-semibold transition-all duration-300 backdrop-blur-sm touch-target ${
+                  onClick={(e) => {
+                    console.log('[NAVIGATION] Mobile button clicked:', item.name, item.href)
+                    handleNavigation(item.href, e)
+                    setIsMobileMenuOpen(false)
+                  }}
+                  className={`block w-full text-left px-5 py-4 rounded-xl text-base font-semibold transition-all duration-300 backdrop-blur-sm touch-target cursor-pointer relative z-10 ${
                     isActiveLink(item.href)
                       ? 'bg-white/25 text-white shadow-lg border border-white/40'
                       : 'text-white/85 hover:text-white hover:bg-white/15 hover:border-white/30 border border-transparent'
                   }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  type="button"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   {item.name}
-                </Link>
+                </button>
               ))}
             </nav>
 
