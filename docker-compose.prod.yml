@@ -1,0 +1,74 @@
+# =========================================
+# Docker Compose Override for Production
+# =========================================
+version: '3.8'
+
+services:
+  nextjs-app:
+    # Production-specific configuration
+    restart: always
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    
+    # Read-only filesystem with temp directories
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+    
+    # Additional environment variables for production
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - LOG_LEVEL=info
+      - ENABLE_PERFORMANCE_MONITORING=true
+
+  nginx:
+    # Production Nginx configuration
+    restart: always
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    
+    # Additional volumes for production
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx:rw
+      # Uncomment if you have SSL certificates
+      # - ./ssl:/etc/nginx/ssl:ro
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true

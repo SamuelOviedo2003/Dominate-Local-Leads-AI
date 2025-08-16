@@ -67,6 +67,42 @@ export interface NewLeadsFilters {
   startDate: string
 }
 
+// Incoming Calls Types
+export interface IncomingCall {
+  incoming_call_id: string
+  source: string | null
+  caller_type: string | null
+  duration: number
+  status: string
+  created_at: string
+  business_id: string
+}
+
+export interface SourceDistribution {
+  source: string
+  count: number
+}
+
+export interface CallerTypeDistribution {
+  caller_type: string
+  count: number
+}
+
+export interface SankeyData {
+  source: string
+  caller_type: string
+  value: number
+}
+
+export interface IncomingCallsAnalytics {
+  sourceDistribution: SourceDistribution[]
+  callerTypeDistribution: CallerTypeDistribution[]
+  sankeyData: SankeyData[]
+  recentCalls: IncomingCall[]
+}
+
+export type IncomingCallsTimePeriod = '7' | '15' | '30' | '60' | '90'
+
 export interface ApiResponse<T> {
   data: T
   success: boolean

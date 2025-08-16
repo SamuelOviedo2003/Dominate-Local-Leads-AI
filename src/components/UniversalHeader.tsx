@@ -10,6 +10,7 @@ import UserDropdown from './UserDropdown'
 import BusinessSwitcher from './BusinessSwitcher'
 import { useDynamicTheme, useThemeStyles } from '@/contexts/DynamicThemeContext'
 import { ExtractedColors } from '@/lib/color-extraction'
+import { logNavigation, logColorExtraction } from '@/lib/logger'
 
 interface UniversalHeaderProps {
   user: AuthUser
@@ -77,16 +78,16 @@ export default function UniversalHeader({
 
   // Handle navigation with explicit routing to ensure navigation works
   const handleNavigation = (href: string, event?: React.MouseEvent) => {
-    console.log('[NAVIGATION] Button clicked! Navigating to:', href, 'from:', pathname)
+    logNavigation('Button clicked', href, { from: pathname })
     
     // Prevent any default behavior
     if (event) {
       event.preventDefault()
       event.stopPropagation()
-      console.log('[NAVIGATION] Event prevented and stopped')
+      logNavigation('Event prevented and stopped')
     }
     
-    console.log('[NAVIGATION] Executing navigation to:', href)
+    logNavigation('Executing navigation', href)
     
     // Try multiple navigation methods for maximum compatibility
     try {

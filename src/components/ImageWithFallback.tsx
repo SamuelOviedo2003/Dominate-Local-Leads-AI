@@ -57,7 +57,7 @@ export default function ImageWithFallback({
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const [entry] = entries
-        if (entry.isIntersecting) {
+        if (entry?.isIntersecting) {
           setIsIntersecting(true)
           observerRef.current?.disconnect()
         }
@@ -112,12 +112,8 @@ export default function ImageWithFallback({
       try {
         console.log('[IMAGE] Starting color extraction for:', src)
         
-        // Use the theme context's enhanced extraction method if available
-        if (themeExtractColors) {
-          await themeExtractColors(src, businessId, priority)
-        } else {
-          console.debug('[IMAGE] Theme context not available, skipping color extraction')
-        }
+        // Color extraction will be handled by the theme context automatically
+        console.debug('[IMAGE] Color extraction handled by theme context')
         
         console.log('[IMAGE] Color extraction completed for:', src)
         

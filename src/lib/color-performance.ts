@@ -208,8 +208,8 @@ export class ColorPerformanceMonitor {
     // Check memory usage
     const memoryMetrics = recent.filter(m => m.name === 'memory_usage' && m.metadata?.source === 'js_heap')
     if (memoryMetrics.length > 0) {
-      const latestMemory = memoryMetrics[memoryMetrics.length - 1].value
-      if (latestMemory > this.thresholds.HIGH_MEMORY_USAGE) {
+      const latestMemory = memoryMetrics[memoryMetrics.length - 1]?.value
+      if (latestMemory && latestMemory > this.thresholds.HIGH_MEMORY_USAGE) {
         this.addAlert(`High memory usage detected: ${(latestMemory / 1024 / 1024).toFixed(2)}MB`)
       }
     }
@@ -245,7 +245,8 @@ export class ColorPerformanceMonitor {
    */
   private addAlert(message: string): void {
     const alertKey = `${Date.now()}-${message}`
-    if (!this.alerts.some(alert => alert.includes(message.split(':')[0]))) {
+    const messagePrefix = message.split(':')[0] || ''
+    if (!this.alerts.some(alert => alert.includes(messagePrefix))) {
       this.alerts.push(`[${new Date().toISOString()}] ${message}`)
       console.warn('[PERFORMANCE ALERT]', message)
       
