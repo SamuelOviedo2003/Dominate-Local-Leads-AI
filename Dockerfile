@@ -45,6 +45,9 @@ RUN --mount=type=cache,target=/root/.npm \
 # =========================================
 FROM base AS builder
 
+# Override NODE_ENV to ensure devDependencies are installed
+ENV NODE_ENV=development
+
 # Copy package files
 COPY package.json package-lock.json* ./
 
@@ -67,6 +70,9 @@ ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 # Set build-time environment variables
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# Set NODE_ENV back to production for the build
+ENV NODE_ENV=production
 
 # Build the application with standalone output
 RUN npm run build
