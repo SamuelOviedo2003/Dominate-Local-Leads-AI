@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
 import { LeadWithClient } from '@/types/leads'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // Check authentication

@@ -18,8 +18,6 @@ const nextConfig = {
   
   // Experimental features for performance
   experimental: {
-    // Enable server actions
-    serverActions: true,
     // Optimize package imports
     optimizePackageImports: ['lucide-react'],
   },

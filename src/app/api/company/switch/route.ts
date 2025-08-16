@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateCompanyAccess, getSuperAdminCompanies, getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
 import { BusinessSwitcherData } from '@/types/auth'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     // Verify user authentication
