@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { ChevronUp, ChevronDown, User, Clock, Phone, CheckCircle } from 'lucide-react'
 import { AppointmentSetter } from '@/types/leads'
 
@@ -10,28 +10,12 @@ interface AppointmentSettersProps {
   error: string | null
 }
 
-export function AppointmentSetters({ setters, isLoading, error }: AppointmentSettersProps) {
+function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentSettersProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const itemsPerPage = 2 // Reduced to show fewer items for better height matching
 
-  const handlePrevious = () => {
-    if (setters && currentIndex > 0) {
-      const newIndex = currentIndex - 1
-      setCurrentIndex(newIndex)
-      scrollToIndex(newIndex)
-    }
-  }
-
-  const handleNext = () => {
-    if (setters && currentIndex < setters.length - itemsPerPage) {
-      const newIndex = currentIndex + 1
-      setCurrentIndex(newIndex)
-      scrollToIndex(newIndex)
-    }
-  }
-
-  const scrollToIndex = (index: number) => {
+  const scrollToIndex = useCallback((index: number) => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current
       const itemHeight = container.scrollHeight / (setters?.length || 1)
@@ -41,16 +25,32 @@ export function AppointmentSetters({ setters, isLoading, error }: AppointmentSet
         behavior: 'smooth'
       })
     }
-  }
+  }, [setters?.length])
 
-  const formatTime = (seconds: number) => {
+  const handlePrevious = useCallback(() => {
+    if (setters && currentIndex > 0) {
+      const newIndex = currentIndex - 1
+      setCurrentIndex(newIndex)
+      scrollToIndex(newIndex)
+    }
+  }, [setters, currentIndex, scrollToIndex])
+
+  const handleNext = useCallback(() => {
+    if (setters && currentIndex < setters.length - itemsPerPage) {
+      const newIndex = currentIndex + 1
+      setCurrentIndex(newIndex)
+      scrollToIndex(newIndex)
+    }
+  }, [setters, currentIndex, itemsPerPage, scrollToIndex])
+
+  const formatTime = useCallback((seconds: number) => {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
     if (hours > 0) {
       return `${hours}h ${minutes}m`
     }
     return `${minutes}m`
-  }
+  }, [])
 
   if (error) {
     return (
@@ -65,7 +65,7 @@ export function AppointmentSetters({ setters, isLoading, error }: AppointmentSet
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 h-fit">
+    <div className="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 p-6 flex-1 flex flex-col">
       {/* Fixed Header */}
       <div className="flex items-center justify-between mb-6 sticky top-0 bg-white z-10">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center">
@@ -111,9 +111,9 @@ export function AppointmentSetters({ setters, isLoading, error }: AppointmentSet
       ) : setters && setters.length > 0 ? (
         <div 
           ref={scrollContainerRef}
-          className="space-y-4 overflow-y-auto scroll-smooth"
-          style={{ maxHeight: '400px' }}
+          className="flex-1 flex flex-col"
         >
+          <div className="space-y-4 flex-1 flex flex-col justify-evenly min-h-0">
           {setters.slice(currentIndex, currentIndex + itemsPerPage).map((setter, index) => (
             <div 
               key={setter.name} 
@@ -180,6 +180,7 @@ export function AppointmentSetters({ setters, isLoading, error }: AppointmentSet
               </div>
             </div>
           ))}
+          </div>
           
           {setters.length > itemsPerPage && (
             <div className="text-center text-sm text-gray-500 mt-4 py-2 bg-gray-50 rounded-lg">
@@ -194,7 +195,7 @@ export function AppointmentSetters({ setters, isLoading, error }: AppointmentSet
           )}
         </div>
       ) : (
-        <div className="text-gray-500 text-center py-12 bg-gradient-to-r from-gray-50 to-purple-50 rounded-lg">
+        <div className="text-gray-500 text-center py-12 bg-gradient-to-r from-gray-50 to-purple-50 rounded-lg flex-1 flex flex-col justify-center">
           <User className="w-12 h-12 mx-auto text-gray-400 mb-3" />
           <div className="text-lg font-medium">No appointment setters found</div>
           <div className="text-sm mt-1">Check back later for updates</div>
@@ -203,3 +204,5 @@ export function AppointmentSetters({ setters, isLoading, error }: AppointmentSet
     </div>
   )
 }
+
+export const AppointmentSetters = memo(AppointmentSettersComponent)

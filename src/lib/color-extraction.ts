@@ -1,5 +1,8 @@
 'use client'
 
+import { getColorCacheManager } from './color-cache'
+import { getWorkerPool } from './worker-pool'
+
 export interface ExtractedColors {
   primary: string
   primaryDark: string
@@ -13,10 +16,18 @@ export interface ColorExtractionOptions {
   quality?: number
   colorCount?: number
   ignoreTransparent?: boolean
+  useWorker?: boolean
+  priority?: number
+  businessId?: string
 }
 
-// Cache for extracted colors to avoid repeated processing
-const colorCache = new Map<string, ExtractedColors>()
+export interface ColorExtractionMetrics {
+  extractionTime: number
+  cacheHit: boolean
+  workerUsed: boolean
+  fallbackUsed: boolean
+  source: 'memory' | 'localStorage' | 'database' | 'extraction' | 'fallback'
+}
 
 // Fallback brand colors
 const FALLBACK_COLORS: ExtractedColors = {
@@ -27,6 +38,19 @@ const FALLBACK_COLORS: ExtractedColors = {
   textColor: '#FFFFFF',
   isLightLogo: false
 }
+
+// Performance monitoring
+const performanceMetrics = {
+  totalExtractions: 0,
+  cacheHits: 0,
+  workerExtractions: 0,
+  fallbackExtractions: 0,
+  averageExtractionTime: 0,
+  errors: 0
+}
+
+// Request debouncing
+const debounceMap = new Map<string, Promise<ExtractedColors>>()
 
 /**
  * Calculates relative luminance of a color
@@ -133,138 +157,338 @@ function createImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Extracts colors from an image URL and returns a cohesive color palette
+ * Optimized color extraction with multi-tier caching and worker support
  */
 export async function extractColorsFromImage(
   imageUrl: string, 
   options: ColorExtractionOptions = {}
 ): Promise<ExtractedColors> {
+  const startTime = performance.now()
+  performanceMetrics.totalExtractions++
+
   try {
-    // Check cache first
-    if (colorCache.has(imageUrl)) {
-      return colorCache.get(imageUrl)!
+    const { 
+      useWorker = true, 
+      priority = 0,
+      businessId,
+      ...extractionOptions 
+    } = options
+
+    // Generate debounce key
+    const debounceKey = `${imageUrl}:${businessId || 'no-business'}`
+    
+    // Check if we're already processing this request
+    if (debounceMap.has(debounceKey)) {
+      console.log('[COLOR EXTRACTION] Debouncing request:', debounceKey)
+      return await debounceMap.get(debounceKey)!
     }
 
-    const { colorCount = 10 } = options
+    // Create extraction promise
+    const extractionPromise = performExtraction(imageUrl, {
+      ...extractionOptions,
+      useWorker,
+      priority,
+      businessId
+    }, startTime)
 
-    // Dynamic import of ColorThief for better client-side performance
-    const ColorThief = (await import('colorthief')).default
-    const colorThief = new ColorThief()
+    // Store in debounce map
+    debounceMap.set(debounceKey, extractionPromise)
 
-    // Create image element
-    const img = await createImage(imageUrl)
-
-    // Extract dominant color and palette
-    const dominantColor = colorThief.getColor(img)
-    const palette = colorThief.getPalette(img, colorCount)
-
-    // Convert RGB arrays to hex colors
-    const primaryColor = rgbToHex(dominantColor[0], dominantColor[1], dominantColor[2])
-    
-    // Find the darkest and lightest colors from palette for variations
-    let darkestColor = primaryColor
-    let lightestColor = primaryColor
-    let darkestLuminance = getRelativeLuminance(primaryColor)
-    let lightestLuminance = darkestLuminance
-
-    palette.forEach(([r, g, b]: [number, number, number]) => {
-      const hexColor = rgbToHex(r, g, b)
-      const luminance = getRelativeLuminance(hexColor)
-      
-      if (luminance < darkestLuminance) {
-        darkestColor = hexColor
-        darkestLuminance = luminance
-      }
-      
-      if (luminance > lightestLuminance) {
-        lightestColor = hexColor
-        lightestLuminance = luminance
-      }
+    // Clean up debounce map after completion
+    extractionPromise.finally(() => {
+      debounceMap.delete(debounceKey)
     })
-    
-    // Create color variations
-    const primaryDark = darkestColor !== primaryColor ? darkestColor : darkenColor(primaryColor, 0.4)
-    const primaryLight = lightestColor !== primaryColor ? lightestColor : lightenColor(primaryColor, 0.3)
-    
-    // Use a palette color that's different from primary as accent, or create one
-    const accentColor = palette.length > 1 && palette[1] 
-      ? rgbToHex(palette[1][0], palette[1][1], palette[1][2])
-      : darkenColor(primaryColor, 0.6)
-    
-    // Determine if the logo is light or dark based on primary color luminance
-    const isLightLogo = getRelativeLuminance(primaryColor) > 0.5
-    
-    // Get accessible text color
-    const textColor = getAccessibleTextColor(primaryColor)
 
-    const extractedColors: ExtractedColors = {
-      primary: primaryColor,
-      primaryDark,
-      primaryLight,
-      accent: accentColor,
-      textColor,
-      isLightLogo
-    }
-
-    // Cache the result
-    colorCache.set(imageUrl, extractedColors)
-
-    return extractedColors
+    return await extractionPromise
 
   } catch (error) {
-    console.warn('Color extraction failed:', error)
+    performanceMetrics.errors++
+    console.warn('[COLOR EXTRACTION] Extraction failed:', error)
+    updateMetrics(startTime, false, false, true, 'fallback')
     return FALLBACK_COLORS
   }
 }
 
 /**
- * Clears the color cache (useful for memory management)
+ * Internal extraction logic with caching and worker support
+ */
+async function performExtraction(
+  imageUrl: string,
+  options: Omit<ColorExtractionOptions, 'useWorker' | 'priority'> & {
+    useWorker: boolean
+    priority: number
+    businessId?: string
+  },
+  startTime: number
+): Promise<ExtractedColors> {
+  const { useWorker, priority, businessId, ...extractionOptions } = options
+  const cacheManager = getColorCacheManager()
+
+  try {
+    // Check multi-tier cache first
+    const cachedColors = await cacheManager.get(imageUrl, businessId)
+    if (cachedColors) {
+      performanceMetrics.cacheHits++
+      updateMetrics(startTime, true, false, false, 'memory')
+      console.log('[COLOR EXTRACTION] Cache hit for:', imageUrl)
+      return cachedColors
+    }
+
+    console.log('[COLOR EXTRACTION] Cache miss, extracting colors for:', imageUrl)
+
+    let extractedColors: ExtractedColors
+
+    // Use worker pool if supported and enabled
+    if (useWorker) {
+      try {
+        const workerPool = getWorkerPool()
+        extractedColors = await workerPool.extractColors(
+          imageUrl, 
+          extractionOptions,
+          priority,
+          businessId
+        )
+        performanceMetrics.workerExtractions++
+        updateMetrics(startTime, false, true, false, 'extraction')
+        console.log('[COLOR EXTRACTION] Worker extraction completed for:', imageUrl)
+      } catch (workerError) {
+        console.warn('[COLOR EXTRACTION] Worker extraction failed, falling back to main thread:', workerError)
+        extractedColors = await mainThreadExtraction(imageUrl, extractionOptions)
+        performanceMetrics.fallbackExtractions++
+        updateMetrics(startTime, false, false, true, 'extraction')
+      }
+    } else {
+      // Main thread extraction
+      extractedColors = await mainThreadExtraction(imageUrl, extractionOptions)
+      updateMetrics(startTime, false, false, false, 'extraction')
+    }
+
+    // Cache the result
+    await cacheManager.set(imageUrl, extractedColors, businessId)
+    
+    console.log('[COLOR EXTRACTION] Colors extracted and cached:', extractedColors)
+    return extractedColors
+
+  } catch (error) {
+    console.error('[COLOR EXTRACTION] Extraction failed:', error)
+    throw error
+  }
+}
+
+/**
+ * Main thread color extraction (fallback)
+ */
+async function mainThreadExtraction(
+  imageUrl: string,
+  options: ColorExtractionOptions
+): Promise<ExtractedColors> {
+  const { colorCount = 10 } = options
+
+  // Dynamic import of ColorThief for better client-side performance
+  const ColorThief = (await import('colorthief')).default
+  const colorThief = new ColorThief()
+
+  // Create image element
+  const img = await createImage(imageUrl)
+
+  // Extract dominant color and palette
+  const dominantColor = colorThief.getColor(img)
+  const palette = colorThief.getPalette(img, colorCount)
+
+  // Convert RGB arrays to hex colors
+  const primaryColor = rgbToHex(dominantColor[0], dominantColor[1], dominantColor[2])
+  
+  // Find the darkest and lightest colors from palette for variations
+  let darkestColor = primaryColor
+  let lightestColor = primaryColor
+  let darkestLuminance = getRelativeLuminance(primaryColor)
+  let lightestLuminance = darkestLuminance
+
+  palette.forEach(([r, g, b]: [number, number, number]) => {
+    const hexColor = rgbToHex(r, g, b)
+    const luminance = getRelativeLuminance(hexColor)
+    
+    if (luminance < darkestLuminance) {
+      darkestColor = hexColor
+      darkestLuminance = luminance
+    }
+    
+    if (luminance > lightestLuminance) {
+      lightestColor = hexColor
+      lightestLuminance = luminance
+    }
+  })
+  
+  // Create color variations
+  const primaryDark = darkestColor !== primaryColor ? darkestColor : darkenColor(primaryColor, 0.4)
+  const primaryLight = lightestColor !== primaryColor ? lightestColor : lightenColor(primaryColor, 0.3)
+  
+  // Use a palette color that's different from primary as accent, or create one
+  const accentColor = palette.length > 1 && palette[1] 
+    ? rgbToHex(palette[1][0], palette[1][1], palette[1][2])
+    : darkenColor(primaryColor, 0.6)
+  
+  // Determine if the logo is light or dark based on primary color luminance
+  const isLightLogo = getRelativeLuminance(primaryColor) > 0.5
+  
+  // Get accessible text color
+  const textColor = getAccessibleTextColor(primaryColor)
+
+  return {
+    primary: primaryColor,
+    primaryDark,
+    primaryLight,
+    accent: accentColor,
+    textColor,
+    isLightLogo
+  }
+}
+
+/**
+ * Update performance metrics
+ */
+function updateMetrics(
+  startTime: number, 
+  cacheHit: boolean, 
+  workerUsed: boolean, 
+  fallbackUsed: boolean,
+  source: ColorExtractionMetrics['source']
+): void {
+  const extractionTime = performance.now() - startTime
+  
+  // Update average extraction time
+  const totalCompleted = performanceMetrics.totalExtractions
+  performanceMetrics.averageExtractionTime = (
+    (performanceMetrics.averageExtractionTime * (totalCompleted - 1)) + extractionTime
+  ) / totalCompleted
+
+  console.log(`[COLOR EXTRACTION] Metrics - Time: ${extractionTime.toFixed(2)}ms, Source: ${source}, Cache: ${cacheHit}, Worker: ${workerUsed}, Fallback: ${fallbackUsed}`)
+}
+
+/**
+ * Enhanced cache management functions
  */
 export function clearColorCache(): void {
-  colorCache.clear()
-  console.log('[COLOR CACHE] Cache cleared')
+  const cacheManager = getColorCacheManager()
+  cacheManager.clearAll()
+  console.log('[COLOR CACHE] All caches cleared')
+}
+
+export async function invalidateColorCache(imageUrl: string, businessId?: string): Promise<void> {
+  const cacheManager = getColorCacheManager()
+  await cacheManager.invalidate(imageUrl, businessId)
+  console.log('[COLOR CACHE] Invalidated cache for:', imageUrl)
+}
+
+export async function getCachedColors(imageUrl: string, businessId?: string): Promise<ExtractedColors | null> {
+  const cacheManager = getColorCacheManager()
+  return await cacheManager.get(imageUrl, businessId)
 }
 
 /**
- * Invalidates cache for a specific URL (useful when business switching)
+ * Enhanced preloading with worker support and priority
  */
-export function invalidateColorCache(imageUrl: string): void {
-  if (colorCache.has(imageUrl)) {
-    colorCache.delete(imageUrl)
-    console.log('[COLOR CACHE] Invalidated cache for:', imageUrl)
-  }
-}
-
-/**
- * Gets cached colors for an image URL without triggering extraction
- */
-export function getCachedColors(imageUrl: string): ExtractedColors | null {
-  const cached = colorCache.get(imageUrl) || null
-  if (cached) {
-    console.log('[COLOR CACHE] Cache hit for:', imageUrl)
-  } else {
-    console.log('[COLOR CACHE] Cache miss for:', imageUrl)
-  }
-  return cached
-}
-
-/**
- * Preloads and extracts colors for multiple images
- */
-export async function preloadColors(imageUrls: string[]): Promise<Map<string, ExtractedColors>> {
+export async function preloadColors(
+  imageUrls: string[], 
+  options: { 
+    businessId?: string
+    priority?: number
+    batchSize?: number 
+  } = {}
+): Promise<Map<string, ExtractedColors>> {
+  const { businessId, priority = -1, batchSize = 3 } = options
   const results = new Map<string, ExtractedColors>()
   
-  await Promise.allSettled(
-    imageUrls.map(async (url) => {
-      try {
-        const colors = await extractColorsFromImage(url)
-        results.set(url, colors)
-      } catch (error) {
-        console.warn(`Failed to preload colors for ${url}:`, error)
-        results.set(url, FALLBACK_COLORS)
-      }
-    })
-  )
+  // Process in batches to avoid overwhelming the worker pool
+  for (let i = 0; i < imageUrls.length; i += batchSize) {
+    const batch = imageUrls.slice(i, i + batchSize)
+    
+    await Promise.allSettled(
+      batch.map(async (url) => {
+        try {
+          const colors = await extractColorsFromImage(url, {
+            businessId,
+            priority,
+            useWorker: true,
+            quality: 20, // Lower quality for preloading
+            colorCount: 32
+          })
+          results.set(url, colors)
+        } catch (error) {
+          console.warn(`Failed to preload colors for ${url}:`, error)
+          results.set(url, FALLBACK_COLORS)
+        }
+      })
+    )
+    
+    // Small delay between batches to prevent overwhelming
+    if (i + batchSize < imageUrls.length) {
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+  }
   
+  console.log(`[COLOR EXTRACTION] Preloaded colors for ${results.size} images`)
   return results
+}
+
+/**
+ * Get performance metrics and statistics
+ */
+export function getColorExtractionStats() {
+  const cacheManager = getColorCacheManager()
+  const workerPool = getWorkerPool()
+  
+  return {
+    extraction: performanceMetrics,
+    cache: cacheManager.getStats(),
+    worker: workerPool.getStats()
+  }
+}
+
+/**
+ * Warm up the color extraction system
+ */
+export async function warmUpColorExtraction(imageUrls: string[] = []): Promise<void> {
+  console.log('[COLOR EXTRACTION] Warming up color extraction system...')
+  
+  try {
+    // Initialize cache manager
+    getColorCacheManager()
+    
+    // Initialize worker pool
+    getWorkerPool()
+    
+    // Preload critical colors if provided
+    if (imageUrls.length > 0) {
+      await preloadColors(imageUrls, { priority: 10 })
+    }
+    
+    console.log('[COLOR EXTRACTION] Warm-up completed successfully')
+  } catch (error) {
+    console.warn('[COLOR EXTRACTION] Warm-up failed:', error)
+  }
+}
+
+/**
+ * Cleanup function for performance and memory management
+ */
+export function cleanupColorExtraction(): void {
+  console.log('[COLOR EXTRACTION] Cleaning up color extraction system...')
+  
+  try {
+    // Clear debounce map
+    debounceMap.clear()
+    
+    // Destroy worker pool
+    const { destroyWorkerPool } = require('./worker-pool')
+    destroyWorkerPool()
+    
+    // Destroy cache manager
+    const { destroyColorCacheManager } = require('./color-cache')
+    destroyColorCacheManager()
+    
+    console.log('[COLOR EXTRACTION] Cleanup completed')
+  } catch (error) {
+    console.warn('[COLOR EXTRACTION] Cleanup error:', error)
+  }
 }

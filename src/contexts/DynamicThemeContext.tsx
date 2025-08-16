@@ -1,7 +1,14 @@
 'use client'
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react'
-import { ExtractedColors, extractColorsFromImage, getCachedColors } from '@/lib/color-extraction'
+import React, { createContext, useContext, useReducer, useEffect, ReactNode, useCallback } from 'react'
+import { 
+  ExtractedColors, 
+  extractColorsFromImage, 
+  getCachedColors, 
+  warmUpColorExtraction,
+  cleanupColorExtraction,
+  getColorExtractionStats 
+} from '@/lib/color-extraction'
 
 // Theme state interface
 export interface DynamicThemeState {
@@ -10,15 +17,28 @@ export interface DynamicThemeState {
   currentLogoUrl: string | null
   businessId: string | null
   error: string | null
+  isInitialized: boolean
+  extractionQueue: Set<string>
+  lastExtractionTime: number | null
+  metrics: {
+    totalExtractions: number
+    successfulExtractions: number
+    cacheHits: number
+    averageTime: number
+  }
 }
 
 // Theme actions
 type ThemeAction = 
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_COLORS'; payload: { colors: ExtractedColors; logoUrl: string; businessId: string } }
+  | { type: 'SET_COLORS'; payload: { colors: ExtractedColors; logoUrl: string; businessId: string; extractionTime?: number } }
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'CLEAR_ERROR' }
   | { type: 'RESET_THEME' }
+  | { type: 'INITIALIZE' }
+  | { type: 'ADD_TO_QUEUE'; payload: string }
+  | { type: 'REMOVE_FROM_QUEUE'; payload: string }
+  | { type: 'UPDATE_METRICS'; payload: { cacheHit: boolean; extractionTime: number } }
 
 // Default fallback colors matching brand theme
 const DEFAULT_COLORS: ExtractedColors = {
@@ -35,23 +55,48 @@ const initialState: DynamicThemeState = {
   isLoading: false,
   currentLogoUrl: null,
   businessId: null,
-  error: null
+  error: null,
+  isInitialized: false,
+  extractionQueue: new Set(),
+  lastExtractionTime: null,
+  metrics: {
+    totalExtractions: 0,
+    successfulExtractions: 0,
+    cacheHits: 0,
+    averageTime: 0
+  }
 }
 
 // Theme reducer
 function themeReducer(state: DynamicThemeState, action: ThemeAction): DynamicThemeState {
   switch (action.type) {
+    case 'INITIALIZE':
+      return { ...state, isInitialized: true }
+    
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload, error: null }
     
     case 'SET_COLORS':
+      const newExtractionQueue = new Set(state.extractionQueue)
+      newExtractionQueue.delete(action.payload.logoUrl)
+      
       return {
         ...state,
         colors: action.payload.colors,
         currentLogoUrl: action.payload.logoUrl,
         businessId: action.payload.businessId,
         isLoading: false,
-        error: null
+        error: null,
+        extractionQueue: newExtractionQueue,
+        lastExtractionTime: action.payload.extractionTime || Date.now(),
+        metrics: {
+          ...state.metrics,
+          totalExtractions: state.metrics.totalExtractions + 1,
+          successfulExtractions: state.metrics.successfulExtractions + 1,
+          averageTime: action.payload.extractionTime 
+            ? (state.metrics.averageTime * state.metrics.successfulExtractions + action.payload.extractionTime) / (state.metrics.successfulExtractions + 1)
+            : state.metrics.averageTime
+        }
       }
     
     case 'SET_ERROR':
@@ -59,16 +104,41 @@ function themeReducer(state: DynamicThemeState, action: ThemeAction): DynamicThe
         ...state,
         error: action.payload,
         isLoading: false,
-        colors: DEFAULT_COLORS
+        colors: DEFAULT_COLORS,
+        metrics: {
+          ...state.metrics,
+          totalExtractions: state.metrics.totalExtractions + 1
+        }
       }
     
     case 'CLEAR_ERROR':
       return { ...state, error: null }
     
+    case 'ADD_TO_QUEUE':
+      const newQueue = new Set(state.extractionQueue)
+      newQueue.add(action.payload)
+      return { ...state, extractionQueue: newQueue }
+    
+    case 'REMOVE_FROM_QUEUE':
+      const updatedQueue = new Set(state.extractionQueue)
+      updatedQueue.delete(action.payload)
+      return { ...state, extractionQueue: updatedQueue }
+    
+    case 'UPDATE_METRICS':
+      return {
+        ...state,
+        metrics: {
+          ...state.metrics,
+          cacheHits: action.payload.cacheHit ? state.metrics.cacheHits + 1 : state.metrics.cacheHits,
+          averageTime: (state.metrics.averageTime * state.metrics.totalExtractions + action.payload.extractionTime) / (state.metrics.totalExtractions + 1)
+        }
+      }
+    
     case 'RESET_THEME':
       return {
         ...initialState,
-        colors: DEFAULT_COLORS
+        colors: DEFAULT_COLORS,
+        isInitialized: state.isInitialized
       }
     
     default:
@@ -79,9 +149,12 @@ function themeReducer(state: DynamicThemeState, action: ThemeAction): DynamicThe
 // Context interfaces
 interface DynamicThemeContextType {
   state: DynamicThemeState
-  extractColors: (logoUrl: string, businessId: string) => Promise<void>
+  extractColors: (logoUrl: string, businessId: string, priority?: number) => Promise<void>
   resetTheme: () => void
   clearError: () => void
+  getExtractionStats: () => any
+  warmUp: (imageUrls?: string[]) => Promise<void>
+  cleanup: () => void
 }
 
 // Create context
@@ -96,16 +169,48 @@ interface DynamicThemeProviderProps {
 export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
   const [state, dispatch] = useReducer(themeReducer, initialState)
 
-  // Extract colors from logo URL
-  const extractColors = async (logoUrl: string, businessId: string) => {
-    console.log('[THEME DEBUG] Starting color extraction:', { logoUrl, businessId, currentLogoUrl: state.currentLogoUrl, currentBusinessId: state.businessId })
+  // Initialize the color extraction system
+  useEffect(() => {
+    if (!state.isInitialized) {
+      warmUpColorExtraction().then(() => {
+        dispatch({ type: 'INITIALIZE' })
+        console.log('[THEME] Color extraction system initialized')
+      }).catch(error => {
+        console.warn('[THEME] Failed to initialize color extraction system:', error)
+        dispatch({ type: 'INITIALIZE' }) // Initialize anyway
+      })
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (state.isInitialized) {
+        cleanupColorExtraction()
+      }
+    }
+  }, [state.isInitialized])
+
+  // Enhanced extract colors with performance optimization
+  const extractColors = useCallback(async (logoUrl: string, businessId: string, priority: number = 0) => {
+    const extractionKey = `${logoUrl}:${businessId}`
+    const startTime = performance.now()
+    
+    console.log('[THEME] Starting color extraction:', { logoUrl, businessId, priority, currentLogoUrl: state.currentLogoUrl, currentBusinessId: state.businessId })
     
     try {
       // Skip if already processing the same logo and business
       if (state.currentLogoUrl === logoUrl && state.businessId === businessId && !state.error && !state.isLoading) {
-        console.log('[THEME DEBUG] Skipping extraction - already processed:', { logoUrl, businessId })
+        console.log('[THEME] Skipping extraction - already processed:', { logoUrl, businessId })
         return
       }
+
+      // Check if already in queue
+      if (state.extractionQueue.has(extractionKey)) {
+        console.log('[THEME] Already processing extraction for:', extractionKey)
+        return
+      }
+
+      // Add to queue
+      dispatch({ type: 'ADD_TO_QUEUE', payload: extractionKey })
 
       // Clear any previous errors when starting new extraction
       if (state.error) {
@@ -113,67 +218,99 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
       }
 
       dispatch({ type: 'SET_LOADING', payload: true })
-      console.log('[THEME DEBUG] Set loading state to true')
+      console.log('[THEME] Set loading state to true')
 
-      // Check cache first
-      const cachedColors = getCachedColors(logoUrl)
+      // Check cache first (optimized cache lookup)
+      const cachedColors = await getCachedColors(logoUrl, businessId)
       if (cachedColors) {
-        console.log('[THEME DEBUG] Using cached colors:', cachedColors)
+        const extractionTime = performance.now() - startTime
+        console.log('[THEME] Using cached colors:', cachedColors)
+        
         dispatch({ 
           type: 'SET_COLORS', 
-          payload: { colors: cachedColors, logoUrl, businessId } 
+          payload: { colors: cachedColors, logoUrl, businessId, extractionTime } 
         })
+        
+        dispatch({ 
+          type: 'UPDATE_METRICS', 
+          payload: { cacheHit: true, extractionTime } 
+        })
+        
         return
       }
 
-      console.log('[THEME DEBUG] Extracting colors from image...')
+      console.log('[THEME] Cache miss, extracting colors from image...')
       
-      // Extract colors from the image with timeout to prevent hanging
-      const extractionPromise = extractColorsFromImage(logoUrl, {
+      // Extract colors with enhanced options
+      const extractedColors = await extractColorsFromImage(logoUrl, {
         quality: 10,
         colorCount: 64,
-        ignoreTransparent: true
+        ignoreTransparent: true,
+        useWorker: true,
+        priority,
+        businessId
       })
-
-      // Add 5 second timeout to prevent hanging
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Color extraction timed out')), 5000)
-      })
-
-      const extractedColors = await Promise.race([extractionPromise, timeoutPromise])
       
-      console.log('[THEME DEBUG] Colors extracted successfully:', extractedColors)
+      const extractionTime = performance.now() - startTime
+      console.log('[THEME] Colors extracted successfully in', extractionTime.toFixed(2), 'ms:', extractedColors)
 
       // Double-check we're still dealing with the same business before applying colors
       // This prevents race conditions during rapid business switching
       if (businessId === state.businessId || state.businessId === null) {
         dispatch({ 
           type: 'SET_COLORS', 
-          payload: { colors: extractedColors, logoUrl, businessId } 
+          payload: { colors: extractedColors, logoUrl, businessId, extractionTime } 
         })
-        console.log('[THEME DEBUG] Colors applied to theme state')
+        console.log('[THEME] Colors applied to theme state')
       } else {
-        console.log('[THEME DEBUG] Skipping color application - business changed during extraction')
+        console.log('[THEME] Skipping color application - business changed during extraction')
       }
 
     } catch (error) {
-      console.error('[THEME DEBUG] Failed to extract colors:', error)
+      console.error('[THEME] Failed to extract colors:', error)
       dispatch({ 
         type: 'SET_ERROR', 
         payload: error instanceof Error ? error.message : 'Color extraction failed' 
       })
+    } finally {
+      // Remove from queue
+      dispatch({ type: 'REMOVE_FROM_QUEUE', payload: extractionKey })
     }
-  }
+  }, [state.currentLogoUrl, state.businessId, state.error, state.isLoading, state.extractionQueue])
 
   // Reset theme to default
-  const resetTheme = () => {
+  const resetTheme = useCallback(() => {
     dispatch({ type: 'RESET_THEME' })
-  }
+  }, [])
 
   // Clear error state
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: 'CLEAR_ERROR' })
-  }
+  }, [])
+
+  // Get comprehensive extraction statistics
+  const getExtractionStats = useCallback(() => {
+    return {
+      theme: state.metrics,
+      system: getColorExtractionStats()
+    }
+  }, [state.metrics])
+
+  // Warm up system with optional image URLs
+  const warmUp = useCallback(async (imageUrls: string[] = []) => {
+    try {
+      await warmUpColorExtraction(imageUrls)
+      console.log('[THEME] System warm-up completed')
+    } catch (error) {
+      console.warn('[THEME] System warm-up failed:', error)
+    }
+  }, [])
+
+  // Cleanup system resources
+  const cleanup = useCallback(() => {
+    cleanupColorExtraction()
+    console.log('[THEME] System cleanup completed')
+  }, [])
 
   // Apply CSS custom properties for dynamic theming
   useEffect(() => {
@@ -201,7 +338,10 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
     state,
     extractColors,
     resetTheme,
-    clearError
+    clearError,
+    getExtractionStats,
+    warmUp,
+    cleanup
   }
 
   return (

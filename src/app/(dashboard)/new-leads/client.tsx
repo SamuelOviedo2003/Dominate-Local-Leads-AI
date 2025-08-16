@@ -66,9 +66,9 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
         )}
 
         {/* Lead Metrics and Appointment Setters */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 items-stretch">
           {/* Lead Metrics */}
-          <div className="h-full">
+          <div className="flex">
             <LeadMetrics 
               metrics={metrics}
               isLoading={isLoading}
@@ -77,7 +77,7 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           </div>
 
           {/* Appointment Setters */}
-          <div className="h-full">
+          <div className="flex">
             <AppointmentSetters 
               setters={appointmentSetters}
               isLoading={isLoading}
