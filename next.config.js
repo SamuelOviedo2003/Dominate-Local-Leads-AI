@@ -28,22 +28,6 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react'],
   },
   
-  // Turbopack configuration for better module resolution in dev/build
-  turbopack: {
-    resolveAlias: {
-      // Ensure consistent module resolution
-      '@': './src',
-    },
-    resolveExtensions: [
-      '.ts',
-      '.tsx', 
-      '.js',
-      '.jsx',
-      '.mjs',
-      '.json'
-    ],
-  },
-  
   // Security headers
   async headers() {
     return [
