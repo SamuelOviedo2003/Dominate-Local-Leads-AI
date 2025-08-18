@@ -22,8 +22,6 @@ const LeadInformationComponent = ({ lead, property }: LeadInformationProps) => {
     const recommendedActions = []
     if (lead.score >= 70) {
       recommendedActions.push('Schedule appointment')
-    } else if (lead.score >= 40) {
-      recommendedActions.push('Schedule callback')
     } else {
       recommendedActions.push('Schedule follow up')
     }

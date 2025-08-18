@@ -101,9 +101,6 @@ const CommunicationsHistoryComponent = ({ communications }: CommunicationsHistor
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Communications History</h3>
-        <span className="text-sm text-gray-500">
-          {communications.length} communications
-        </span>
       </div>
       {/* Communications List */}
       {sortedCommunications.length === 0 ? (

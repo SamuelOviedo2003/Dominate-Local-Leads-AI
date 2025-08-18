@@ -18,10 +18,28 @@ const nextConfig = {
   
   // Image optimization configuration
   images: {
-    domains: [],
+    domains: ['maps.googleapis.com', 'maps.google.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'maps.googleapis.com',
+        port: '',
+        pathname: '/maps/api/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'maps.google.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
     // Enable optimization for better performance
     minimumCacheTTL: 60,
+    // Disable optimization for Google Maps API images to avoid CORS issues
+    unoptimized: false,
+    // Add loader for external images
+    loader: 'default',
   },
   
   // Experimental features for performance
@@ -51,6 +69,34 @@ const nextConfig = {
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
+      {
+        // Specific headers for API routes and external image handling
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
+        ],
+      },
+      {
+        // Headers for external image loading
+        source: '/_next/image(.*)',
+        headers: [
+          {
+            key: 'Referrer-Policy',
+            value: 'no-referrer',
           },
         ],
       },

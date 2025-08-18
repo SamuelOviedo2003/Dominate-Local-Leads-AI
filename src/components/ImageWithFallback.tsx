@@ -40,6 +40,8 @@ export default function ImageWithFallback({
   const [isLoading, setIsLoading] = useState(true)
   const [isExtracting, setIsExtracting] = useState(false)
   const [isIntersecting, setIsIntersecting] = useState(!lazy)
+  const [currentSrc, setCurrentSrc] = useState(src)
+  const [retryAttempt, setRetryAttempt] = useState(0)
   
   const imgRef = useRef<HTMLImageElement>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -78,14 +80,49 @@ export default function ImageWithFallback({
   }, [lazy])
 
   const handleError = useCallback((event: any) => {
-    console.warn('[IMAGE] Load error for:', src, event)
+    const errorDetails = {
+      src: currentSrc,
+      originalSrc: src,
+      retryAttempt,
+      error: event?.error || 'Unknown error',
+      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'Server',
+      timestamp: new Date().toISOString(),
+      referrer: typeof window !== 'undefined' ? window.document.referrer : 'Unknown'
+    }
+    
+    console.warn('[IMAGE] Load error:', errorDetails)
+    
+    // Try image proxy as fallback for external images (Google Maps, etc.)
+    const isExternalImage = src.includes('maps.googleapis.com') || src.includes('maps.google.com')
+    const isDirectLoad = currentSrc === src
+    
+    if (isExternalImage && isDirectLoad && retryAttempt === 0) {
+      console.log('[IMAGE] Attempting to load via proxy:', src)
+      const proxiedUrl = `/api/image-proxy?url=${encodeURIComponent(src)}`
+      setCurrentSrc(proxiedUrl)
+      setRetryAttempt(1)
+      setIsLoading(true)
+      return // Don't set error yet, try proxy first
+    }
+    
+    // Additional logging for Google Maps API images
+    if (src.includes('maps.googleapis.com')) {
+      console.error('[IMAGE] Google Maps API image failed to load after all attempts. This might be due to:', {
+        'CORS Issues': 'Check if the API key has proper referrer restrictions',
+        'Domain Configuration': 'Verify Next.js image domains are configured',
+        'Network Restrictions': 'Check if deployment environment blocks external requests',
+        'URL Issues': 'Verify the API URL is properly formatted',
+        'Proxy Issues': retryAttempt > 0 ? 'Image proxy also failed' : 'Proxy not attempted'
+      })
+    }
+    
     setHasError(true)
     setIsLoading(false)
     lastExtractedSrc.current = ''
     
-    const error = new Error(`Failed to load image: ${src}`)
+    const error = new Error(`Failed to load image after ${retryAttempt + 1} attempts: ${src}`)
     onError?.(error)
-  }, [src, onError])
+  }, [src, currentSrc, retryAttempt, onError])
 
   const handleLoadStart = useCallback(() => {
     setIsLoading(true)
@@ -135,6 +172,8 @@ export default function ImageWithFallback({
     setHasError(false)
     setIsLoading(true)
     setIsExtracting(false)
+    setCurrentSrc(src)
+    setRetryAttempt(0)
     lastExtractedSrc.current = ''
     
     // Cancel any ongoing extraction
@@ -160,8 +199,16 @@ export default function ImageWithFallback({
 
   if (hasError && fallbackBehavior === 'placeholder') {
     return (
-      <div className={`flex items-center justify-center bg-gray-200 text-gray-500 ${className}`}>
-        <span className="text-sm">{fallbackText}</span>
+      <div className={`flex flex-col items-center justify-center bg-gray-200 text-gray-500 ${className}`}>
+        <svg className="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <span className="text-sm font-medium">{fallbackText}</span>
+        {process.env.NODE_ENV === 'development' && (
+          <span className="text-xs text-gray-400 mt-1 text-center px-2">
+            Failed to load: {src.length > 50 ? `${src.substring(0, 50)}...` : src}
+          </span>
+        )}
       </div>
     )
   }
@@ -181,13 +228,13 @@ export default function ImageWithFallback({
     <div className="relative">
       <img
         ref={imgRef}
-        src={isIntersecting ? src : undefined}
+        src={isIntersecting ? currentSrc : undefined}
         alt={alt}
         className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
         onError={handleError}
         onLoad={handleLoad}
         onLoadStart={handleLoadStart}
-        crossOrigin="anonymous" // Required for color extraction
+        crossOrigin={currentSrc.includes('maps.googleapis.com') ? undefined : "anonymous"} // Skip CORS for Google Maps to avoid issues
         loading={lazy ? "lazy" : "eager"}
         sizes={sizes}
         style={{ 
