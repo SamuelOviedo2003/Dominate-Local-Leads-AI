@@ -22,7 +22,7 @@ export interface Client {
   account_id: string
   business_id: string
   full_address: string
-  house_value: number | null
+  house_value: string | null
   house_url: string | null
   distance_meters: number | null
   duration_seconds: number | null
@@ -108,3 +108,28 @@ export interface ApiResponse<T> {
   success: boolean
   error?: string
 }
+
+// Lead Details Types
+export interface Communication {
+  communication_id: string
+  created_at: string
+  message_type: 'email' | 'sms' | 'call' | 'voicemail' | string
+  summary: string
+  recording_url: string | null
+}
+
+export interface PropertyInfo {
+  house_value: number | null
+  distance_meters: number | null
+  house_url: string | null
+  full_address: string
+  duration_seconds: number | null
+}
+
+export interface LeadDetails {
+  lead: Lead
+  property: PropertyInfo | null
+  communications: Communication[]
+}
+
+export type MessageType = 'email' | 'sms' | 'call' | 'voicemail'

@@ -41,7 +41,7 @@ export function LeadsTable({ leads, isLoading, error }: LeadsTableProps) {
   }
 
   const handleRowClick = (leadId: string) => {
-    router.push(`/leads/${leadId}`)
+    router.push(`/lead-details/${leadId}`)
   }
 
   const formatNotes = (lead: LeadWithClient) => {
@@ -50,7 +50,7 @@ export function LeadsTable({ leads, isLoading, error }: LeadsTableProps) {
       parts.push(lead.client.full_address)
     }
     if (lead.client?.house_value) {
-      parts.push(`$${lead.client.house_value.toLocaleString()}`)
+      parts.push(lead.client.house_value)
     }
     return parts.join(' • ') || 'No additional notes'
   }
