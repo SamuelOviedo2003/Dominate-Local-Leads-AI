@@ -9,6 +9,8 @@ interface TimePeriodFilterProps {
 
 export function TimePeriodFilter({ selectedPeriod, onPeriodChange }: TimePeriodFilterProps) {
   const periods: { value: TimePeriod; label: string }[] = [
+    { value: '7', label: '7 Days' },
+    { value: '15', label: '15 Days' },
     { value: '30', label: '30 Days' },
     { value: '60', label: '60 Days' },
     { value: '90', label: '90 Days' }

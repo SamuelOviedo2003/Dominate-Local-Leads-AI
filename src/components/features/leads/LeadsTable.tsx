@@ -7,9 +7,10 @@ interface LeadsTableProps {
   leads: LeadWithClient[] | null
   isLoading: boolean
   error: string | null
+  navigationTarget?: 'lead-details' | 'property-details'
 }
 
-export function LeadsTable({ leads, isLoading, error }: LeadsTableProps) {
+export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-details' }: LeadsTableProps) {
   const router = useRouter()
 
   const getScoreColor = (score: number) => {
@@ -31,17 +32,20 @@ export function LeadsTable({ leads, isLoading, error }: LeadsTableProps) {
     }
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleString('en-US', { 
       month: 'short', 
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
     })
   }
 
   const handleRowClick = (leadId: string) => {
-    router.push(`/lead-details/${leadId}`)
+    router.push(`/${navigationTarget}/${leadId}`)
   }
 
   const formatNotes = (lead: LeadWithClient) => {
@@ -100,10 +104,10 @@ export function LeadsTable({ leads, isLoading, error }: LeadsTableProps) {
                   How Soon
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Service
+                  Next Step
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  Date & Time
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Notes
@@ -131,7 +135,9 @@ export function LeadsTable({ leads, isLoading, error }: LeadsTableProps) {
                         <div className="text-sm font-medium text-gray-900">
                           {lead.first_name} {lead.last_name}
                         </div>
-                        <div className="text-sm text-gray-500">{lead.email}</div>
+                        {lead.service && lead.service.trim() && (
+                          <div className="text-sm text-gray-500">{lead.service}</div>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -141,10 +147,10 @@ export function LeadsTable({ leads, isLoading, error }: LeadsTableProps) {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {lead.service}
+                    {lead.next_step || 'Not set'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(lead.created_at)}
+                    {formatDateTime(lead.created_at)}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                     {formatNotes(lead)}

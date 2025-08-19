@@ -3,11 +3,10 @@
 import { useState, useEffect, useCallback, memo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { LeadDetails, ApiResponse } from '@/types/leads'
-import { LeadInformation } from '@/components/features/leads/LeadInformation'
-import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
+import { PropertyOverview } from '@/components/features/leads/PropertyOverview'
 import { useCompany } from '@/contexts/CompanyContext'
 
-const LeadDetailsPage = () => {
+const PropertyDetailsPage = () => {
   const params = useParams()
   const router = useRouter()
   const { selectedCompany } = useCompany()
@@ -56,9 +55,9 @@ const LeadDetailsPage = () => {
     } catch (error) {
       console.error('Error fetching lead details:', error)
       
-      // If the error is "Lead not found", redirect to new leads instead of showing error
+      // If the error is "Lead not found", redirect to salesman instead of showing error
       if (error instanceof Error && error.message === 'Lead not found') {
-        router.push('/new-leads')
+        router.push('/salesman')
         return
       }
       
@@ -69,13 +68,13 @@ const LeadDetailsPage = () => {
   }, [leadId, selectedCompany?.business_id])
 
   const handleGoBack = useCallback(() => {
-    router.push('/new-leads')
+    router.push('/salesman')
   }, [router])
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header Skeleton */}
           <div className="mb-8">
             <div className="animate-pulse">
@@ -85,44 +84,15 @@ const LeadDetailsPage = () => {
           </div>
 
           {/* Content Skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-6 bg-gray-200 rounded w-48"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-20"></div>
-                        <div className="h-5 bg-gray-200 rounded w-32"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="animate-pulse">
-                  <div className="h-6 bg-gray-200 rounded w-56 mb-6"></div>
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="border border-gray-200 rounded-lg p-4">
-                        <div className="h-16 bg-gray-200 rounded"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="animate-pulse">
-                  <div className="h-6 bg-gray-200 rounded w-20 mb-4"></div>
-                  <div className="aspect-square bg-gray-200 rounded-lg mb-4"></div>
-                  <div className="flex justify-center">
-                    <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
-                  </div>
+          <div className="max-w-md mx-auto">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-200 rounded w-20 mb-4"></div>
+                <div className="aspect-square bg-gray-200 rounded-lg mb-4"></div>
+                <div className="space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
                 </div>
               </div>
             </div>
@@ -135,7 +105,7 @@ const LeadDetailsPage = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <button
             onClick={handleGoBack}
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 mb-8"
@@ -143,12 +113,12 @@ const LeadDetailsPage = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to New Leads
+            Back to Salesman
           </button>
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="text-center py-12">
-              <div className="text-red-500 text-lg font-medium mb-2">Error Loading Lead Details</div>
+              <div className="text-red-500 text-lg font-medium mb-2">Error Loading Property Details</div>
               <p className="text-gray-600 mb-6">{error}</p>
               <button
                 onClick={fetchLeadDetails}
@@ -166,7 +136,7 @@ const LeadDetailsPage = () => {
   if (!leadDetails) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <button
             onClick={handleGoBack}
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 mb-8"
@@ -174,12 +144,12 @@ const LeadDetailsPage = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to New Leads
+            Back to Salesman
           </button>
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="text-center py-12">
-              <div className="text-gray-500 text-lg font-medium">Lead not found</div>
+              <div className="text-gray-500 text-lg font-medium">Property not found</div>
             </div>
           </div>
         </div>
@@ -189,7 +159,7 @@ const LeadDetailsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header with Back Navigation */}
         <div className="mb-6">
           <button
@@ -199,19 +169,24 @@ const LeadDetailsPage = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to New Leads
+            Back to Salesman
           </button>
+          
+          <div className="mt-4">
+            <h1 className="text-2xl font-bold text-gray-900">
+              Property Details
+            </h1>
+            <p className="text-gray-600 mt-1">
+              {leadDetails.lead.first_name} {leadDetails.lead.last_name}
+            </p>
+          </div>
         </div>
 
-        {/* Single column layout for lead information only */}
-        <div className="space-y-6">
-          <LeadInformation 
-            lead={leadDetails.lead} 
+        {/* Property Overview Component */}
+        <div className="max-w-md mx-auto">
+          <PropertyOverview 
             property={leadDetails.property} 
           />
-          
-          {/* Communications History */}
-          <CommunicationsHistory communications={leadDetails.communications} />
         </div>
       </div>
     </div>
@@ -219,4 +194,4 @@ const LeadDetailsPage = () => {
 }
 
 // Export the memoized component to prevent unnecessary re-renders
-export default memo(LeadDetailsPage)
+export default memo(PropertyDetailsPage)

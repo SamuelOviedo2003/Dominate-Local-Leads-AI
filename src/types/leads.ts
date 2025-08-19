@@ -16,6 +16,8 @@ export interface Lead {
   closed_amount: number | null
   created_at: string
   working_hours?: boolean
+  next_step?: string
+  stage: 1 | 2 // 1 = Recent Leads, 2 = Salesman Leads
 }
 
 export interface Client {
@@ -35,6 +37,7 @@ export interface LeadCall {
   duration: number
   time_speed: number
   created_at: string
+  next_step?: string
 }
 
 export interface LeadWithClient extends Lead {
@@ -60,7 +63,7 @@ export interface AppointmentSetter {
   avgResponseSpeed: number
 }
 
-export type TimePeriod = '30' | '60' | '90'
+export type TimePeriod = '7' | '15' | '30' | '60' | '90'
 
 export interface NewLeadsFilters {
   timePeriod: TimePeriod
@@ -133,3 +136,36 @@ export interface LeadDetails {
 }
 
 export type MessageType = 'email' | 'sms' | 'call' | 'voicemail'
+
+// Salesman Types
+export interface SalesmanMetrics {
+  shows: number
+  closes: number
+  totalRevenue: number
+  closeRate: number
+  averageOrderValue: number
+}
+
+export interface SalesmanPerformance {
+  salesman: string
+  shows: number
+  closes: number
+  totalRevenue: number
+  closeRate: number
+  averageOrderValue: number
+  leadsWorked: number
+}
+
+export interface RevenueTrendData {
+  date: string
+  revenue: number
+  shows: number
+  closes: number
+}
+
+export interface SalesmanAnalytics {
+  metrics: SalesmanMetrics
+  performance: SalesmanPerformance[]
+  trends: RevenueTrendData[]
+  timePeriod: TimePeriod
+}
