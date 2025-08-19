@@ -71,7 +71,6 @@ remove_artifacts() {
     log_info "Removing development artifacts..."
     
     ARTIFACTS_TO_REMOVE=(
-        "performance-metrics.log"
         "database-cache-implementation.ts"
         "enhanced-business-switching.ts"
         "enhanced-rate-limiting.ts"

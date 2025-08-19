@@ -5,9 +5,16 @@ import path from 'path';
 class PerformanceLogger {
   private logFile: string;
   private isServer = typeof window === 'undefined';
+  private useFileLogging: boolean;
 
   constructor() {
-    this.logFile = path.join(process.cwd(), 'performance-metrics.log');
+    // Use /tmp directory for log files (writable in container environments)
+    // Fall back to current directory in development
+    const logDir = process.env.NODE_ENV === 'production' ? '/tmp' : process.cwd();
+    this.logFile = path.join(logDir, 'performance-metrics.log');
+    
+    // Allow disabling file logging via environment variable
+    this.useFileLogging = process.env.DISABLE_PERFORMANCE_FILE_LOGGING !== 'true';
   }
 
   // Format metric for table display
@@ -34,9 +41,24 @@ class PerformanceLogger {
     ].join('\n');
   }
 
-  // Write metrics to log file
+  // Write metrics to log file or console
   public async logMetrics(metrics: PerformanceMetric[]): Promise<void> {
     if (!this.isServer || metrics.length === 0) {
+      return;
+    }
+
+    // If file logging is disabled, log to console instead
+    if (!this.useFileLogging) {
+      console.log('Performance Metrics:', {
+        timestamp: new Date().toISOString(),
+        metrics: metrics.map(m => ({
+          metric: m.metric,
+          category: m.category,
+          measuredValue: m.measuredValue,
+          targetValue: m.targetValue,
+          observations: m.observations
+        }))
+      });
       return;
     }
 
@@ -56,6 +78,7 @@ class PerformanceLogger {
       if (needsHeader) {
         logEntries.push('# Performance Metrics Log');
         logEntries.push(`Generated on: ${new Date().toISOString()}`);
+        logEntries.push(`Log file: ${this.logFile}`);
         logEntries.push('');
         logEntries.push(this.getTableHeader());
       }
@@ -69,7 +92,18 @@ class PerformanceLogger {
 
       await fs.appendFile(this.logFile, logEntries.join('\n'));
     } catch (error) {
-      console.error('Failed to write performance metrics to log:', error);
+      console.error('Failed to write performance metrics to log file, falling back to console:', error);
+      console.log('Performance Metrics (fallback):', {
+        timestamp: new Date().toISOString(),
+        logFile: this.logFile,
+        metrics: metrics.map(m => ({
+          metric: m.metric,
+          category: m.category,
+          measuredValue: m.measuredValue,
+          targetValue: m.targetValue,
+          observations: m.observations
+        }))
+      });
     }
   }
 
@@ -109,10 +143,36 @@ class PerformanceLogger {
     summary.push(`## Overall Health Score: ${healthScore}/100`);
     summary.push('');
 
+    // If file logging is disabled, log to console instead
+    if (!this.useFileLogging) {
+      console.log('Performance Summary Report:', {
+        timestamp: new Date().toISOString(),
+        healthScore,
+        categorySummary: Object.fromEntries(
+          categories.map(category => [
+            category,
+            metrics.filter(m => m.category === category).length
+          ])
+        )
+      });
+      return;
+    }
+
     try {
       await fs.appendFile(this.logFile, summary.join('\n'));
     } catch (error) {
-      console.error('Failed to write summary report:', error);
+      console.error('Failed to write summary report to file, falling back to console:', error);
+      console.log('Performance Summary Report (fallback):', {
+        timestamp: new Date().toISOString(),
+        logFile: this.logFile,
+        healthScore,
+        categorySummary: Object.fromEntries(
+          categories.map(category => [
+            category,
+            metrics.filter(m => m.category === category).length
+          ])
+        )
+      });
     }
   }
 
@@ -149,7 +209,7 @@ class PerformanceLogger {
 
   // Clear log file
   public async clearLog(): Promise<void> {
-    if (!this.isServer) return;
+    if (!this.isServer || !this.useFileLogging) return;
     
     try {
       await fs.writeFile(this.logFile, '');
@@ -160,13 +220,23 @@ class PerformanceLogger {
 
   // Read log file
   public async readLog(): Promise<string> {
-    if (!this.isServer) return '';
+    if (!this.isServer || !this.useFileLogging) return '';
     
     try {
       return await fs.readFile(this.logFile, 'utf-8');
-    } catch {
+    } catch (error) {
+      console.warn('Failed to read performance log:', error);
       return '';
     }
+  }
+
+  // Get current log configuration
+  public getLogConfig(): { logFile: string; useFileLogging: boolean; isServer: boolean } {
+    return {
+      logFile: this.logFile,
+      useFileLogging: this.useFileLogging,
+      isServer: this.isServer
+    };
   }
 }
 

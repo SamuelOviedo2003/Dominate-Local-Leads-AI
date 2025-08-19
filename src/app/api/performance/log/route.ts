@@ -19,10 +19,19 @@ export async function POST(request: NextRequest) {
       timestamp: new Date(metric.timestamp)
     }));
 
-    // Log metrics to file
+    // Log metrics (will handle file/console logging automatically)
     await performanceLogger.logMetrics(processedMetrics);
 
-    return NextResponse.json({ success: true });
+    // Get current logging configuration for response
+    const config = performanceLogger.getLogConfig();
+
+    return NextResponse.json({ 
+      success: true,
+      logConfig: {
+        useFileLogging: config.useFileLogging,
+        logFile: config.useFileLogging ? config.logFile : null
+      }
+    });
   } catch (error) {
     console.error('Performance logging error:', error);
     return NextResponse.json(
@@ -34,8 +43,20 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    const config = performanceLogger.getLogConfig();
+    
+    if (!config.useFileLogging) {
+      return NextResponse.json({ 
+        log: 'File logging is disabled. Performance metrics are logged to console.',
+        logConfig: config
+      });
+    }
+
     const logContent = await performanceLogger.readLog();
-    return NextResponse.json({ log: logContent });
+    return NextResponse.json({ 
+      log: logContent,
+      logConfig: config
+    });
   } catch (error) {
     console.error('Failed to read performance log:', error);
     return NextResponse.json(
