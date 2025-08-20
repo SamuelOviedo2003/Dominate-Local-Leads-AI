@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { LeadWithClient } from '@/types/leads'
-import { TableSkeleton } from '@/components/LoadingSystem'
 
 interface LeadsTableProps {
   leads: LeadWithClient[] | null
@@ -70,7 +69,11 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
       </div>
       
       {isLoading ? (
-        <TableSkeleton count={5} />
+        <div className="p-6">
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
+          </div>
+        </div>
       ) : leads && leads.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
