@@ -5,7 +5,7 @@ import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
 import { TimePeriodFilter } from '@/components/features/leads/TimePeriodFilter'
 import { LeadsTable } from '@/components/features/leads/LeadsTable'
 import { TrendingUp, Users, DollarSign, Target, Award, BarChart3 } from 'lucide-react'
-import { PageLoading } from '@/components/LoadingSystem'
+import { ComponentLoading, CardSkeleton } from '@/components/LoadingSystem'
 import { 
   SalesmanMetrics, 
   SalesmanPerformance, 
@@ -119,7 +119,13 @@ export default function SalesmanPage() {
   }
 
   if (loading) {
-    return <PageLoading message="Loading salesman dashboard..." />
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-center py-16">
+          <ComponentLoading message="Loading salesman dashboard..." />
+        </div>
+      </div>
+    )
   }
 
   if (error) {
@@ -153,63 +159,77 @@ export default function SalesmanPage() {
       </div>
 
       {/* Revenue Metrics Cards */}
-      {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <Target className="w-8 h-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Shows</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics.shows}</p>
-              </div>
+      <div className="mb-8">
+        {loading ? (
+          <CardSkeleton count={5} />
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="text-red-600 text-sm">
+              Error loading metrics: {error}
             </div>
           </div>
+        ) : metrics ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center">
+                <Target className="w-8 h-8 text-blue-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Shows</p>
+                  <p className="text-2xl font-bold text-gray-900">{metrics.shows}</p>
+                </div>
+              </div>
+            </div>
 
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <Award className="w-8 h-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Closes</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics.closes}</p>
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center">
+                <Award className="w-8 h-8 text-green-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Closes</p>
+                  <p className="text-2xl font-bold text-gray-900">{metrics.closes}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <DollarSign className="w-8 h-8 text-yellow-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${metrics.totalRevenue.toLocaleString()}
-                </p>
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center">
+                <DollarSign className="w-8 h-8 text-yellow-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${metrics.totalRevenue.toLocaleString()}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <TrendingUp className="w-8 h-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Close Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{metrics.closeRate}%</p>
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center">
+                <TrendingUp className="w-8 h-8 text-purple-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Close Rate</p>
+                  <p className="text-2xl font-bold text-gray-900">{metrics.closeRate}%</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-lg shadow-sm border p-6">
-            <div className="flex items-center">
-              <BarChart3 className="w-8 h-8 text-indigo-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Avg Order Value</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  ${metrics.averageOrderValue.toLocaleString()}
-                </p>
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center">
+                <BarChart3 className="w-8 h-8 text-indigo-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Avg Order Value</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    ${metrics.averageOrderValue.toLocaleString()}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <div className="text-gray-500 text-center">No metrics data available</div>
+          </div>
+        )}
+      </div>
 
       {/* Salesman Leads Table */}
       <LeadsTable 

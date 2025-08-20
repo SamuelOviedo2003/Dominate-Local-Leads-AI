@@ -2,6 +2,7 @@
 
 import { useState, useRef, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { InlineLoading } from '@/components/LoadingSystem'
 
 interface LoginFormProps {
   loginAction: (formData: FormData) => void
@@ -151,7 +152,7 @@ export default function LoginForm({ loginAction }: LoginFormProps) {
       >
         {isPending && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            <InlineLoading message="" />
           </div>
         )}
         

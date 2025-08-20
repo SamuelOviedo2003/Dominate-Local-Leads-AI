@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { LeadDetails, ApiResponse } from '@/types/leads'
 import { PropertyOverview } from '@/components/features/leads/PropertyOverview'
 import { useCompany } from '@/contexts/CompanyContext'
-import { PageLoading } from '@/components/LoadingSystem'
+import { ComponentLoading } from '@/components/LoadingSystem'
 
 const PropertyDetailsPage = () => {
   const params = useParams()
@@ -73,7 +73,15 @@ const PropertyDetailsPage = () => {
   }, [router])
 
   if (isLoading) {
-    return <PageLoading message="Loading property details..." />
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center py-16">
+            <ComponentLoading message="Loading property details..." />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (error) {

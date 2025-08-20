@@ -70,7 +70,7 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
       </div>
       
       {isLoading ? (
-        <TableSkeleton rows={5} />
+        <TableSkeleton count={5} />
       ) : leads && leads.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">

@@ -6,7 +6,7 @@ import { LeadDetails, ApiResponse } from '@/types/leads'
 import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { useCompany } from '@/contexts/CompanyContext'
-import { PageLoading } from '@/components/LoadingSystem'
+import { ComponentLoading } from '@/components/LoadingSystem'
 
 const LeadDetailsPage = () => {
   const params = useParams()
@@ -74,7 +74,15 @@ const LeadDetailsPage = () => {
   }, [router])
 
   if (isLoading) {
-    return <PageLoading message="Loading lead details..." />
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center py-16">
+            <ComponentLoading message="Loading lead details..." />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (error) {

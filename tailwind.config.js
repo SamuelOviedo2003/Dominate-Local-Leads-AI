@@ -60,6 +60,8 @@ module.exports = {
         'shimmer': 'shimmer 2s linear infinite',
         'logo-entrance': 'logoEntrance 1.2s ease-out',
         'logo-glow': 'logoGlow 2s ease-in-out 0.5s infinite alternate',
+        // Simple spinning circle loader
+        'spin-smooth': 'spinSmooth 1s linear infinite',
       },
       keyframes: {
         gradient: {
@@ -127,6 +129,15 @@ module.exports = {
           '100%': { 
             opacity: '0.6',
             transform: 'scale(1.5)' 
+          },
+        },
+        // Simple spinning circle loader keyframes
+        spinSmooth: {
+          '0%': { 
+            transform: 'rotate(0deg)'
+          },
+          '100%': { 
+            transform: 'rotate(360deg)'
           },
         },
       },
