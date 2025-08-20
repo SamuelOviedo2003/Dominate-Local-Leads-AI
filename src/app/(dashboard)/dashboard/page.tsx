@@ -1,20 +1,28 @@
-'use client'
-
-import { Construction } from 'lucide-react'
+import { getAuthenticatedUser } from '@/lib/auth-helpers'
+import { DashboardClient } from './client'
 
 export const dynamic = 'force-dynamic'
 
-export default function DashboardPage() {
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <div className="text-center">
-        <Construction className="w-24 h-24 text-gray-400 mx-auto mb-6" />
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Dashboard</h1>
-        <p className="text-xl text-gray-600 mb-2">Page Under Construction</p>
-        <p className="text-gray-500">
-          We're working hard to bring you an amazing dashboard experience. Check back soon!
-        </p>
+export default async function DashboardPage() {
+  // Get authenticated user on server side
+  const user = await getAuthenticatedUser()
+  
+  if (!user.profile?.business_id) {
+    return (
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-red-600">Error: No business associated with your account. Please contact support.</div>
+          </div>
+        </div>
       </div>
-    </div>
+    )
+  }
+
+  return (
+    <DashboardClient 
+      businessId={user.profile.business_id.toString()} 
+      userRole={user.profile.role}
+    />
   )
 }

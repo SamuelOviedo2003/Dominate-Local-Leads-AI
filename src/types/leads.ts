@@ -42,6 +42,7 @@ export interface LeadCall {
 
 export interface LeadWithClient extends Lead {
   client?: Client
+  callWindows?: CallWindow[]
 }
 
 export interface LeadMetrics {
@@ -129,10 +130,20 @@ export interface PropertyInfo {
   duration_seconds: number | null
 }
 
+export interface CallWindow {
+  window_start_at: string
+  window_end_at: string
+  called_at: string | null
+  called_out: string | null
+  business_id?: string
+  account_id?: string
+}
+
 export interface LeadDetails {
   lead: Lead
   property: PropertyInfo | null
   communications: Communication[]
+  callWindows: CallWindow[]
 }
 
 export type MessageType = 'email' | 'sms' | 'call' | 'voicemail'

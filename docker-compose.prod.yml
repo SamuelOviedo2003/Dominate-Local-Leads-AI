@@ -40,6 +40,8 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
       - LOG_LEVEL=info
       - ENABLE_PERFORMANCE_MONITORING=true
+      - DOCKER_CONTAINER=true
+      - PERFORMANCE_LOG_STDOUT=true
 
   nginx:
     # Production Nginx configuration

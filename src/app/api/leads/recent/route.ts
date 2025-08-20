@@ -73,8 +73,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get lead IDs for fetching most recent calls
+    // Get lead IDs and account IDs for fetching most recent calls and call windows
     const leadIds = leadsData.map(lead => lead.lead_id)
+    const accountIds = leadsData.map(lead => lead.account_id)
 
     // Fetch the most recent call for each lead to get next_step
     let callsData: any[] = []
@@ -93,12 +94,67 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Fetch call windows for each lead
+    let callWindowsData: any[] = []
+    if (accountIds.length > 0) {
+      console.log(`[DEBUG] Fetching call windows for ${accountIds.length} accounts, business_id: ${requestedBusinessId}`)
+      
+      const { data: fetchedCallWindows, error: callWindowsError } = await supabase
+        .from('call_windows')
+        .select('account_id, window_start_at, window_end_at, called_at, called_out, business_id')
+        .in('account_id', accountIds)
+        .eq('business_id', requestedBusinessId)
+        .order('window_start_at', { ascending: true })
+
+      console.log(`[DEBUG] Call windows bulk query result:`, {
+        accountIdsCount: accountIds.length,
+        dataLength: fetchedCallWindows?.length || 0,
+        error: callWindowsError,
+        errorDetails: callWindowsError ? {
+          message: callWindowsError.message,
+          code: callWindowsError.code,
+          hint: callWindowsError.hint
+        } : null
+      })
+
+      if (callWindowsError) {
+        console.error('Error fetching call windows:', {
+          error: callWindowsError,
+          accountIdsCount: accountIds.length,
+          businessId: requestedBusinessId
+        })
+        
+        // Check if this is an RLS policy error
+        if (callWindowsError.code === '42501' || callWindowsError.message?.includes('policy')) {
+          console.error('RLS Policy Error: User cannot access call_windows table. Check RLS policies.')
+        }
+        
+        // Continue without call windows data rather than failing
+      } else {
+        callWindowsData = fetchedCallWindows || []
+      }
+    }
+
     // Create a map of lead_id to most recent next_step
     const nextStepMap = new Map<number, string | null>()
     callsData.forEach(call => {
       if (!nextStepMap.has(call.lead_id)) {
         nextStepMap.set(call.lead_id, call.next_step)
       }
+    })
+
+    // Create a map of account_id to call windows
+    const callWindowsMap = new Map<string, any[]>()
+    callWindowsData.forEach(window => {
+      if (!callWindowsMap.has(window.account_id)) {
+        callWindowsMap.set(window.account_id, [])
+      }
+      callWindowsMap.get(window.account_id)?.push({
+        window_start_at: window.window_start_at,
+        window_end_at: window.window_end_at,
+        called_at: window.called_at,
+        called_out: window.called_out
+      })
     })
 
     // Helper function to format datetime with hours and minutes
@@ -116,7 +172,9 @@ export async function GET(request: NextRequest) {
         // Use next_step from leads_calls table, fallback to null if not available
         next_step: nextStepMap.get(lead.lead_id) || null,
         created_at: formatDateTimeWithTime(lead.created_at),
-        client: Array.isArray(clients) ? clients[0] : clients
+        client: Array.isArray(clients) ? clients[0] : clients,
+        // Include call windows for this lead's account
+        callWindows: callWindowsMap.get(lead.account_id) || []
       }
     })
 

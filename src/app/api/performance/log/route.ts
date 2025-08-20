@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
       success: true,
       logConfig: {
         useFileLogging: config.useFileLogging,
+        logToStdout: config.logToStdout,
+        isContainerized: config.isContainerized,
+        environment: config.environment,
         logFile: config.useFileLogging ? config.logFile : null
       }
     });
@@ -45,10 +48,20 @@ export async function GET() {
   try {
     const config = performanceLogger.getLogConfig();
     
+    // Provide different responses based on logging configuration
+    if (config.logToStdout) {
+      return NextResponse.json({ 
+        log: 'Performance metrics are logged to stdout in structured JSON format. Check container logs or console output.',
+        logConfig: config,
+        message: 'Stdout logging is enabled for containerized environments. Use docker logs or monitoring tools to view performance data.'
+      });
+    }
+    
     if (!config.useFileLogging) {
       return NextResponse.json({ 
         log: 'File logging is disabled. Performance metrics are logged to console.',
-        logConfig: config
+        logConfig: config,
+        message: 'File logging is disabled. Check console output for performance metrics.'
       });
     }
 

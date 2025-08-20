@@ -56,7 +56,7 @@ const CommunicationsHistoryComponent = ({ communications }: CommunicationsHistor
     return communications.sort((a, b) => {
       const dateA = new Date(a.created_at).getTime()
       const dateB = new Date(b.created_at).getTime()
-      return dateB - dateA // Always sort newest first
+      return dateA - dateB // Sort oldest first, newest at bottom
     })
   }, [communications])
 

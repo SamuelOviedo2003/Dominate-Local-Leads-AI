@@ -203,15 +203,22 @@ const LeadDetailsPage = () => {
           </button>
         </div>
 
-        {/* Single column layout for lead information only */}
-        <div className="space-y-6">
-          <LeadInformation 
-            lead={leadDetails.lead} 
-            property={leadDetails.property} 
-          />
+
+        {/* Lead details layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main content */}
+          <div className="lg:col-span-2 space-y-6">
+            <LeadInformation 
+              lead={leadDetails.lead} 
+              property={leadDetails.property}
+              callWindows={leadDetails.callWindows}
+            />
+          </div>
           
-          {/* Communications History */}
-          <CommunicationsHistory communications={leadDetails.communications} />
+          {/* Right column - Communications */}
+          <div className="lg:col-span-1">
+            <CommunicationsHistory communications={leadDetails.communications} />
+          </div>
         </div>
       </div>
     </div>

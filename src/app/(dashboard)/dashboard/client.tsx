@@ -4,26 +4,24 @@ import { useState } from 'react'
 import { TimePeriod } from '@/types/leads'
 import { useLeadsData } from '@/hooks/useLeadsData'
 import { 
-  LeadMetrics, 
-  LeadsTable, 
+  AppointmentSetters, 
   TimePeriodFilter 
 } from '@/components/features/leads'
 import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
 
-interface NewLeadsClientProps {
+interface DashboardClientProps {
   businessId: string
   userRole?: number
 }
 
-export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
+export function DashboardClient({ businessId, userRole }: DashboardClientProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30')
   
   // Get the effective business ID (user's own or selected company for superadmin)
   const effectiveBusinessId = useEffectiveBusinessId()
   
   const {
-    metrics,
-    recentLeads,
+    appointmentSetters,
     isLoading,
     error,
     refetch
@@ -38,7 +36,8 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            {/* Empty header content as requested */}
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1">Monitor your appointment setters performance</p>
           </div>
           
           {/* Time Period Filter */}
@@ -65,21 +64,16 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           </div>
         )}
 
-        {/* Lead Metrics */}
-        <div className="mb-8">
-          <LeadMetrics 
-            metrics={metrics}
-            isLoading={isLoading}
-            error={error}
-          />
+        {/* Appointment Setters - Centered */}
+        <div className="flex justify-center">
+          <div className="w-full max-w-md">
+            <AppointmentSetters 
+              setters={appointmentSetters}
+              isLoading={isLoading}
+              error={error}
+            />
+          </div>
         </div>
-
-        {/* Recent Leads Table - Full Width */}
-        <LeadsTable 
-          leads={recentLeads}
-          isLoading={isLoading}
-          error={error}
-        />
       </div>
     </div>
   )

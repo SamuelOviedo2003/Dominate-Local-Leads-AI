@@ -48,16 +48,6 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
     router.push(`/${navigationTarget}/${leadId}`)
   }
 
-  const formatNotes = (lead: LeadWithClient) => {
-    const parts = []
-    if (lead.client?.full_address) {
-      parts.push(lead.client.full_address)
-    }
-    if (lead.client?.house_value) {
-      parts.push(lead.client.house_value)
-    }
-    return parts.join(' • ') || 'No additional notes'
-  }
 
   if (error) {
     return (
@@ -104,16 +94,13 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
                   How Soon
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Service
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Next Step
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date & Time
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Notes
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
                 </th>
               </tr>
             </thead>
@@ -135,9 +122,6 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
                         <div className="text-sm font-medium text-gray-900">
                           {lead.first_name} {lead.last_name}
                         </div>
-                        {lead.service && lead.service.trim() && (
-                          <div className="text-sm text-gray-500">{lead.service}</div>
-                        )}
                       </div>
                     </div>
                   </td>
@@ -147,22 +131,13 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {lead.next_step || 'Not set'}
+                    {lead.service || 'No service specified'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDateTime(lead.created_at)}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                    {formatNotes(lead)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                      lead.contacted 
-                        ? 'text-green-800 bg-green-100' 
-                        : 'text-yellow-800 bg-yellow-100'
-                    }`}>
-                      {lead.contacted ? 'Contacted' : 'New'}
-                    </span>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {lead.next_step || 'Not set'}
                   </td>
                 </tr>
               ))}
