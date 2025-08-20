@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { LeadDetails, ApiResponse } from '@/types/leads'
 import { PropertyOverview } from '@/components/features/leads/PropertyOverview'
 import { useCompany } from '@/contexts/CompanyContext'
+import { PageLoading } from '@/components/LoadingSystem'
 
 const PropertyDetailsPage = () => {
   const params = useParams()
@@ -72,34 +73,7 @@ const PropertyDetailsPage = () => {
   }, [router])
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header Skeleton */}
-          <div className="mb-8">
-            <div className="animate-pulse">
-              <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
-              <div className="h-8 bg-gray-200 rounded w-64"></div>
-            </div>
-          </div>
-
-          {/* Content Skeleton */}
-          <div className="max-w-md mx-auto">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="animate-pulse">
-                <div className="h-6 bg-gray-200 rounded w-20 mb-4"></div>
-                <div className="aspect-square bg-gray-200 rounded-lg mb-4"></div>
-                <div className="space-y-4">
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <PageLoading message="Loading property details..." />
   }
 
   if (error) {

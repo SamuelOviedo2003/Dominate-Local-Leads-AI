@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, memo } from 'react'
+import { InlineLoading } from '@/components/LoadingSystem'
 
 interface AudioPlayerProps {
   src: string
@@ -152,7 +153,9 @@ const AudioPlayerComponent = ({ src, className = '' }: AudioPlayerProps) => {
         title={isPlaying ? 'Pause audio' : 'Play audio'}
       >
         {isLoading ? (
-          <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+          <div className="w-3 h-3">
+            <InlineLoading message="" />
+          </div>
         ) : isPlaying ? (
           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="6" y="4" width="4" height="16" />

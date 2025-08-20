@@ -3,6 +3,7 @@
 import { memo } from 'react'
 import { Users, Phone, CheckCircle, TrendingUp } from 'lucide-react'
 import { LeadMetrics as LeadMetricsType } from '@/types/leads'
+import { CardSkeleton } from '@/components/LoadingSystem'
 
 interface LeadMetricsProps {
   metrics: LeadMetricsType | null
@@ -24,21 +25,7 @@ function LeadMetricsComponent({ metrics, isLoading, error }: LeadMetricsProps) {
   }
 
   if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg shadow-sm border p-6 animate-pulse">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-200 rounded" />
-              <div className="ml-4 flex-1">
-                <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
-                <div className="h-8 bg-gray-200 rounded w-16" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    )
+    return <CardSkeleton count={4} />
   }
 
   if (!metrics) {

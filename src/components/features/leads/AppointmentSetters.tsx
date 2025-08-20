@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { ChevronUp, ChevronDown, User, Clock, Phone, CheckCircle } from 'lucide-react'
 import { AppointmentSetter } from '@/types/leads'
+import { ComponentLoading } from '@/components/LoadingSystem'
 
 interface AppointmentSettersProps {
   setters: AppointmentSetter[] | null
@@ -102,47 +103,8 @@ function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentS
       </div>
       
       {isLoading ? (
-        <div className="flex-1 overflow-y-auto">
-          <div className="space-y-4">
-            {[...Array(itemsPerPage)].map((_, i) => (
-              <div key={i} className="animate-pulse bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className="flex items-center mb-4">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full mr-3" />
-                  <div className="h-5 bg-gray-200 rounded w-32" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gray-200 rounded-lg" />
-                    <div>
-                      <div className="h-3 bg-gray-200 rounded w-16 mb-1" />
-                      <div className="h-4 bg-gray-200 rounded w-8" />
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gray-200 rounded-lg" />
-                    <div>
-                      <div className="h-3 bg-gray-200 rounded w-16 mb-1" />
-                      <div className="h-4 bg-gray-200 rounded w-8" />
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gray-200 rounded-lg" />
-                    <div>
-                      <div className="h-3 bg-gray-200 rounded w-16 mb-1" />
-                      <div className="h-4 bg-gray-200 rounded w-8" />
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gray-200 rounded-lg" />
-                    <div>
-                      <div className="h-3 bg-gray-200 rounded w-16 mb-1" />
-                      <div className="h-4 bg-gray-200 rounded w-8" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="flex-1 flex items-center justify-center">
+          <ComponentLoading message="Loading appointment setters..." />
         </div>
       ) : setters && setters.length > 0 ? (
         <div className="flex-1 flex flex-col min-h-0">

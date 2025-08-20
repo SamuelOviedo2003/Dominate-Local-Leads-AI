@@ -33,6 +33,19 @@ module.exports = {
           700: '#334155',
           800: '#1E293B',
           900: '#0F172A',
+        },
+        // Coral accent colors for loading system
+        'coral': {
+          50: '#FFF5F5',
+          100: '#FED7D7',
+          200: '#FEB2B2',
+          300: '#FC8181',
+          400: '#F87171', // Primary coral color from spec
+          500: '#F56565',
+          600: '#E53E3E',
+          700: '#C53030',
+          800: '#9B2C2C',
+          900: '#742A2A',
         }
       },
       animation: {

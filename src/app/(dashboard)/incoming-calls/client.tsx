@@ -6,17 +6,18 @@ import { IncomingCallsTimePeriod } from '@/types/leads'
 // Remove this import for now - will use inline component
 import { Phone, TrendingUp, Users, Calendar } from 'lucide-react'
 // Using simple custom charts without external dependencies
+import { ComponentLoading } from '@/components/LoadingSystem'
 
 interface IncomingCallsClientProps {
   businessId: string
   userRole: number
 }
 
-// Loading component
+// Loading component (replaced with universal loading system)
 function LoadingSpinner() {
   return (
-    <div className="flex items-center justify-center py-12">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+    <div className="py-12">
+      <ComponentLoading message="Loading analytics..." />
     </div>
   )
 }

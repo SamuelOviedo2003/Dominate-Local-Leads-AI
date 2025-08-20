@@ -5,6 +5,7 @@ import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
 import { TimePeriodFilter } from '@/components/features/leads/TimePeriodFilter'
 import { LeadsTable } from '@/components/features/leads/LeadsTable'
 import { TrendingUp, Users, DollarSign, Target, Award, BarChart3 } from 'lucide-react'
+import { PageLoading } from '@/components/LoadingSystem'
 import { 
   SalesmanMetrics, 
   SalesmanPerformance, 
@@ -118,11 +119,7 @@ export default function SalesmanPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    )
+    return <PageLoading message="Loading salesman dashboard..." />
   }
 
   if (error) {

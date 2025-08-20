@@ -6,6 +6,7 @@ import { LeadDetails, ApiResponse } from '@/types/leads'
 import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { useCompany } from '@/contexts/CompanyContext'
+import { PageLoading } from '@/components/LoadingSystem'
 
 const LeadDetailsPage = () => {
   const params = useParams()
@@ -73,63 +74,7 @@ const LeadDetailsPage = () => {
   }, [router])
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header Skeleton */}
-          <div className="mb-8">
-            <div className="animate-pulse">
-              <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
-              <div className="h-8 bg-gray-200 rounded w-64"></div>
-            </div>
-          </div>
-
-          {/* Content Skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-6 bg-gray-200 rounded w-48"></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className="space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-20"></div>
-                        <div className="h-5 bg-gray-200 rounded w-32"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="animate-pulse">
-                  <div className="h-6 bg-gray-200 rounded w-56 mb-6"></div>
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="border border-gray-200 rounded-lg p-4">
-                        <div className="h-16 bg-gray-200 rounded"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="animate-pulse">
-                  <div className="h-6 bg-gray-200 rounded w-20 mb-4"></div>
-                  <div className="aspect-square bg-gray-200 rounded-lg mb-4"></div>
-                  <div className="flex justify-center">
-                    <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <PageLoading message="Loading lead details..." />
   }
 
   if (error) {

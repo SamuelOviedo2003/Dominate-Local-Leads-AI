@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { login } from './actions'
 import LoginForm from '@/components/LoginForm'
 import ImageWithFallback from '@/components/ImageWithFallback'
+import { ComponentLoading } from '@/components/LoadingSystem'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,8 +55,8 @@ export default async function LoginPage() {
             </p>
             
             <Suspense fallback={
-              <div className="flex items-center justify-center py-8">
-                <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+              <div className="py-8">
+                <ComponentLoading message="Loading login form..." />
               </div>
             }>
               <LoginForm loginAction={login} />
