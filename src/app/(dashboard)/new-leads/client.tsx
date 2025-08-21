@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { TimePeriod } from '@/types/leads'
 import { useLeadsData } from '@/hooks/useLeadsData'
 import { 
-  LeadMetrics, 
+  LeadMetrics,
   LeadsTable, 
   TimePeriodFilter 
 } from '@/components/features/leads'
@@ -25,7 +25,11 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
     metrics,
     recentLeads,
     isLoading,
+    isMetricsLoading,
+    isRecentLeadsLoading,
     error,
+    metricsError,
+    recentLeadsError,
     refetch
   } = useLeadsData({
     timePeriod,
@@ -65,42 +69,20 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           </div>
         )}
 
-        {/* Lead Metrics */}
+        {/* Lead Metrics - Individual Loading State */}
         <div className="mb-8">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white rounded-lg shadow-sm border p-6">
-                  <div className="flex items-center justify-center py-8">
-                    <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="text-red-600 text-sm">
-                Error loading metrics: {error}
-              </div>
-            </div>
-          ) : metrics ? (
-            <LeadMetrics 
-              metrics={metrics}
-              isLoading={false}
-              error={null}
-            />
-          ) : (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-              <div className="text-gray-500 text-center">No metrics data available</div>
-            </div>
-          )}
+          <LeadMetrics 
+            metrics={metrics}
+            isLoading={isMetricsLoading}
+            error={metricsError}
+          />
         </div>
 
-        {/* Recent Leads Table - Full Width */}
+        {/* Recent Leads Table - Individual Loading State */}
         <LeadsTable 
           leads={recentLeads}
-          isLoading={isLoading}
-          error={error}
+          isLoading={isRecentLeadsLoading}
+          error={recentLeadsError}
         />
       </div>
     </div>

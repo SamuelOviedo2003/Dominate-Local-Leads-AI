@@ -2,13 +2,40 @@
 
 import { Communication } from '@/types/leads'
 import { AudioPlayer } from './AudioPlayer'
+import { LoadingSystem } from '@/components/LoadingSystem'
 import { useMemo, useCallback, memo } from 'react'
 
 interface CommunicationsHistoryProps {
-  communications: Communication[]
+  communications?: Communication[] | null
+  isLoading?: boolean
+  error?: string | null
 }
 
-const CommunicationsHistoryComponent = ({ communications }: CommunicationsHistoryProps) => {
+const CommunicationsHistoryComponent = ({ communications = [], isLoading = false, error = null }: CommunicationsHistoryProps) => {
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Communications History</h3>
+        <div className="flex items-center justify-center py-16">
+          <LoadingSystem size="md" message="Loading communications..." />
+        </div>
+      </div>
+    )
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Communications History</h3>
+        <div className="text-center py-16">
+          <div className="text-red-500 text-lg font-medium mb-2">Error Loading Communications</div>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   const getMessageTypeColor = useCallback((messageType: string): string => {
     const type = messageType.toLowerCase()
@@ -53,6 +80,7 @@ const CommunicationsHistoryComponent = ({ communications }: CommunicationsHistor
   }, [])
 
   const sortedCommunications = useMemo(() => {
+    if (!communications || communications.length === 0) return []
     return communications.sort((a, b) => {
       const dateA = new Date(a.created_at).getTime()
       const dateB = new Date(b.created_at).getTime()
@@ -61,7 +89,7 @@ const CommunicationsHistoryComponent = ({ communications }: CommunicationsHistor
   }, [communications])
 
 
-  if (communications.length === 0) {
+  if (!communications || communications.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Communications History</h3>

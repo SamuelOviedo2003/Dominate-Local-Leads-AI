@@ -23,7 +23,11 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
     metrics,
     salesmanLeads,
     isLoading,
+    isMetricsLoading,
+    isSalesmanLeadsLoading,
     error,
+    metricsError,
+    salesmanLeadsError,
     refetch
   } = useSalesmanData({
     timePeriod,
@@ -66,7 +70,7 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
 
         {/* Salesman Metrics */}
         <div className="mb-8">
-          {isLoading ? (
+          {isMetricsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-white rounded-lg shadow-sm border p-6">
@@ -76,10 +80,18 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
                 </div>
               ))}
             </div>
-          ) : error ? (
+          ) : metricsError ? (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="text-red-600 text-sm">
-                Error loading metrics: {error}
+              <div className="flex items-center">
+                <div className="text-red-600 text-sm">
+                  Error loading metrics: {metricsError}
+                </div>
+                <button
+                  onClick={refetch}
+                  className="ml-4 text-red-600 hover:text-red-800 text-sm font-medium"
+                >
+                  Try Again
+                </button>
               </div>
             </div>
           ) : metrics ? (
@@ -158,8 +170,8 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
         {/* Salesman Leads Table */}
         <LeadsTable 
           leads={salesmanLeads}
-          isLoading={isLoading}
-          error={error}
+          isLoading={isSalesmanLeadsLoading}
+          error={salesmanLeadsError}
           navigationTarget="property-details"
         />
       </div>

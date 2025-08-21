@@ -2,15 +2,51 @@
 
 import { Lead, PropertyInfo } from '@/types/leads'
 import { useMemo, useCallback, memo } from 'react'
+import { LoadingSystem } from '@/components/LoadingSystem'
 
 interface LeadInformationProps {
-  lead: Lead
+  lead?: Lead | null
   property?: PropertyInfo | null
+  isLoading?: boolean
+  error?: string | null
 }
 
-const LeadInformationComponent = ({ lead, property }: LeadInformationProps) => {
+const LeadInformationComponent = ({ lead, property, isLoading = false, error = null }: LeadInformationProps) => {
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
+        <div className="flex items-center justify-center flex-1">
+          <LoadingSystem size="md" message="Loading lead information..." />
+        </div>
+      </div>
+    )
+  }
 
+  // Handle error state
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
+        <div className="text-center flex-1 flex items-center justify-center">
+          <div>
+            <div className="text-red-500 text-lg font-medium mb-2">Error Loading Lead Information</div>
+            <p className="text-gray-600">{error}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
+  // Handle no data state
+  if (!lead) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
+        <div className="text-center flex-1 flex items-center justify-center">
+          <div className="text-gray-500 text-lg font-medium">No lead information available</div>
+        </div>
+      </div>
+    )
+  }
 
   const leadAnalysis = useMemo(() => {
     const service = lead.service || 'Service'
@@ -82,9 +118,9 @@ const LeadInformationComponent = ({ lead, property }: LeadInformationProps) => {
 
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col overflow-y-auto">
       {/* Lead Name Header */}
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">
+      <h1 className="text-2xl font-bold text-gray-900 mb-4 break-words">
         {lead.first_name} {lead.last_name}
       </h1>
       
@@ -119,28 +155,30 @@ const LeadInformationComponent = ({ lead, property }: LeadInformationProps) => {
       </div>
       
       {/* Contact Information */}
-      <div className="mb-4 space-y-1">
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-600 text-sm">Email:</span>
-          <span className="text-gray-900 text-sm">{lead.email}</span>
-          {/* Email validation checkmark */}
-          <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
+      <div className="mb-4 space-y-2">
+        <div className="flex items-start space-x-2">
+          <span className="text-gray-600 text-sm flex-shrink-0">Email:</span>
+          <div className="flex items-center space-x-1 min-w-0 flex-1">
+            <span className="text-gray-900 text-sm truncate">{lead.email}</span>
+            {/* Email validation checkmark */}
+            <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-gray-600 text-sm">Phone:</span>
-          <span className="text-gray-900 text-sm">{lead.phone}</span>
+        <div className="flex items-start space-x-2">
+          <span className="text-gray-600 text-sm flex-shrink-0">Phone:</span>
+          <span className="text-gray-900 text-sm break-all">{lead.phone}</span>
         </div>
       </div>
 
       {/* Lead Description & Urgency */}
       <div className="mb-6">
-        <div className="flex items-start justify-between mb-2">
-          <p className="text-gray-700 text-sm leading-relaxed flex-1">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 space-y-2 sm:space-y-0">
+          <p className="text-gray-700 text-sm leading-relaxed flex-1 break-words pr-0 sm:pr-3">
             {leadAnalysis.description}
           </p>
-          <span className={`ml-3 px-2 py-1 text-xs font-medium rounded-full ${
+          <span className={`self-start flex-shrink-0 px-2 py-1 text-xs font-medium rounded-full ${
             leadAnalysis.urgencyLevel === 'High' ? 'bg-red-100 text-red-800' :
             leadAnalysis.urgencyLevel === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
             'bg-gray-100 text-gray-800'
@@ -152,14 +190,14 @@ const LeadInformationComponent = ({ lead, property }: LeadInformationProps) => {
       </div>
 
       {/* Service Details Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
         {/* Left Column */}
         <div className="space-y-3">
           <div>
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
               Service Needed
             </div>
-            <div className="text-gray-900 font-medium text-sm">
+            <div className="text-gray-900 font-medium text-sm break-words">
               {lead.service || 'Not specified'}
             </div>
           </div>
@@ -193,7 +231,7 @@ const LeadInformationComponent = ({ lead, property }: LeadInformationProps) => {
             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
               How Soon
             </div>
-            <div className="text-gray-900 font-medium text-sm">
+            <div className="text-gray-900 font-medium text-sm break-words">
               {getHowSoonDisplay(lead.how_soon)}
             </div>
           </div>

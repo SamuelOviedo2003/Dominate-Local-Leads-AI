@@ -160,8 +160,14 @@ export const TableSkeleton = memo(({ count = 1 }: { count?: number }) => (
 
 // Enhanced skeleton for metrics and components
 export const CardSkeleton = memo(({ count = 1 }: { count?: number }) => (
-  <div className="flex items-center justify-center py-12">
-    <LoadingSystem size="md" message="Loading data..." />
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    {[...Array(count)].map((_, i) => (
+      <div key={i} className="bg-white rounded-lg shadow-sm border p-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
+        </div>
+      </div>
+    ))}
   </div>
 ))
 

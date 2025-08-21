@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { TimePeriod } from '@/types/leads'
-import { useLeadsData } from '@/hooks/useLeadsData'
 import { useDashboardData } from '@/hooks/useDashboardData'
+import { useAppointmentSetters } from '@/hooks/useAppointmentSetters'
 import { 
   AppointmentSetters, 
   TimePeriodFilter 
@@ -24,10 +24,10 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
   
   const {
     appointmentSetters,
-    isLoading: leadsLoading,
-    error: leadsError,
-    refetch: refetchLeads
-  } = useLeadsData({
+    isLoading: appointmentSettersLoading,
+    error: appointmentSettersError,
+    refetch: refetchAppointmentSetters
+  } = useAppointmentSetters({
     timePeriod,
     businessId: effectiveBusinessId
   })
@@ -42,10 +42,10 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
     businessId: effectiveBusinessId
   })
 
-  const isLoading = leadsLoading || dashboardLoading
-  const error = leadsError || dashboardError
+  const isLoading = appointmentSettersLoading || dashboardLoading
+  const error = appointmentSettersError || dashboardError
   const refetch = () => {
-    refetchLeads()
+    refetchAppointmentSetters()
     refetchDashboard()
   }
 
@@ -124,25 +124,11 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
         {/* Appointment Setters - Centered */}
         <div className="flex justify-center">
           <div className="w-full max-w-md">
-            {leadsLoading ? (
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
-                </div>
-              </div>
-            ) : leadsError ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="text-red-600 text-sm">
-                  Error loading appointment setters: {leadsError}
-                </div>
-              </div>
-            ) : (
-              <AppointmentSetters 
-                setters={appointmentSetters}
-                isLoading={false}
-                error={null}
-              />
-            )}
+            <AppointmentSetters 
+              setters={appointmentSetters}
+              isLoading={appointmentSettersLoading}
+              error={appointmentSettersError}
+            />
           </div>
         </div>
       </div>
