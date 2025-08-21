@@ -131,12 +131,21 @@ export interface PropertyInfo {
 }
 
 export interface CallWindow {
+  // Database fields
+  call_window: number // 1-6 indicating call number
   window_start_at: string
-  window_end_at: string
+  window_end_at: string  
+  created_at: string
   called_at: string | null
   called_out: string | null
   business_id?: string
   account_id?: string
+  
+  // Business logic calculated fields
+  responseTimeMinutes: number | null // Duration between created_at and called_at
+  medalTier: 'gold' | 'silver' | 'bronze' | null // Performance tier based on response time
+  isMissed: boolean // True if called_at is null
+  callNumber: number // Same as call_window, but ensures it's always present
 }
 
 export interface LeadDetails {

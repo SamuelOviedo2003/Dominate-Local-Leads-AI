@@ -2,13 +2,14 @@
 
 import { CallWindow } from '@/types/leads'
 import { useMemo, useCallback, memo } from 'react'
+import { AlertTriangle, Clock, Phone } from 'lucide-react'
 
 interface CallWindowsProps {
   callWindows?: CallWindow[]
 }
 
 const CallWindowsComponent = ({ callWindows }: CallWindowsProps) => {
-  const formatCallWindowDate = useCallback((dateString: string) => {
+  const formatTime = useCallback((dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
@@ -19,65 +20,194 @@ const CallWindowsComponent = ({ callWindows }: CallWindowsProps) => {
     })
   }, [])
 
+  const formatResponseTime = useCallback((minutes: number | null) => {
+    if (!minutes) return 'N/A'
+    if (minutes < 1) return '< 1 min'
+    if (minutes < 60) return `${Math.round(minutes)} min`
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = Math.round(minutes % 60)
+    return `${hours}h ${remainingMinutes}m`
+  }, [])
+
+  const getMedalIcon = useCallback((medalTier: 'gold' | 'silver' | 'bronze' | null) => {
+    switch (medalTier) {
+      case 'gold':
+        return <span className="text-lg" title="Gold Medal - Response time < 1 minute">🥇</span>
+      case 'silver':
+        return <span className="text-lg" title="Silver Medal - Response time 1-2 minutes">🥈</span>
+      case 'bronze':
+        return <span className="text-lg" title="Bronze Medal - Response time 2-5 minutes">🥉</span>
+      default:
+        return null
+    }
+  }, [])
+
+  // Sort and ensure exactly 6 calls are displayed (1-6)
+  const sortedCallWindows = useMemo(() => {
+    if (!callWindows) return []
+    
+    // Create array of 6 calls, filling missing ones with placeholders
+    const calls = Array.from({ length: 6 }, (_, index) => {
+      const callNumber = index + 1
+      const existingCall = callWindows.find(cw => cw.callNumber === callNumber || cw.call_window === callNumber)
+      
+      if (existingCall) {
+        return existingCall
+      }
+      
+      // Return placeholder for missing calls
+      return {
+        call_window: callNumber,
+        callNumber: callNumber,
+        window_start_at: '',
+        window_end_at: '',
+        created_at: '',
+        called_at: null,
+        called_out: null,
+        responseTimeMinutes: null,
+        medalTier: null,
+        isMissed: false,
+        isPlaceholder: true
+      } as CallWindow & { isPlaceholder: true }
+    })
+    
+    return calls
+  }, [callWindows])
+
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Call Windows</h3>
-      {callWindows && callWindows.length > 0 ? (
-        <div className="space-y-3">
-          {callWindows.map((window, index) => (
-            <div key={index} className="bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                    Window Start
+      
+      <div className="space-y-3">
+        {sortedCallWindows.map((window) => {
+          const isPlaceholder = 'isPlaceholder' in window && window.isPlaceholder
+          const isMissed = window.isMissed && !isPlaceholder
+          
+          return (
+            <div 
+              key={window.callNumber} 
+              className={`
+                rounded-lg p-4 border-2 transition-all duration-200
+                ${isMissed 
+                  ? 'bg-red-50 border-red-200 shadow-md ring-1 ring-red-300' 
+                  : isPlaceholder 
+                    ? 'bg-gray-50 border-gray-200 opacity-60' 
+                    : 'bg-white border-gray-200 hover:border-gray-300'
+                }
+              `}
+            >
+              {/* Call Number Header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <div className={`
+                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+                    ${isMissed 
+                      ? 'bg-red-600 text-white' 
+                      : isPlaceholder 
+                        ? 'bg-gray-300 text-gray-500' 
+                        : 'bg-purple-600 text-white'
+                    }
+                  `}>
+                    {window.callNumber}
                   </div>
-                  <div className="text-gray-900 font-medium text-sm">
-                    {formatCallWindowDate(window.window_start_at)}
-                  </div>
+                  {isMissed && (
+                    <div className="flex items-center space-x-1 text-red-600">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span className="text-sm font-medium">MISSED CALL</span>
+                    </div>
+                  )}
                 </div>
                 
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                    Window End
+                {/* Medal and Response Time */}
+                {!isPlaceholder && window.responseTimeMinutes !== null && (
+                  <div className="flex items-center space-x-2">
+                    {getMedalIcon(window.medalTier)}
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500">Response Time</div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatResponseTime(window.responseTimeMinutes)}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-gray-900 font-medium text-sm">
-                    {formatCallWindowDate(window.window_end_at)}
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                    Call Status
-                  </div>
-                  <div className="text-gray-900 font-medium text-sm">
-                    {window.called_at ? (
-                      <span className="inline-flex items-center">
-                        <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                        Called at {formatCallWindowDate(window.called_at)}
-                      </span>
-                    ) : window.called_out ? (
-                      <span className="inline-flex items-center">
-                        <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                        Called out at {formatCallWindowDate(window.called_out)}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center">
-                        <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
-                        Not called yet
-                      </span>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
+
+              {isPlaceholder ? (
+                <div className="text-center py-4">
+                  <Clock className="w-6 h-6 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500">Call window not scheduled</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Window Times */}
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Window Start
+                      </div>
+                      <div className="text-gray-900 font-medium text-sm">
+                        {formatTime(window.window_start_at)}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                        Window End
+                      </div>
+                      <div className="text-gray-900 font-medium text-sm">
+                        {formatTime(window.window_end_at)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Call Status */}
+                  <div>
+                    <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                      Call Status
+                    </div>
+                    <div className="text-gray-900 font-medium text-sm">
+                      {window.called_at ? (
+                        <span className="inline-flex items-center">
+                          <Phone className="w-4 h-4 text-green-500 mr-2" />
+                          <div>
+                            <div className="text-green-700 font-medium">Called</div>
+                            <div className="text-xs text-gray-600">
+                              {formatTime(window.called_at)}
+                            </div>
+                          </div>
+                        </span>
+                      ) : window.called_out ? (
+                        <span className="inline-flex items-center">
+                          <Phone className="w-4 h-4 text-orange-500 mr-2" />
+                          <div>
+                            <div className="text-orange-700 font-medium">Called Out</div>
+                            <div className="text-xs text-gray-600">
+                              {formatTime(window.called_out)}
+                            </div>
+                          </div>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center">
+                          <Clock className="w-4 h-4 text-gray-400 mr-2" />
+                          <span className={isMissed ? 'text-red-700 font-medium' : 'text-gray-600'}>
+                            {isMissed ? 'Not called' : 'Pending'}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-gray-50 rounded-lg p-6 text-center">
+          )
+        })}
+      </div>
+
+      {(!callWindows || callWindows.length === 0) && (
+        <div className="bg-gray-50 rounded-lg p-6 text-center mt-4">
           <div className="text-gray-400 mb-2">
-            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <Clock className="w-12 h-12 mx-auto" />
           </div>
           <p className="text-gray-500 text-sm">No call windows scheduled for this lead</p>
           <p className="text-gray-400 text-xs mt-1">Call windows will appear here when they are created</p>
