@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'
 import { LeadDetails, ApiResponse } from '@/types/leads'
 import { PropertyOverview } from '@/components/features/leads/PropertyOverview'
 import { useCompany } from '@/contexts/CompanyContext'
-import { ComponentLoading } from '@/components/LoadingSystem'
 
 const PropertyDetailsPage = () => {
   const params = useParams()
@@ -77,7 +76,7 @@ const PropertyDetailsPage = () => {
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center py-16">
-            <ComponentLoading message="Loading property details..." />
+            <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
           </div>
         </div>
       </div>

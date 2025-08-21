@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { LeadWithClient } from '@/types/leads'
 
 interface LeadsTableProps {
@@ -12,6 +13,7 @@ interface LeadsTableProps {
 
 export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-details' }: LeadsTableProps) {
   const router = useRouter()
+  const [navigatingId, setNavigatingId] = useState<string | null>(null)
 
   const getScoreColor = (score: number) => {
     if (score <= 33) return 'bg-red-500'
@@ -44,8 +46,13 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
     })
   }
 
-  const handleRowClick = (leadId: string) => {
-    router.push(`/${navigationTarget}/${leadId}`)
+  const handleRowClick = async (leadId: string) => {
+    setNavigatingId(leadId)
+    try {
+      await router.push(`/${navigationTarget}/${leadId}`)
+    } catch (error) {
+      setNavigatingId(null)
+    }
   }
 
 
@@ -86,9 +93,6 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
                   How Soon
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Service
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -101,29 +105,37 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
                 <tr 
                   key={lead.lead_id}
                   onClick={() => handleRowClick(lead.lead_id)}
-                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                  className={`hover:bg-gray-50 cursor-pointer transition-colors relative ${
+                    navigatingId === lead.lead_id ? 'bg-purple-50' : ''
+                  }`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div 
-                        className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3 ${getScoreColor(lead.score)}`}
-                      >
-                        {Math.round(lead.score)}
-                      </div>
+                      {navigatingId === lead.lead_id ? (
+                        <div className="h-8 w-8 rounded-full flex items-center justify-center mr-3">
+                          <div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
+                        </div>
+                      ) : (
+                        <div 
+                          className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3 ${getScoreColor(lead.score)}`}
+                        >
+                          {Math.round(lead.score)}
+                        </div>
+                      )}
                       <div>
                         <div className="text-sm font-medium text-gray-900">
                           {lead.first_name} {lead.last_name}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {lead.service || ''}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getHowSoonColor(lead.how_soon)}`}>
-                      {lead.how_soon}
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getHowSoonColor(lead.how_soon || 'Not specified')}`}>
+                      {lead.how_soon || 'Not specified'}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {lead.service || 'No service specified'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDateTime(lead.created_at)}

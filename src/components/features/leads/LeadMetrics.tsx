@@ -48,7 +48,7 @@ function LeadMetricsComponent({ metrics, isLoading, error }: LeadMetricsProps) {
         <div className="flex items-center">
           <Users className="w-8 h-8 text-blue-600" />
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Total Leads</p>
+            <p className="text-sm font-medium text-gray-600">Leads</p>
             <p className="text-2xl font-bold text-gray-900">{metrics.total}</p>
           </div>
         </div>
@@ -59,11 +59,11 @@ function LeadMetricsComponent({ metrics, isLoading, error }: LeadMetricsProps) {
         <div className="flex items-center">
           <Phone className="w-8 h-8 text-green-600" />
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-600">Contacted</p>
+            <p className="text-sm font-medium text-gray-600">Contact</p>
             <div className="flex items-baseline space-x-2">
               <p className="text-2xl font-bold text-gray-900">{metrics.contacted}</p>
-              <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                {metrics.contactRate.toFixed(1)}%
+              <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                {metrics.contactRate.toFixed(1)}% of total
               </span>
             </div>
           </div>
@@ -78,8 +78,8 @@ function LeadMetricsComponent({ metrics, isLoading, error }: LeadMetricsProps) {
             <p className="text-sm font-medium text-gray-600">Booked</p>
             <div className="flex items-baseline space-x-2">
               <p className="text-2xl font-bold text-gray-900">{metrics.booked}</p>
-              <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
-                {metrics.bookingRate.toFixed(1)}%
+              <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                {metrics.bookingRate.toFixed(1)}% of contact
               </span>
             </div>
           </div>

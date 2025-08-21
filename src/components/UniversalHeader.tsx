@@ -21,9 +21,8 @@ interface UniversalHeaderProps {
 const navigationItems: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'New Leads', href: '/new-leads' },
-  { name: 'Salesman', href: '/salesman' },
+  { name: 'Bookings', href: '/salesman' },
   { name: 'Incoming Calls', href: '/incoming-calls' },
-  { name: 'FB Analysis', href: '/fb-analysis' },
 ]
 
 export default function UniversalHeader({ 

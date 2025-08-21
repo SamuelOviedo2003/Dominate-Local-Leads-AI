@@ -67,11 +67,25 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
         {/* Appointment Setters - Centered */}
         <div className="flex justify-center">
           <div className="w-full max-w-md">
-            <AppointmentSetters 
-              setters={appointmentSetters}
-              isLoading={isLoading}
-              error={error}
-            />
+            {isLoading ? (
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
+                </div>
+              </div>
+            ) : error ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="text-red-600 text-sm">
+                  Error loading appointment setters: {error}
+                </div>
+              </div>
+            ) : (
+              <AppointmentSetters 
+                setters={appointmentSetters}
+                isLoading={false}
+                error={null}
+              />
+            )}
           </div>
         </div>
       </div>

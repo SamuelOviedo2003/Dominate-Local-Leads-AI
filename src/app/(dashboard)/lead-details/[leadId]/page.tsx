@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { LeadDetails, ApiResponse } from '@/types/leads'
 import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
+import { CallWindows } from '@/components/features/leads/CallWindows'
 import { useCompany } from '@/contexts/CompanyContext'
-import { ComponentLoading } from '@/components/LoadingSystem'
 
 const LeadDetailsPage = () => {
   const params = useParams()
@@ -78,7 +78,7 @@ const LeadDetailsPage = () => {
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center py-16">
-            <ComponentLoading message="Loading lead details..." />
+            <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
           </div>
         </div>
       </div>
@@ -164,14 +164,18 @@ const LeadDetailsPage = () => {
             <LeadInformation 
               lead={leadDetails.lead} 
               property={leadDetails.property}
-              callWindows={leadDetails.callWindows}
             />
           </div>
           
-          {/* Right column - Communications */}
+          {/* Right column - Call Windows */}
           <div className="lg:col-span-1">
-            <CommunicationsHistory communications={leadDetails.communications} />
+            <CallWindows callWindows={leadDetails.callWindows} />
           </div>
+        </div>
+
+        {/* Communications History - Full Width */}
+        <div className="mt-6">
+          <CommunicationsHistory communications={leadDetails.communications} />
         </div>
       </div>
     </div>

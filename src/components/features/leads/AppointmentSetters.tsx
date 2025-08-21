@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { ChevronUp, ChevronDown, User, Clock, Phone, CheckCircle } from 'lucide-react'
 import { AppointmentSetter } from '@/types/leads'
-import { ComponentLoading } from '@/components/LoadingSystem'
 
 interface AppointmentSettersProps {
   setters: AppointmentSetter[] | null
@@ -104,7 +103,7 @@ function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentS
       
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
-          <ComponentLoading message="Loading appointment setters..." />
+          <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
         </div>
       ) : setters && setters.length > 0 ? (
         <div className="flex-1 flex flex-col min-h-0">

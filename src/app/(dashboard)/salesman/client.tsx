@@ -130,7 +130,7 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
                 <div className="flex items-center">
                   <BarChart3 className="w-8 h-8 text-indigo-600" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Avg Order Value</p>
+                    <p className="text-xs font-medium text-gray-600">Avg Order Value</p>
                     <p className="text-2xl font-bold text-gray-900">
                       ${metrics.averageOrderValue.toLocaleString()}
                     </p>

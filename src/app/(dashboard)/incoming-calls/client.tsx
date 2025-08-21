@@ -255,61 +255,79 @@ export function IncomingCallsClient({ businessId, userRole }: IncomingCallsClien
           </div>
         </div>
 
-        {isLoading ? (
-          <LoadingSpinner />
-        ) : (
-          <>
-            {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Source Distribution Chart */}
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Phone className="w-5 h-5 mr-2 text-indigo-600" />
-                  Source Distribution
-                </h3>
-                <SimpleBarChart 
-                  data={sourceDistribution ? sourceDistribution.map(item => ({ name: item.source, value: item.count })) : []}
-                  title="Source Distribution"
-                />
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Source Distribution Chart */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Phone className="w-5 h-5 mr-2 text-indigo-600" />
+              Source Distribution
+            </h3>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
               </div>
+            ) : (
+              <SimpleBarChart 
+                data={sourceDistribution ? sourceDistribution.map(item => ({ name: item.source, value: item.count })) : []}
+                title="Source Distribution"
+              />
+            )}
+          </div>
 
-              {/* Caller Type Distribution Chart */}
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Users className="w-5 h-5 mr-2 text-indigo-600" />
-                  Caller Type Distribution
-                </h3>
-                <SimpleBarChart 
-                  data={callerTypeDistribution ? callerTypeDistribution.map(item => ({ name: item.caller_type, value: item.count })) : []}
-                  title="Caller Type Distribution"
-                />
+          {/* Caller Type Distribution Chart */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-indigo-600" />
+              Caller Type Distribution
+            </h3>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
               </div>
-            </div>
+            ) : (
+              <SimpleBarChart 
+                data={callerTypeDistribution ? callerTypeDistribution.map(item => ({ name: item.caller_type, value: item.count })) : []}
+                title="Caller Type Distribution"
+              />
+            )}
+          </div>
+        </div>
 
-            {/* Sankey Diagram */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center mb-4">
-                <TrendingUp className="w-5 h-5 mr-2 text-indigo-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Call Flow Analysis</h3>
-              </div>
-              <SankeyDiagram data={sankeyData || []} />
+        {/* Sankey Diagram */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex items-center mb-4">
+            <TrendingUp className="w-5 h-5 mr-2 text-indigo-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Call Flow Analysis</h3>
+          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
             </div>
+          ) : (
+            <SankeyDiagram data={sankeyData || []} />
+          )}
+        </div>
 
-            {/* Recent Calls Table */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
-                  <h3 className="text-lg font-semibold text-gray-900">Recent Calls</h3>
-                </div>
-                <span className="text-sm text-gray-500">
-                  Last {recentCalls?.length || 0} calls
-                </span>
-              </div>
-              <RecentCallsTable calls={recentCalls || []} />
+        {/* Recent Calls Table */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
+              <h3 className="text-lg font-semibold text-gray-900">Recent Calls</h3>
             </div>
-          </>
-        )}
+            <span className="text-sm text-gray-500">
+              Last {recentCalls?.length || 0} calls
+            </span>
+          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
+            </div>
+          ) : (
+            <RecentCallsTable calls={recentCalls || []} />
+          )}
+        </div>
       </div>
     </div>
   )
