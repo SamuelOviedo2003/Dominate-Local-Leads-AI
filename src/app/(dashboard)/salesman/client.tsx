@@ -5,7 +5,7 @@ import { TimePeriod } from '@/types/leads'
 import { useSalesmanData } from '@/hooks/useSalesmanData'
 import { TimePeriodFilter } from '@/components/features/leads/TimePeriodFilter'
 import { LeadsTable } from '@/components/features/leads/LeadsTable'
-import { TrendingUp, DollarSign, Target, Award, BarChart3 } from 'lucide-react'
+import { TrendingUp, DollarSign, Target, Award, BarChart3, Calendar } from 'lucide-react'
 import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
 
 interface SalesmanClientProps {
@@ -67,8 +67,8 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
         {/* Salesman Metrics */}
         <div className="mb-8">
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-              {[...Array(5)].map((_, i) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+              {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-white rounded-lg shadow-sm border p-6">
                   <div className="flex items-center justify-center py-8">
                     <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
@@ -83,7 +83,17 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
               </div>
             </div>
           ) : metrics ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <div className="flex items-center">
+                  <Calendar className="w-8 h-8 text-purple-600" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Booked</p>
+                    <p className="text-2xl font-bold text-gray-900">{metrics.booked}</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <div className="flex items-center">
                   <Target className="w-8 h-8 text-blue-600" />
@@ -118,7 +128,7 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
 
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <div className="flex items-center">
-                  <TrendingUp className="w-8 h-8 text-purple-600" />
+                  <TrendingUp className="w-8 h-8 text-orange-600" />
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Close Rate</p>
                     <p className="text-2xl font-bold text-gray-900">{metrics.closeRate}%</p>

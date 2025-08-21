@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
-import { SalesmanMetrics } from '@/types/leads'
+import { DashboardMetrics } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * GET /api/dashboard/platform-spend
+ * Fetches total platform spend from ad_spends table for dashboard metrics
+ * 
+ * Query Parameters:
+ * - startDate: ISO string for filtering ad spends created after this date
+ * - businessId: Business ID to filter ad spends
+ * 
+ * @param request - Next.js request object
+ * @returns Promise<NextResponse> - JSON response with platform spend data
+ */
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
@@ -47,40 +58,28 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Fetch leads data for salesman metrics
-    const { data: leads, error } = await supabase
-      .from('leads')
-      .select('lead_id, show, closed_amount, start_time, created_at')
+    // Fetch ad spends data for platform spend calculation
+    const { data: adSpends, error } = await supabase
+      .from('ad_spends')
+      .select('spend')
       .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
-      .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Database error:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch leads data' },
+        { error: 'Failed to fetch ad spends data' },
         { status: 500 }
       )
     }
 
-    // Calculate salesman metrics
-    const shows = leads.filter(lead => lead.show === true).length
-    const closes = leads.filter(lead => lead.closed_amount !== null && lead.closed_amount > 0).length
-    const booked = leads.filter(lead => lead.start_time !== null).length
-    const totalRevenue = leads.reduce((sum, lead) => {
-      return sum + (lead.closed_amount || 0)
+    // Calculate total platform spend
+    const totalPlatformSpend = adSpends.reduce((sum, spend) => {
+      return sum + (spend.spend || 0)
     }, 0)
-    
-    const closeRate = shows > 0 ? (closes / shows) * 100 : 0
-    const averageOrderValue = closes > 0 ? totalRevenue / closes : 0
 
-    const metrics: SalesmanMetrics = {
-      shows,
-      closes,
-      booked,
-      totalRevenue: Math.round(totalRevenue * 100) / 100,
-      closeRate: Math.round(closeRate * 100) / 100,
-      averageOrderValue: Math.round(averageOrderValue * 100) / 100
+    const metrics: DashboardMetrics = {
+      platformSpend: Math.round(totalPlatformSpend * 100) / 100
     }
 
     return NextResponse.json({

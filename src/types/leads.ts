@@ -152,6 +152,7 @@ export type MessageType = 'email' | 'sms' | 'call' | 'voicemail'
 export interface SalesmanMetrics {
   shows: number
   closes: number
+  booked: number
   totalRevenue: number
   closeRate: number
   averageOrderValue: number
@@ -179,4 +180,9 @@ export interface SalesmanAnalytics {
   performance: SalesmanPerformance[]
   trends: RevenueTrendData[]
   timePeriod: TimePeriod
+}
+
+// Dashboard Types
+export interface DashboardMetrics {
+  platformSpend: number
 }

@@ -84,33 +84,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get lead IDs for fetching most recent calls
-    const leadIds = leadsData.map(lead => lead.lead_id)
-
-    // Fetch the most recent call for each lead to get next_step
-    let callsData: any[] = []
-    if (leadIds.length > 0) {
-      const { data: fetchedCalls, error: callsError } = await supabase
-        .from('leads_calls')
-        .select('lead_id, next_step, created_at')
-        .in('lead_id', leadIds)
-        .order('created_at', { ascending: false })
-
-      if (callsError) {
-        console.error('Error fetching calls:', callsError)
-        // Continue without calls data rather than failing
-      } else {
-        callsData = fetchedCalls || []
-      }
-    }
-
-    // Create a map of lead_id to most recent next_step
-    const nextStepMap = new Map<number, string | null>()
-    callsData.forEach(call => {
-      if (!nextStepMap.has(call.lead_id)) {
-        nextStepMap.set(call.lead_id, call.next_step)
-      }
-    })
+    // No need to fetch calls data since next_step comes directly from leads table
 
     // Helper function to format datetime with hours and minutes
     const formatDateTimeWithTime = (dateString: string): string => {
@@ -124,8 +98,7 @@ export async function GET(request: NextRequest) {
       const { clients, ...lead } = leadData
       return {
         ...lead,
-        // Use next_step from leads_calls table, fallback to null if not available
-        next_step: nextStepMap.get(lead.lead_id) || null,
+        // next_step comes directly from leads table, no need to override
         created_at: formatDateTimeWithTime(lead.created_at),
         client: Array.isArray(clients) ? clients[0] : clients
       }

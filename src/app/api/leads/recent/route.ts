@@ -73,26 +73,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get lead IDs and account IDs for fetching most recent calls and call windows
-    const leadIds = leadsData.map(lead => lead.lead_id)
+    // Get account IDs for fetching call windows
     const accountIds = leadsData.map(lead => lead.account_id)
-
-    // Fetch the most recent call for each lead to get next_step
-    let callsData: any[] = []
-    if (leadIds.length > 0) {
-      const { data: fetchedCalls, error: callsError } = await supabase
-        .from('leads_calls')
-        .select('lead_id, next_step, created_at')
-        .in('lead_id', leadIds)
-        .order('created_at', { ascending: false })
-
-      if (callsError) {
-        console.error('Error fetching calls:', callsError)
-        // Continue without calls data rather than failing
-      } else {
-        callsData = fetchedCalls || []
-      }
-    }
 
     // Fetch call windows for each lead
     let callWindowsData: any[] = []
@@ -135,13 +117,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Create a map of lead_id to most recent next_step
-    const nextStepMap = new Map<number, string | null>()
-    callsData.forEach(call => {
-      if (!nextStepMap.has(call.lead_id)) {
-        nextStepMap.set(call.lead_id, call.next_step)
-      }
-    })
+    // No need to create next_step map since it comes directly from leads table
 
     // Create a map of account_id to call windows
     const callWindowsMap = new Map<string, any[]>()
@@ -169,8 +145,7 @@ export async function GET(request: NextRequest) {
       const { clients, ...lead } = leadData
       return {
         ...lead,
-        // Use next_step from leads_calls table, fallback to null if not available
-        next_step: nextStepMap.get(lead.lead_id) || null,
+        // next_step comes directly from leads table, no need to override
         created_at: formatDateTimeWithTime(lead.created_at),
         client: Array.isArray(clients) ? clients[0] : clients,
         // Include call windows for this lead's account

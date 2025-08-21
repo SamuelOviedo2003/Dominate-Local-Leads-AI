@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { TimePeriod } from '@/types/leads'
 import { useLeadsData } from '@/hooks/useLeadsData'
+import { useDashboardData } from '@/hooks/useDashboardData'
 import { 
   AppointmentSetters, 
   TimePeriodFilter 
 } from '@/components/features/leads'
 import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
+import { DollarSign } from 'lucide-react'
 
 interface DashboardClientProps {
   businessId: string
@@ -22,13 +24,30 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
   
   const {
     appointmentSetters,
-    isLoading,
-    error,
-    refetch
+    isLoading: leadsLoading,
+    error: leadsError,
+    refetch: refetchLeads
   } = useLeadsData({
     timePeriod,
     businessId: effectiveBusinessId
   })
+
+  const {
+    platformSpendMetrics,
+    isLoading: dashboardLoading,
+    error: dashboardError,
+    refetch: refetchDashboard
+  } = useDashboardData({
+    timePeriod,
+    businessId: effectiveBusinessId
+  })
+
+  const isLoading = leadsLoading || dashboardLoading
+  const error = leadsError || dashboardError
+  const refetch = () => {
+    refetchLeads()
+    refetchDashboard()
+  }
 
   return (
     <div className="p-6">
@@ -64,19 +83,57 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
           </div>
         )}
 
+        {/* Platform Spend Card */}
+        <div className="mb-8">
+          {isLoading ? (
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
+              </div>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="text-red-600 text-sm">
+                Error loading metrics: {error}
+              </div>
+            </div>
+          ) : platformSpendMetrics ? (
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center">
+                <DollarSign className="w-8 h-8 text-purple-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Platform Spend</p>
+                  <div className="flex items-baseline space-x-2">
+                    <p className="text-2xl font-bold text-gray-900">
+                      ${platformSpendMetrics.platformSpend.toLocaleString()}
+                    </p>
+                    <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
+                      last {timePeriod} days
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+              <div className="text-gray-500 text-center">No platform spend data available</div>
+            </div>
+          )}
+        </div>
+
         {/* Appointment Setters - Centered */}
         <div className="flex justify-center">
           <div className="w-full max-w-md">
-            {isLoading ? (
+            {leadsLoading ? (
               <div className="bg-white rounded-lg shadow-sm border p-6">
                 <div className="flex items-center justify-center py-8">
                   <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
                 </div>
               </div>
-            ) : error ? (
+            ) : leadsError ? (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="text-red-600 text-sm">
-                  Error loading appointment setters: {error}
+                  Error loading appointment setters: {leadsError}
                 </div>
               </div>
             ) : (
