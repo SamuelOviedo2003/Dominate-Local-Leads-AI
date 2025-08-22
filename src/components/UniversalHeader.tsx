@@ -91,20 +91,13 @@ export default function UniversalHeader({
     // Try multiple navigation methods for maximum compatibility
     try {
       // Method 1: Next.js router
-      console.log('[NAVIGATION] Trying router.push...')
       router.push(href)
     } catch (routerError) {
-      console.error('[NAVIGATION] Router error:', routerError)
-      
       try {
         // Method 2: Direct window navigation
-        console.log('[NAVIGATION] Trying window.location...')
         window.location.href = href
       } catch (windowError) {
-        console.error('[NAVIGATION] Window navigation error:', windowError)
-        
         // Method 3: Force page reload with new URL
-        console.log('[NAVIGATION] Force reload with new URL')
         window.location.replace(href)
       }
     }
@@ -113,14 +106,12 @@ export default function UniversalHeader({
   // Initialize fallback color extraction when no business data
   useEffect(() => {
     if (!user.businessData?.avatar_url) {
-      console.log('[UNIVERSAL HEADER] Initializing fallback logo color extraction')
       extractColors('/images/DominateLocalLeadsLogo.webp', 'main-logo')
     }
   }, [user.businessData?.avatar_url]) // Removed extractColors to prevent infinite loop
 
   // Handle color extraction from fallback main logo
   const handleFallbackColorsExtracted = (colors: ExtractedColors) => {
-    console.log('[UNIVERSAL HEADER] Fallback colors extracted:', colors)
     // Colors are automatically handled by the ImageWithFallback component
   }
 
@@ -175,13 +166,7 @@ export default function UniversalHeader({
               {navigationItems.map((item) => (
                 <button
                   key={item.name}
-                  onClick={(e) => {
-                    console.log('[NAVIGATION] Desktop button clicked:', item.name, item.href)
-                    handleNavigation(item.href, e)
-                  }}
-                  onMouseDown={(e) => {
-                    console.log('[NAVIGATION] Mouse down on:', item.name)
-                  }}
+                  onClick={(e) => handleNavigation(item.href, e)}
                   className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm touch-target cursor-pointer inline-block relative z-10 ${
                     isActiveLink(item.href)
                       ? 'bg-white/25 text-white shadow-lg border border-white/40 scale-105'
@@ -257,7 +242,6 @@ export default function UniversalHeader({
                 <button
                   key={item.name}
                   onClick={(e) => {
-                    console.log('[NAVIGATION] Mobile button clicked:', item.name, item.href)
                     handleNavigation(item.href, e)
                     setIsMobileMenuOpen(false)
                   }}

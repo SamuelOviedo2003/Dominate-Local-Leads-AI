@@ -87,30 +87,6 @@ function processCallWindows(rawData: any[], leadId: string): CallWindow[] {
     }
   })
   
-  // Log business metrics for monitoring
-  const call1Windows = processedWindows.filter(w => w.callNumber === 1)
-  const otherCallWindows = processedWindows.filter(w => w.callNumber !== 1)
-  const missedCallsCount = processedWindows.filter(w => !w.calledAt).length
-  const respondedCallsCount = processedWindows.filter(w => w.calledAt).length
-  
-  // Medal distribution for Call 1 only
-  const goldMedals = call1Windows.filter(w => 'medalTier' in w && w.medalTier === 'gold').length
-  const silverMedals = call1Windows.filter(w => 'medalTier' in w && w.medalTier === 'silver').length
-  const bronzeMedals = call1Windows.filter(w => 'medalTier' in w && w.medalTier === 'bronze').length
-  
-  console.log(`[SIMPLIFIED_CALL_WINDOWS] Lead ${leadId} call performance:`, {
-    totalActualCalls: processedWindows.length,
-    call1Count: call1Windows.length,
-    otherCallsCount: otherCallWindows.length,
-    missedCalls: missedCallsCount,
-    respondedCalls: respondedCallsCount,
-    call1Performance: {
-      gold: goldMedals,
-      silver: silverMedals, 
-      bronze: bronzeMedals,
-      noMedal: call1Windows.length - goldMedals - silverMedals - bronzeMedals
-    }
-  })
   
   return processedWindows
 }
@@ -211,7 +187,6 @@ export async function GET(request: NextRequest, context: RouteParams) {
     }
 
     // Fetch call windows with business logic implementation
-    console.log(`[INFO] Fetching call windows for account_id: ${lead.account_id}, business_id: ${requestedBusinessId}`)
     
     const { data: rawCallWindowsData, error: callWindowsError } = await supabase
       .from('call_windows')
@@ -235,14 +210,9 @@ export async function GET(request: NextRequest, context: RouteParams) {
       // Continue with empty call windows rather than failing the entire request
       callWindows = []
     } else if (rawCallWindowsData) {
-      console.log(`[INFO] Raw call windows data retrieved: ${rawCallWindowsData.length} records`)
-      
       // Apply business logic to process call windows
       callWindows = processCallWindows(rawCallWindowsData, lead.lead_id)
-      
-      console.log(`[INFO] Processed call windows: ${callWindows.length} records with business logic applied`)
     } else {
-      console.log(`[INFO] No call windows found for account_id: ${lead.account_id}`)
       callWindows = []
     }
 
@@ -254,20 +224,6 @@ export async function GET(request: NextRequest, context: RouteParams) {
       callWindows
     }
 
-    console.log(`[INFO] Final response for lead ${leadId}:`, {
-      leadId: lead.lead_id,
-      accountId: lead.account_id,
-      callWindowsCount: callWindows.length,
-      simplifiedStructure: {
-        hasMissedCalls: callWindows.some(w => !w.calledAt),
-        hasCall1: callWindows.some(w => w.callNumber === 1),
-        medalDistribution: {
-          gold: callWindows.filter(w => 'medalTier' in w && w.medalTier === 'gold').length,
-          silver: callWindows.filter(w => 'medalTier' in w && w.medalTier === 'silver').length,
-          bronze: callWindows.filter(w => 'medalTier' in w && w.medalTier === 'bronze').length
-        }
-      }
-    })
 
     return NextResponse.json({
       data: leadDetails,

@@ -90,14 +90,12 @@ export default function ImageWithFallback({
       referrer: typeof window !== 'undefined' ? window.document.referrer : 'Unknown'
     }
     
-    console.warn('[IMAGE] Load error:', errorDetails)
     
     // Try image proxy as fallback for external images (Google Maps, etc.)
     const isExternalImage = src.includes('maps.googleapis.com') || src.includes('maps.google.com')
     const isDirectLoad = currentSrc === src
     
     if (isExternalImage && isDirectLoad && retryAttempt === 0) {
-      console.log('[IMAGE] Attempting to load via proxy:', src)
       const proxiedUrl = `/api/image-proxy?url=${encodeURIComponent(src)}`
       setCurrentSrc(proxiedUrl)
       setRetryAttempt(1)
@@ -147,12 +145,7 @@ export default function ImageWithFallback({
       extractionAbortController.current = new AbortController()
 
       try {
-        console.log('[IMAGE] Starting color extraction for:', src)
-        
         // Color extraction will be handled by the theme context automatically
-        console.debug('[IMAGE] Color extraction handled by theme context')
-        
-        console.log('[IMAGE] Color extraction completed for:', src)
         
         // If there's a callback, we could call it here, but the theme context
         // already handles the color application

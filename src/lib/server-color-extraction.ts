@@ -15,7 +15,6 @@ export class ServerColorExtractor {
       // TODO: Implement actual server-side color extraction
       // This requires proper DOM environment setup for ColorThief
       
-      console.log('[SERVER EXTRACTION] Processing image:', imageUrl)
       
       // Return default colors for now
       const defaultColors: ExtractedColors = {

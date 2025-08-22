@@ -79,7 +79,6 @@ export async function GET(request: NextRequest) {
     // Fetch call windows for each lead
     let callWindowsData: any[] = []
     if (accountIds.length > 0) {
-      console.log(`[DEBUG] Fetching call windows for ${accountIds.length} accounts, business_id: ${requestedBusinessId}`)
       
       const { data: fetchedCallWindows, error: callWindowsError } = await supabase
         .from('call_windows')
@@ -88,25 +87,9 @@ export async function GET(request: NextRequest) {
         .eq('business_id', requestedBusinessId)
         .order('window_start_at', { ascending: true })
 
-      console.log(`[DEBUG] Call windows bulk query result:`, {
-        accountIdsCount: accountIds.length,
-        dataLength: fetchedCallWindows?.length || 0,
-        error: callWindowsError,
-        errorDetails: callWindowsError ? {
-          message: callWindowsError.message,
-          code: callWindowsError.code,
-          hint: callWindowsError.hint
-        } : null
-      })
 
       if (callWindowsError) {
-        console.error('Error fetching call windows:', {
-          error: callWindowsError,
-          accountIdsCount: accountIds.length,
-          businessId: requestedBusinessId
-        })
-        
-        // Check if this is an RLS policy error
+        // Log RLS policy errors for debugging
         if (callWindowsError.code === '42501' || callWindowsError.message?.includes('policy')) {
           console.error('RLS Policy Error: User cannot access call_windows table. Check RLS policies.')
         }

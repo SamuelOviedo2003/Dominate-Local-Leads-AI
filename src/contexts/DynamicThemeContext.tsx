@@ -174,9 +174,7 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
     if (!state.isInitialized) {
       warmUpColorExtraction().then(() => {
         dispatch({ type: 'INITIALIZE' })
-        console.log('[THEME] Color extraction system initialized')
       }).catch(error => {
-        console.warn('[THEME] Failed to initialize color extraction system:', error)
         dispatch({ type: 'INITIALIZE' }) // Initialize anyway
       })
     }
@@ -194,18 +192,15 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
     const extractionKey = `${logoUrl}:${businessId}`
     const startTime = performance.now()
     
-    console.log('[THEME] Starting color extraction:', { logoUrl, businessId, priority, currentLogoUrl: state.currentLogoUrl, currentBusinessId: state.businessId })
     
     try {
       // Skip if already processing the same logo and business and no errors
       if (state.currentLogoUrl === logoUrl && state.businessId === businessId && !state.error) {
-        console.log('[THEME] Skipping extraction - already processed:', { logoUrl, businessId })
         return
       }
 
       // Check if already in queue
       if (state.extractionQueue.has(extractionKey)) {
-        console.log('[THEME] Already processing extraction for:', extractionKey)
         return
       }
 
@@ -218,13 +213,11 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
       }
 
       dispatch({ type: 'SET_LOADING', payload: true })
-      console.log('[THEME] Set loading state to true')
 
       // Check cache first (optimized cache lookup)
       const cachedColors = await getCachedColors(logoUrl, businessId)
       if (cachedColors) {
         const extractionTime = performance.now() - startTime
-        console.log('[THEME] Using cached colors:', cachedColors)
         
         dispatch({ 
           type: 'SET_COLORS', 
@@ -239,7 +232,6 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
         return
       }
 
-      console.log('[THEME] Cache miss, extracting colors from image...')
       
       // Extract colors with enhanced options
       const extractedColors = await extractColorsFromImage(logoUrl, {
@@ -252,7 +244,6 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
       })
       
       const extractionTime = performance.now() - startTime
-      console.log('[THEME] Colors extracted successfully in', extractionTime.toFixed(2), 'ms:', extractedColors)
 
       // Always apply colors from successful extraction
       // The extraction queue already handles preventing duplicate requests
@@ -260,7 +251,6 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
         type: 'SET_COLORS', 
         payload: { colors: extractedColors, logoUrl, businessId, extractionTime } 
       })
-      console.log('[THEME] Colors applied to theme state for business:', businessId)
 
     } catch (error) {
       console.error('[THEME] Failed to extract colors:', error)
@@ -296,16 +286,13 @@ export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
   const warmUp = useCallback(async (imageUrls: string[] = []) => {
     try {
       await warmUpColorExtraction(imageUrls)
-      console.log('[THEME] System warm-up completed')
     } catch (error) {
-      console.warn('[THEME] System warm-up failed:', error)
     }
   }, [])
 
   // Cleanup system resources
   const cleanup = useCallback(() => {
     cleanupColorExtraction()
-    console.log('[THEME] System cleanup completed')
   }, [])
 
   // Apply CSS custom properties for dynamic theming

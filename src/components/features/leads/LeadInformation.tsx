@@ -112,7 +112,7 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
 
   const handleQuickAction = useCallback((action: string) => {
     // In a real implementation, this would trigger the appropriate action
-    console.log(`Quick action triggered: ${action} for lead ${lead.lead_id}`)
+    // Quick action logic would be implemented here
     // Example: window.location.href = `tel:${lead.phone}`
   }, [lead])
 

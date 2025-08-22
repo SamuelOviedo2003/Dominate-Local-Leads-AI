@@ -30,14 +30,12 @@ export function useEnhancedCompanySwitching(): UseCompanySwitchingReturn {
       // Step 1: Preload colors for the target company BEFORE switching
       if (targetCompany.avatar_url) {
         try {
-          console.log('[ENHANCED SWITCHING] Preloading colors for:', companyId)
           await preloadColors([targetCompany.avatar_url], {
             businessId: companyId,
             priority: 10, // High priority
             batchSize: 1
           })
         } catch (colorError) {
-          console.warn('[ENHANCED SWITCHING] Color preload failed:', colorError)
           // Continue with switch even if color preload fails
         }
       }
@@ -69,7 +67,6 @@ export function useEnhancedCompanySwitching(): UseCompanySwitchingReturn {
             const extractedColors = await extractColors(targetCompany.avatar_url, companyId)
             // Colors are automatically cached by the extraction system
           } catch (extractionError) {
-            console.warn('[ENHANCED SWITCHING] Color extraction failed:', extractionError)
           }
         }
         
@@ -107,15 +104,12 @@ export async function preloadAllBusinessColors(businesses: BusinessSwitcherData[
   if (imageUrls.length === 0) return
 
   try {
-    console.log('[BUSINESS PRELOAD] Preloading colors for', imageUrls.length, 'businesses')
     
     await preloadColors(imageUrls, {
       priority: -1, // Low priority background preloading
       batchSize: 2 // Process 2 at a time to avoid overwhelming
     })
     
-    console.log('[BUSINESS PRELOAD] Completed preloading business colors')
   } catch (error) {
-    console.warn('[BUSINESS PRELOAD] Failed to preload business colors:', error)
   }
 }
