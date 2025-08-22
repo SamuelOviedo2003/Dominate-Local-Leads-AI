@@ -71,10 +71,10 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
 
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
+    <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col w-full">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Call Windows</h3>
       
-      <div className="overflow-y-auto space-y-4 pr-2" style={{ height: '480px', maxHeight: '480px' }}>
+      <div className="overflow-y-auto space-y-3 pr-2 flex-1">
         {sortedCallWindows.map((window) => {
           const isCall1 = window.callNumber === 1
           const isNoCaller = !window.calledAt && (window.status === 'No call' || !window.status)
@@ -82,79 +82,45 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
           return (
             <div 
               key={window.callNumber} 
-              className="bg-white rounded-lg p-6 border-2 border-gray-200 hover:border-gray-300 transition-all duration-200 min-h-[200px]"
+              className="bg-white rounded-lg p-4 border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200"
             >
-              {/* Call Number Header */}
-              <div className="flex items-center justify-between mb-6">
+              {/* Call Number with Medal and Info */}
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 rounded-full bg-purple-600 text-white flex items-center justify-center text-lg font-bold">
+                  <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold">
                     {window.callNumber}
                   </div>
-                  <div className="text-xl font-semibold text-gray-900">
-                    Call {window.callNumber}
-                  </div>
+                  
+                  {/* Medal for Call 1 */}
+                  {isCall1 && window.medalTier && (
+                    <div className="flex items-center">
+                      {getMedalIcon(window.medalTier)}
+                    </div>
+                  )}
                 </div>
                 
-                {/* Medal for Call 1 */}
-                {isCall1 && window.medalTier && (
-                  <div className="flex items-center space-x-2">
-                    {getMedalIcon(window.medalTier)}
-                  </div>
-                )}
-              </div>
-
-              {/* Call Content */}
-              <div className="space-y-6">
-                {isCall1 ? (
-                  /* Call 1 - Show response time */
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                        Response Time
-                      </div>
-                      <div className="text-lg font-medium text-gray-900">
-                        {window.responseTime || 'N/A'}
-                      </div>
+                {/* Main Content */}
+                <div className="flex-1 text-right">
+                  {isCall1 ? (
+                    /* Call 1 - Show only response time */
+                    <div className="text-lg font-semibold text-purple-600">
+                      {window.responseTime || 'N/A'}
                     </div>
-                    {window.calledAt && (
-                      <div>
-                        <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                          Called At
-                        </div>
-                        <div className="text-lg font-medium text-gray-900">
+                  ) : (
+                    /* Calls 2-6 - Show timestamp or "Not called" */
+                    <div className="text-sm">
+                      {window.calledAt ? (
+                        <div className="text-green-700 font-medium">
                           {formatTime(window.calledAt)}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  /* Calls 2-6 - Show call status */
-                  <div>
-                    <div className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                      Call Status
-                    </div>
-                    <div className="text-lg font-medium">
-                      {window.calledAt ? (
-                        <div className="flex items-center space-x-2">
-                          <Phone className="w-5 h-5 text-green-500" />
-                          <div>
-                            <div className="text-green-700 font-medium">Called</div>
-                            <div className="text-sm text-gray-600 mt-1">
-                              {formatTime(window.calledAt)}
-                            </div>
-                          </div>
-                        </div>
                       ) : (
-                        <div className="flex items-center space-x-2">
-                          <Clock className="w-5 h-5 text-gray-400" />
-                          <span className="text-gray-600">
-                            {window.status === 'No call' || isNoCaller ? 'No call' : 'Pending'}
-                          </span>
-                        </div>
+                        <span className="text-gray-500">
+                          Not called
+                        </span>
                       )}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           )
@@ -162,12 +128,12 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
       </div>
 
       {(!callWindows || callWindows.length === 0) && (
-        <div className="bg-gray-50 rounded-lg p-6 text-center mt-4">
+        <div className="bg-gray-50 rounded-lg p-4 text-center flex-1 flex flex-col items-center justify-center">
           <div className="text-gray-400 mb-2">
-            <Clock className="w-12 h-12 mx-auto" />
+            <Clock className="w-8 h-8 mx-auto" />
           </div>
-          <p className="text-gray-500 text-sm">No call windows scheduled for this lead</p>
-          <p className="text-gray-400 text-xs mt-1">Call windows will appear here when they are created</p>
+          <p className="text-gray-500 text-sm">No call windows scheduled</p>
+          <p className="text-gray-400 text-xs mt-1">Call windows will appear when created</p>
         </div>
       )}
     </div>

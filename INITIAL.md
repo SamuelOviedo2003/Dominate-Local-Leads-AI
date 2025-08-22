@@ -9,7 +9,7 @@
 - [New Leads](#new-leads)
 - [Lead Details](#lead-details)
 - [Incoming Calls](#incoming-calls)
-- [Salesman](#salesman)
+- [Bookings](#bookings)
 - [FB Analysis](#fb-analysis)
 - [Settings](#settings)
 - [Loading System](#loading-system)
@@ -366,27 +366,28 @@ ORDER BY created_at ASC;
 - **Requirement**: Must include back navigation to New Leads
 - **Requirement**: Communications must expand vertically (no internal scroll)
 
-#### Call Windows UI Requirements
-- **Requirement**: Must display call windows in numbered sequence (1-6) with visual call indicators
-- **Requirement**: Must use color-coded design patterns:
-  - Red borders and backgrounds for missed calls with AlertTriangle icons
-  - White backgrounds with purple accents for successful calls
-  - Gray backgrounds with reduced opacity for placeholder/unscheduled calls
-- **Requirement**: Must show medal icons (🥇🥈🥉) prominently for performance recognition
+#### Call Windows UI Requirements (Simplified and Modern)
+- **Requirement**: Must display only essential call information without redundant labels
+- **Requirement**: Must show call numbers in circles without additional "Call X" text
+- **Requirement**: Must remove all caps labels (RESPONSE TIME, CALLED AT, CALL STATUS)
+- **Requirement**: Must display Call 1 with number, medal, and response time value only
+- **Requirement**: Must display Calls 2-6 with number and status ("Not called" or exact timestamp)
+- **Requirement**: Must use "Not called" instead of "No call" for better language clarity
+- **Requirement**: Must show medal icons (🥇🥈🥉) prominently for Call 1 performance recognition
 - **Requirement**: Must display response times in user-friendly format (< 1 min, 5 min, 1h 30m)
-- **Requirement**: Must include hover tooltips explaining medal criteria
-- **Requirement**: Must provide clear visual hierarchy with call numbers in colored circles
+- **Requirement**: Must use clean card design with subtle borders and hover effects
+- **Requirement**: Must provide clear visual hierarchy through layout and spacing
 - **Requirement**: Must be responsive across desktop and mobile layouts
 
 #### Symmetrical Layout Requirements (Enhanced)
 - **Requirement**: Must implement perfect symmetrical layout with Lead Info card (left) and Call Windows (right)
-- **Requirement**: Lead Info card must match exact height of Call Windows container (480px)
-- **Requirement**: Call Windows must show exactly 2 complete windows without partial rendering of additional items
-- **Requirement**: Must use enhanced Call Windows elements with larger padding (`p-6`), improved typography (`text-base`)
-- **Requirement**: Must include larger call number icons (`w-10 h-10`) and enhanced spacing (`space-y-4`)
-- **Requirement**: Call Windows individual items must use minimum height of 200px for proper visual balance
-- **Requirement**: Must maintain scrolling functionality to access all 6 call windows
-- **Requirement**: Must ensure text containment in Lead Info card without overflow (proper wrapping, truncation)
+- **Requirement**: Must use 75/25 width ratio (Lead Info takes majority of space, Call Windows compact)
+- **Requirement**: Lead Info card must match exact height of Call Windows container (540px)
+- **Requirement**: Must ensure perfect height symmetry with no empty space at bottom
+- **Requirement**: Must use compact design with efficient use of space
+- **Requirement**: Must maintain scrolling functionality for Call Windows
+- **Requirement**: Must ensure text containment in Lead Info card without overflow
+- **Requirement**: Must align Call Windows right edge with Communications section below
 
 #### Component-Level Loading States
 - **Requirement**: Must implement individual loading states for Lead Information, Call Windows, and Communications

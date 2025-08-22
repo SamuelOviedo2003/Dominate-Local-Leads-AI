@@ -84,9 +84,9 @@ const LeadDetailsPage = () => {
 
 
         {/* Top Section: Lead Info + Call Windows */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Left column - Lead Information (auto height with min constraint) */}
-          <div className="min-h-[480px]">
+        <div className="flex flex-col lg:flex-row gap-6 mb-6">
+          {/* Left section - Lead Information (70-75% width) */}
+          <div className="flex-1 lg:flex-[3] min-h-[540px] h-[540px]">
             <LeadInformation 
               lead={leadDetails?.lead || null}
               property={leadDetails?.property || null}
@@ -95,8 +95,8 @@ const LeadDetailsPage = () => {
             />
           </div>
           
-          {/* Right column - Call Windows (exact height for 2 items) */}
-          <div className="h-[480px]">
+          {/* Right section - Call Windows (25-30% width) */}
+          <div className="lg:flex-1 lg:max-w-[320px] h-[540px]">
             <CallWindows 
               callWindows={leadDetails?.callWindows || null}
               isLoading={isCallWindowsLoading}
