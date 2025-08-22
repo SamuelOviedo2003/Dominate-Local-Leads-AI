@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { DashboardMetrics, TimePeriod, ApiResponse } from '@/types/leads'
+import { EnhancedDashboardMetrics, TimePeriod, ApiResponse } from '@/types/leads'
 
 interface UseDashboardDataProps {
   timePeriod: TimePeriod
@@ -9,14 +9,14 @@ interface UseDashboardDataProps {
 }
 
 interface UseDashboardDataReturn {
-  platformSpendMetrics: DashboardMetrics | null
+  platformSpendMetrics: EnhancedDashboardMetrics | null
   isLoading: boolean
   error: string | null
   refetch: () => void
 }
 
 export function useDashboardData({ timePeriod, businessId }: UseDashboardDataProps): UseDashboardDataReturn {
-  const [platformSpendMetrics, setPlatformSpendMetrics] = useState<DashboardMetrics | null>(null)
+  const [platformSpendMetrics, setPlatformSpendMetrics] = useState<EnhancedDashboardMetrics | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,7 +46,7 @@ export function useDashboardData({ timePeriod, businessId }: UseDashboardDataPro
         throw new Error(`HTTP error! status: ${platformSpendRes.status}`)
       }
 
-      const platformSpendData: ApiResponse<DashboardMetrics> = await platformSpendRes.json()
+      const platformSpendData: ApiResponse<EnhancedDashboardMetrics> = await platformSpendRes.json()
 
       if (!platformSpendData.success) {
         throw new Error(platformSpendData.error || 'Failed to fetch platform spend data')

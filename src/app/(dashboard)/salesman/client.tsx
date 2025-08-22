@@ -40,8 +40,8 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Salesman Dashboard</h1>
-            <p className="text-gray-600 mt-2">Track sales performance and revenue metrics</p>
+            <h1 className="text-3xl font-bold text-gray-900">Bookings</h1>
+            <p className="text-gray-600 mt-2">Track appointment shows, closes, and revenue metrics</p>
           </div>
           
           {/* Time Period Filter */}
@@ -111,7 +111,12 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
                   <Target className="w-8 h-8 text-blue-600" />
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Shows</p>
-                    <p className="text-2xl font-bold text-gray-900">{metrics.shows}</p>
+                    <div className="flex items-baseline space-x-2">
+                      <p className="text-2xl font-bold text-gray-900">{metrics.shows}</p>
+                      <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
+                        {metrics.showsPercentage.toFixed(1)}% of booked
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -121,7 +126,12 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
                   <Award className="w-8 h-8 text-green-600" />
                   <div className="ml-4">
                     <p className="text-sm font-medium text-gray-600">Closes</p>
-                    <p className="text-2xl font-bold text-gray-900">{metrics.closes}</p>
+                    <div className="flex items-baseline space-x-2">
+                      <p className="text-2xl font-bold text-gray-900">{metrics.closes}</p>
+                      <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                        {metrics.closesPercentage.toFixed(1)}% of shows
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -10,105 +10,106 @@ interface RouteParams {
 }
 
 /**
- * Process call windows with business logic implementation
- * Implements all required business rules for call tracking
+ * Format response time in minutes to human-readable string
+ */
+function formatResponseTime(minutes: number): string {
+  if (minutes < 1) {
+    return '< 1 min'
+  } else if (minutes < 60) {
+    return `${Math.round(minutes)} min`
+  } else {
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = Math.round(minutes % 60)
+    if (remainingMinutes === 0) {
+      return `${hours}h`
+    }
+    return `${hours}h ${remainingMinutes}m`
+  }
+}
+
+/**
+ * Process call windows with simplified structure
+ * Only returns actual scheduled/made calls, filters out empty placeholders
  */
 function processCallWindows(rawData: any[], leadId: string): CallWindow[] {
+  // Filter out unscheduled call windows (ones without created_at or that are just placeholders)
+  const actualCalls = rawData.filter(window => 
+    window.created_at && 
+    window.call_window && 
+    window.call_window >= 1 && 
+    window.call_window <= 6
+  )
+  
   // Sort by call_window number (1-6) to ensure proper ordering
-  const sortedData = rawData.sort((a, b) => (a.call_window || 0) - (b.call_window || 0))
+  const sortedData = actualCalls.sort((a, b) => (a.call_window || 0) - (b.call_window || 0))
   
   const processedWindows: CallWindow[] = sortedData.map(window => {
-    // Calculate response time if both timestamps are available
-    let responseTimeMinutes: number | null = null
-    if (window.created_at && window.called_at) {
-      const createdTime = new Date(window.created_at).getTime()
-      const calledTime = new Date(window.called_at).getTime()
-      const diffMs = calledTime - createdTime
-      responseTimeMinutes = Math.max(0, diffMs / (1000 * 60)) // Convert to minutes, ensure non-negative
-    }
+    const callNumber = window.call_window
+    const calledAt = window.called_at
     
-    // Determine medal tier based on response time
-    let medalTier: 'gold' | 'silver' | 'bronze' | null = null
-    if (responseTimeMinutes !== null) {
-      if (responseTimeMinutes < 1) {
-        medalTier = 'gold' // < 1 minute = Gold
-      } else if (responseTimeMinutes < 2) {
-        medalTier = 'silver' // 1-2 minutes = Silver  
-      } else if (responseTimeMinutes < 5) {
-        medalTier = 'bronze' // 2-5 minutes = Bronze
-      }
-      // >= 5 minutes = No medal (null)
-    }
-    
-    // Check if call was missed (called_at is null)
-    const isMissed = !window.called_at
-    
-    // Ensure call_window number is available, fallback to index + 1
-    const callNumber = window.call_window || 1
-    
-    return {
-      // Database fields
-      call_window: window.call_window || 1,
-      window_start_at: window.window_start_at,
-      window_end_at: window.window_end_at,
-      created_at: window.created_at,
-      called_at: window.called_at,
-      called_out: window.called_out,
-      business_id: window.business_id,
-      account_id: window.account_id,
+    if (callNumber === 1) {
+      // Special processing for Call 1 - include medal tier and response time
+      let responseTimeMinutes: number | null = null
+      let medalTier: 'gold' | 'silver' | 'bronze' | null = null
       
-      // Business logic calculated fields
-      responseTimeMinutes,
-      medalTier,
-      isMissed,
-      callNumber
+      if (window.created_at && window.called_at) {
+        const createdTime = new Date(window.created_at).getTime()
+        const calledTime = new Date(window.called_at).getTime()
+        const diffMs = calledTime - createdTime
+        responseTimeMinutes = Math.max(0, diffMs / (1000 * 60)) // Convert to minutes, ensure non-negative
+        
+        // Determine medal tier based on response time
+        if (responseTimeMinutes < 1) {
+          medalTier = 'gold' // < 1 minute = Gold
+        } else if (responseTimeMinutes < 2) {
+          medalTier = 'silver' // 1-2 minutes = Silver  
+        } else if (responseTimeMinutes < 5) {
+          medalTier = 'bronze' // 2-5 minutes = Bronze
+        }
+        // >= 5 minutes = No medal (null)
+      }
+      
+      return {
+        callNumber: callNumber as 1,
+        medalTier,
+        responseTime: responseTimeMinutes !== null ? formatResponseTime(responseTimeMinutes) : undefined,
+        calledAt
+      }
+    } else {
+      // Processing for Calls 2-6 - show call status and time
+      const status = calledAt ? 'called' : 'No call'
+      
+      return {
+        callNumber,
+        status,
+        calledAt
+      }
     }
   })
   
-  // Validate business rule: Each lead should have exactly 6 calls
-  const expectedCalls = [1, 2, 3, 4, 5, 6]
-  const presentCalls = processedWindows.map(w => w.call_window)
-  const missingCalls = expectedCalls.filter(num => !presentCalls.includes(num))
-  
-  if (missingCalls.length > 0) {
-    console.warn(`[BUSINESS_RULE_WARNING] Lead ${leadId} is missing call windows:`, {
-      expectedCalls,
-      presentCalls,
-      missingCalls,
-      totalFound: processedWindows.length,
-      expectedTotal: 6
-    })
-  }
-  
-  if (processedWindows.length > 6) {
-    console.warn(`[BUSINESS_RULE_WARNING] Lead ${leadId} has more than 6 call windows:`, {
-      totalFound: processedWindows.length,
-      expectedTotal: 6
-    })
-  }
-  
   // Log business metrics for monitoring
-  const missedCallsCount = processedWindows.filter(w => w.isMissed).length
-  const respondedCallsCount = processedWindows.filter(w => !w.isMissed).length
-  const goldMedals = processedWindows.filter(w => w.medalTier === 'gold').length
-  const silverMedals = processedWindows.filter(w => w.medalTier === 'silver').length
-  const bronzeMedals = processedWindows.filter(w => w.medalTier === 'bronze').length
+  const call1Windows = processedWindows.filter(w => w.callNumber === 1)
+  const otherCallWindows = processedWindows.filter(w => w.callNumber !== 1)
+  const missedCallsCount = processedWindows.filter(w => !w.calledAt).length
+  const respondedCallsCount = processedWindows.filter(w => w.calledAt).length
   
-  console.log(`[BUSINESS_METRICS] Lead ${leadId} call performance:`, {
-    totalCalls: processedWindows.length,
+  // Medal distribution for Call 1 only
+  const goldMedals = call1Windows.filter(w => 'medalTier' in w && w.medalTier === 'gold').length
+  const silverMedals = call1Windows.filter(w => 'medalTier' in w && w.medalTier === 'silver').length
+  const bronzeMedals = call1Windows.filter(w => 'medalTier' in w && w.medalTier === 'bronze').length
+  
+  console.log(`[SIMPLIFIED_CALL_WINDOWS] Lead ${leadId} call performance:`, {
+    totalActualCalls: processedWindows.length,
+    call1Count: call1Windows.length,
+    otherCallsCount: otherCallWindows.length,
     missedCalls: missedCallsCount,
     respondedCalls: respondedCallsCount,
-    performance: {
+    call1Performance: {
       gold: goldMedals,
       silver: silverMedals, 
       bronze: bronzeMedals,
-      noMedal: respondedCallsCount - goldMedals - silverMedals - bronzeMedals
-    },
-    averageResponseTime: respondedCallsCount > 0 ? 
-      processedWindows
-        .filter(w => w.responseTimeMinutes !== null)
-        .reduce((sum, w) => sum + (w.responseTimeMinutes || 0), 0) / respondedCallsCount 
-      : null
+      noMedal: call1Windows.length - goldMedals - silverMedals - bronzeMedals
+    }
   })
   
   return processedWindows
@@ -257,19 +258,20 @@ export async function GET(request: NextRequest, context: RouteParams) {
       leadId: lead.lead_id,
       accountId: lead.account_id,
       callWindowsCount: callWindows.length,
-      businessLogicApplied: {
-        hasMissedCalls: callWindows.some(w => w.isMissed),
-        hasResponseTimes: callWindows.some(w => w.responseTimeMinutes !== null),
+      simplifiedStructure: {
+        hasMissedCalls: callWindows.some(w => !w.calledAt),
+        hasCall1: callWindows.some(w => w.callNumber === 1),
         medalDistribution: {
-          gold: callWindows.filter(w => w.medalTier === 'gold').length,
-          silver: callWindows.filter(w => w.medalTier === 'silver').length,
-          bronze: callWindows.filter(w => w.medalTier === 'bronze').length
+          gold: callWindows.filter(w => 'medalTier' in w && w.medalTier === 'gold').length,
+          silver: callWindows.filter(w => 'medalTier' in w && w.medalTier === 'silver').length,
+          bronze: callWindows.filter(w => 'medalTier' in w && w.medalTier === 'bronze').length
         }
       }
     })
 
     return NextResponse.json({
       data: leadDetails,
+      callWindows: callWindows,
       success: true
     })
 

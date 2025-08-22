@@ -8,8 +8,8 @@ import {
   AppointmentSetters, 
   TimePeriodFilter 
 } from '@/components/features/leads'
+import { PlatformSpendCard } from '@/components/features/dashboard/PlatformSpendCard'
 import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
-import { DollarSign } from 'lucide-react'
 
 interface DashboardClientProps {
   businessId: string
@@ -98,22 +98,10 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
               </div>
             </div>
           ) : platformSpendMetrics ? (
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center">
-                <DollarSign className="w-8 h-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Platform Spend</p>
-                  <div className="flex items-baseline space-x-2">
-                    <p className="text-2xl font-bold text-gray-900">
-                      ${platformSpendMetrics.platformSpend.toLocaleString()}
-                    </p>
-                    <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
-                      last {timePeriod} days
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PlatformSpendCard 
+              platformSpendMetrics={platformSpendMetrics}
+              timePeriod={timePeriod}
+            />
           ) : (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
               <div className="text-gray-500 text-center">No platform spend data available</div>

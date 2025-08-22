@@ -131,21 +131,11 @@ export interface PropertyInfo {
 }
 
 export interface CallWindow {
-  // Database fields
-  call_window: number // 1-6 indicating call number
-  window_start_at: string
-  window_end_at: string  
-  created_at: string
-  called_at: string | null
-  called_out: string | null
-  business_id?: string
-  account_id?: string
-  
-  // Business logic calculated fields
-  responseTimeMinutes: number | null // Duration between created_at and called_at
-  medalTier: 'gold' | 'silver' | 'bronze' | null // Performance tier based on response time
-  isMissed: boolean // True if called_at is null
-  callNumber: number // Same as call_window, but ensures it's always present
+  callNumber: number // Call number (1-6)
+  medalTier?: 'gold' | 'silver' | 'bronze' | null // For Call 1 only
+  responseTime?: string // For Call 1 only - human-readable format
+  status?: 'No call' | 'called' // For calls 2-6
+  calledAt: string | null // Exact timestamp when call was made
 }
 
 export interface LeadDetails {
@@ -165,6 +155,8 @@ export interface SalesmanMetrics {
   totalRevenue: number
   closeRate: number
   averageOrderValue: number
+  showsPercentage: number
+  closesPercentage: number
 }
 
 export interface SalesmanPerformance {
@@ -194,4 +186,22 @@ export interface SalesmanAnalytics {
 // Dashboard Types
 export interface DashboardMetrics {
   platformSpend: number
+}
+
+export interface PlatformSpend {
+  platform: string
+  spend: number
+}
+
+export interface TimeRange {
+  startDate: string
+  endDate: string
+  days: number
+}
+
+export interface EnhancedDashboardMetrics {
+  platformSpend: number // Legacy field for backward compatibility
+  totalSpend: number
+  platformSpends: PlatformSpend[]
+  timeRange: TimeRange
 }
