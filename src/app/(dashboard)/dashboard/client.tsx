@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { TimePeriod } from '@/types/leads'
 import { useDashboardData } from '@/hooks/useDashboardData'
-import { useAppointmentSetters } from '@/hooks/useAppointmentSetters'
+// TEMPORARILY DISABLED: Appointment setters functionality commented out due to missing time_speed column
+// import { useAppointmentSetters } from '@/hooks/useAppointmentSetters'
 import { 
-  AppointmentSetters, 
+  // AppointmentSetters, 
   TimePeriodFilter 
 } from '@/components/features/leads'
 import { PlatformSpendCard } from '@/components/features/dashboard/PlatformSpendCard'
@@ -22,6 +23,8 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
   // Get the effective business ID (user's own or selected company for superadmin)
   const effectiveBusinessId = useEffectiveBusinessId()
   
+  // TEMPORARILY DISABLED: Appointment setters functionality commented out due to missing time_speed column
+  /*
   const {
     appointmentSetters,
     isLoading: appointmentSettersLoading,
@@ -31,6 +34,7 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
     timePeriod,
     businessId: effectiveBusinessId
   })
+  */
 
   const {
     platformSpendMetrics,
@@ -42,10 +46,11 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
     businessId: effectiveBusinessId
   })
 
-  const isLoading = appointmentSettersLoading || dashboardLoading
-  const error = appointmentSettersError || dashboardError
+  // TEMPORARILY DISABLED: Updated loading and error handling without appointment setters
+  const isLoading = dashboardLoading
+  const error = dashboardError
   const refetch = () => {
-    refetchAppointmentSetters()
+    // refetchAppointmentSetters() // Commented out
     refetchDashboard()
   }
 
@@ -56,7 +61,7 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Monitor your appointment setters performance</p>
+            <p className="text-gray-600 mt-1">Monitor your platform performance and lead metrics</p>
           </div>
           
           {/* Time Period Filter */}
@@ -109,7 +114,8 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
           )}
         </div>
 
-        {/* Appointment Setters - Centered */}
+        {/* TEMPORARILY DISABLED: Appointment Setters section commented out due to missing time_speed column */}
+        {/*
         <div className="flex justify-center">
           <div className="w-full max-w-md">
             <AppointmentSetters 
@@ -119,6 +125,7 @@ export function DashboardClient({ businessId, userRole }: DashboardClientProps) 
             />
           </div>
         </div>
+        */}
       </div>
     </div>
   )

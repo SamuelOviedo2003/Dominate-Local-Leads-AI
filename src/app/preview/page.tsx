@@ -1,6 +1,8 @@
 'use client'
 
-import { LeadMetrics, AppointmentSetters } from '@/components/features/leads'
+import { LeadMetrics } from '@/components/features/leads'
+// TEMPORARILY DISABLED: AppointmentSetters import commented out due to missing time_speed column
+// import { AppointmentSetters } from '@/components/features/leads'
 import { LeadMetrics as LeadMetricsType, AppointmentSetter } from '@/types/leads'
 
 // Mock data for preview
@@ -12,6 +14,8 @@ const mockMetrics: LeadMetricsType = {
   bookingRate: 25.8
 }
 
+// TEMPORARILY DISABLED: Mock setters data commented out due to missing time_speed column
+/*
 const mockSetters: AppointmentSetter[] = [
   {
     name: "Sarah Johnson",
@@ -54,6 +58,7 @@ const mockSetters: AppointmentSetter[] = [
     avgResponseSpeed: 28.3
   }
 ]
+*/
 
 export default function PreviewPage() {
   return (
@@ -103,12 +108,26 @@ export default function PreviewPage() {
             error={null}
           />
 
-          {/* Appointment Setters - Optimized */}
+          {/* TEMPORARILY DISABLED: Appointment Setters component commented out due to missing time_speed column */}
+          <div className="bg-white rounded-lg shadow-sm border p-6 flex flex-col h-[420px]">
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-8 h-8 bg-yellow-400 rounded-full"></div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Appointment Setters</h3>
+                <p className="text-gray-500 text-sm">Temporarily disabled due to database changes</p>
+                <p className="text-gray-400 text-xs mt-1">Will be restored when time_speed column is available</p>
+              </div>
+            </div>
+          </div>
+          {/*
           <AppointmentSetters 
             setters={mockSetters}
             isLoading={false}
             error={null}
           />
+          */}
         </div>
 
         {/* Technical Details */}
@@ -127,10 +146,10 @@ export default function PreviewPage() {
             <div>
               <h3 className="font-semibold text-gray-800 mb-2">AppointmentSetters Component</h3>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li>• Shows 2 items per page (was 3)</li>
-                <li>• Reduced card padding</li>
-                <li>• Smaller avatar sizes</li>
-                <li>• Optimized grid spacing</li>
+                <li>• <span className="text-yellow-600">Temporarily disabled</span></li>
+                <li>• Database schema change required</li>
+                <li>• Missing time_speed column</li>
+                <li>• Will be restored when column is available</li>
               </ul>
             </div>
             <div>

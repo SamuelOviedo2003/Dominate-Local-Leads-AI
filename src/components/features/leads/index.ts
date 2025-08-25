@@ -1,5 +1,6 @@
 export { LeadMetrics } from './LeadMetrics'
-export { AppointmentSetters } from './AppointmentSetters'
+// TEMPORARILY DISABLED: AppointmentSetters export commented out due to missing time_speed column
+// export { AppointmentSetters } from './AppointmentSetters'
 export { LeadsTable } from './LeadsTable'
 export { TimePeriodFilter } from './TimePeriodFilter'
 export { AudioPlayer } from './AudioPlayer'
