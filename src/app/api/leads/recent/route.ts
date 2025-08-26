@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Fetch leads with clients data - filter for stage = 1 (Recent Leads)
+    // Fetch leads with clients data - filter for stage = 1 OR stage = 2 (Recent Leads)
     const { data: leadsData, error: leadsError } = await supabase
       .from('leads')
       .select(`
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       `)
       .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
-      .eq('stage', 1)
+      .in('stage', [1, 2])
       .order('created_at', { ascending: false })
 
     if (leadsError) {
@@ -73,8 +73,27 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get account IDs for fetching call windows
+    // Get account IDs for fetching communications counts and call windows
     const accountIds = leadsData.map(lead => lead.account_id)
+
+    // Fetch dynamic communications count for each lead
+    let communicationsCounts: Record<string, number> = {}
+    if (accountIds.length > 0) {
+      const { data: communicationsData, error: communicationsCountError } = await supabase
+        .from('communications')
+        .select('account_id')
+        .in('account_id', accountIds)
+
+      if (!communicationsCountError && communicationsData) {
+        // Count communications per account_id
+        communicationsCounts = communicationsData.reduce((acc, comm) => {
+          acc[comm.account_id] = (acc[comm.account_id] || 0) + 1
+          return acc
+        }, {} as Record<string, number>)
+      } else if (communicationsCountError) {
+        console.warn('Communications count fetch warning:', communicationsCountError)
+      }
+    }
 
     // Fetch call windows for each lead
     let callWindowsData: any[] = []
@@ -128,6 +147,8 @@ export async function GET(request: NextRequest) {
       const { clients, ...lead } = leadData
       return {
         ...lead,
+        // Use dynamically fetched communications count
+        communications_count: communicationsCounts[lead.account_id] || 0,
         // next_step comes directly from leads table, no need to override
         created_at: formatDateTimeWithTime(lead.created_at),
         client: Array.isArray(clients) ? clients[0] : clients,

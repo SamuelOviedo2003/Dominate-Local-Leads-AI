@@ -7,14 +7,14 @@ export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/salesman/leads
- * Fetches leads in stage 2 (Salesman Leads) with client information
+ * Fetches leads in stage 3 (Bookings) with client information
  * 
  * Query Parameters:
  * - startDate: ISO string for filtering leads created after this date
  * - businessId: Business ID to filter leads
  * 
  * @param request - Next.js request object
- * @returns Promise<NextResponse> - JSON response with salesman leads data
+ * @returns Promise<NextResponse> - JSON response with bookings leads data
  */
 export async function GET(request: NextRequest) {
   try {
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Fetch leads with clients data - filter for stage = 2 (Salesman Leads)
+    // Fetch leads with clients data - filter for stage = 3 (Bookings)
     const { data: leadsData, error: leadsError } = await supabase
       .from('leads')
       .select(`
@@ -73,13 +73,13 @@ export async function GET(request: NextRequest) {
       `)
       .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
-      .eq('stage', 2)
+      .eq('stage', 3)
       .order('created_at', { ascending: false })
 
     if (leadsError) {
       console.error('Database error:', leadsError)
       return NextResponse.json(
-        { error: 'Failed to fetch salesman leads data' },
+        { error: 'Failed to fetch bookings leads data' },
         { status: 500 }
       )
     }

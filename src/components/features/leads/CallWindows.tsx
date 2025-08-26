@@ -91,8 +91,8 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
                     {window.callNumber}
                   </div>
                   
-                  {/* Medal for Call 1 */}
-                  {isCall1 && window.medalTier && (
+                  {/* Medal for Call 1 - only show when in response time mode (working_hours = true) */}
+                  {isCall1 && window.medalTier && window.responseTime !== undefined && (
                     <div className="flex items-center">
                       {getMedalIcon(window.medalTier)}
                     </div>
@@ -102,10 +102,26 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
                 {/* Main Content */}
                 <div className="flex-1 text-right">
                   {isCall1 ? (
-                    /* Call 1 - Show only response time */
-                    <div className="text-lg font-semibold text-purple-600">
-                      {window.responseTime || 'N/A'}
-                    </div>
+                    /* Call 1 - Conditional display based on working_hours */
+                    window.responseTime !== undefined ? (
+                      /* working_hours = true: Show response time */
+                      <div className="text-lg font-semibold text-purple-600">
+                        {window.responseTime || 'Not called'}
+                      </div>
+                    ) : (
+                      /* working_hours = false: Show timestamp like other calls */
+                      <div className="text-sm">
+                        {window.calledAt ? (
+                          <div className="text-green-700 font-medium">
+                            {formatTime(window.calledAt)}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500">
+                            Not called
+                          </span>
+                        )}
+                      </div>
+                    )
                   ) : (
                     /* Calls 2-6 - Show timestamp or "Not called" */
                     <div className="text-sm">

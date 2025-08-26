@@ -21,16 +21,62 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
     return 'bg-green-500'
   }
 
-  const getHowSoonColor = (howSoon: string) => {
-    switch (howSoon.toLowerCase()) {
-      case 'asap':
-        return 'text-red-600 bg-red-50'
-      case 'week':
-        return 'text-orange-600 bg-orange-50'
-      case 'month':
+  const getSourceColor = (source: string | null | undefined) => {
+    if (!source) return 'text-gray-600 bg-gray-50'
+    
+    switch (source.toLowerCase()) {
+      case 'facebook':
+      case 'facebook ads':
         return 'text-blue-600 bg-blue-50'
+      case 'google':
+      case 'google ads':
+        return 'text-green-600 bg-green-50'
+      case 'website':
+        return 'text-purple-600 bg-purple-50'
+      case 'referral':
+        return 'text-orange-600 bg-orange-50'
       default:
         return 'text-gray-600 bg-gray-50'
+    }
+  }
+
+  const getCallPriorityConfig = (callNowStatus: 1 | 2 | 3 | null | undefined) => {
+    if (!callNowStatus || callNowStatus === 3) {
+      // Normal priority or no status - subtle gray indicator
+      return {
+        bgColor: 'bg-gray-100',
+        textColor: 'text-gray-600',
+        label: 'Normal',
+        icon: '●'
+      }
+    }
+    
+    if (callNowStatus === 1) {
+      // High priority - distinct red shade (darker than scoring system)
+      return {
+        bgColor: 'bg-red-600',
+        textColor: 'text-white',
+        label: 'High Priority',
+        icon: '🔥'
+      }
+    }
+    
+    if (callNowStatus === 2) {
+      // Medium priority - distinct orange (different from scoring system yellow)
+      return {
+        bgColor: 'bg-orange-500',
+        textColor: 'text-white',
+        label: 'Medium Priority',
+        icon: '⚡'
+      }
+    }
+
+    // Fallback
+    return {
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-600',
+      label: 'Normal',
+      icon: '●'
     }
   }
 
@@ -44,6 +90,25 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
       minute: '2-digit',
       hour12: true
     })
+  }
+
+  const formatSourceDisplay = (source: string | null | undefined) => {
+    if (!source) return 'Unknown'
+    
+    switch (source.toLowerCase()) {
+      case 'facebook':
+      case 'facebook ads':
+        return 'Facebook'
+      case 'google':
+      case 'google ads':
+        return 'Google'
+      case 'website':
+        return 'Website'
+      case 'referral':
+        return 'Referral'
+      default:
+        return source.charAt(0).toUpperCase() + source.slice(1)
+    }
   }
 
   const handleRowClick = async (leadId: string) => {
@@ -90,7 +155,13 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
                   Lead Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  How Soon
+                  Priority
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Source
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Comms
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
@@ -133,8 +204,29 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getHowSoonColor(lead.how_soon || 'Not specified')}`}>
-                      {lead.how_soon || 'Not specified'}
+                    {(() => {
+                      const priorityConfig = getCallPriorityConfig(lead.call_now_status)
+                      return (
+                        <div className="flex items-center">
+                          <div 
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${priorityConfig.bgColor} ${priorityConfig.textColor}`}
+                            title={priorityConfig.label}
+                          >
+                            <span className="mr-1">{priorityConfig.icon}</span>
+                            <span className="hidden sm:inline">{priorityConfig.label}</span>
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getSourceColor(lead.source)}`}>
+                      {formatSourceDisplay(lead.source)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-sm text-gray-900 font-medium">
+                      {lead.communications_count || 0}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

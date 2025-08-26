@@ -31,7 +31,7 @@ function formatResponseTime(minutes: number): string {
  * Process call windows with simplified structure
  * Only returns actual scheduled/made calls, filters out empty placeholders
  */
-function processCallWindows(rawData: any[], leadId: string): CallWindow[] {
+function processCallWindows(rawData: any[], leadId: string, workingHours: boolean = true): CallWindow[] {
   // Filter out unscheduled call windows (ones without created_at or that are just placeholders)
   const actualCalls = rawData.filter(window => 
     window.created_at && 
@@ -48,32 +48,44 @@ function processCallWindows(rawData: any[], leadId: string): CallWindow[] {
     const calledAt = window.called_at
     
     if (callNumber === 1) {
-      // Special processing for Call 1 - include medal tier and response time
-      let responseTimeMinutes: number | null = null
-      let medalTier: 'gold' | 'silver' | 'bronze' | null = null
-      
-      if (window.created_at && window.called_at) {
-        const createdTime = new Date(window.created_at).getTime()
-        const calledTime = new Date(window.called_at).getTime()
-        const diffMs = calledTime - createdTime
-        responseTimeMinutes = Math.max(0, diffMs / (1000 * 60)) // Convert to minutes, ensure non-negative
+      // Special processing for Call 1 - conditional logic based on working_hours
+      if (workingHours) {
+        // working_hours = true: Keep existing functionality (response time and medals)
+        let responseTimeMinutes: number | null = null
+        let medalTier: 'gold' | 'silver' | 'bronze' | null = null
         
-        // Determine medal tier based on response time
-        if (responseTimeMinutes < 1) {
-          medalTier = 'gold' // < 1 minute = Gold
-        } else if (responseTimeMinutes < 2) {
-          medalTier = 'silver' // 1-2 minutes = Silver  
-        } else if (responseTimeMinutes < 5) {
-          medalTier = 'bronze' // 2-5 minutes = Bronze
+        if (window.created_at && window.called_at) {
+          const createdTime = new Date(window.created_at).getTime()
+          const calledTime = new Date(window.called_at).getTime()
+          const diffMs = calledTime - createdTime
+          responseTimeMinutes = Math.max(0, diffMs / (1000 * 60)) // Convert to minutes, ensure non-negative
+          
+          // Determine medal tier based on response time
+          if (responseTimeMinutes < 1) {
+            medalTier = 'gold' // < 1 minute = Gold
+          } else if (responseTimeMinutes < 2) {
+            medalTier = 'silver' // 1-2 minutes = Silver  
+          } else if (responseTimeMinutes < 5) {
+            medalTier = 'bronze' // 2-5 minutes = Bronze
+          }
+          // >= 5 minutes = No medal (null)
         }
-        // >= 5 minutes = No medal (null)
-      }
-      
-      return {
-        callNumber: callNumber as 1,
-        medalTier,
-        responseTime: responseTimeMinutes !== null ? formatResponseTime(responseTimeMinutes) : undefined,
-        calledAt
+        
+        return {
+          callNumber: callNumber as 1,
+          medalTier,
+          responseTime: responseTimeMinutes !== null ? formatResponseTime(responseTimeMinutes) : undefined,
+          calledAt
+        }
+      } else {
+        // working_hours = false: Record just the time when the call was made (like other calls)
+        const status = calledAt ? 'called' : 'No call'
+        
+        return {
+          callNumber: callNumber as 1,
+          status,
+          calledAt
+        }
       }
     } else {
       // Processing for Calls 2-6 - show call status and time
@@ -210,8 +222,8 @@ export async function GET(request: NextRequest, context: RouteParams) {
       // Continue with empty call windows rather than failing the entire request
       callWindows = []
     } else if (rawCallWindowsData) {
-      // Apply business logic to process call windows
-      callWindows = processCallWindows(rawCallWindowsData, lead.lead_id)
+      // Apply business logic to process call windows with working_hours context
+      callWindows = processCallWindows(rawCallWindowsData, lead.lead_id, lead.working_hours)
     } else {
       callWindows = []
     }

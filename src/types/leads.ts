@@ -7,7 +7,7 @@ export interface Lead {
   email: string
   phone: string
   service: string
-  how_soon: 'ASAP' | 'week' | 'month' | string
+  source?: string | null // Replaced how_soon with source
   score: number
   status: string
   contacted: boolean
@@ -17,7 +17,11 @@ export interface Lead {
   created_at: string
   working_hours?: boolean
   next_step?: string
-  stage: 1 | 2 // 1 = Recent Leads, 2 = Salesman Leads
+  stage: 1 | 2 | 3 // 1 = New Leads (stage 1), 2 = New Leads (stage 2), 3 = Bookings
+  communications_count: number // New field to track number of communications
+  call_now_status?: 1 | 2 | 3 | null // Call priority: 1 = High (red), 2 = Medium (yellow), 3 = Normal (default)
+  summary?: string | null // Summary field for lead information
+  score_summary?: string | null // Score-based summary field
 }
 
 export interface Client {
