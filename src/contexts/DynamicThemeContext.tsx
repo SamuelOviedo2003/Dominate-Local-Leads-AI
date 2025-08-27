@@ -167,6 +167,12 @@ interface DynamicThemeProviderProps {
 
 // Theme provider component
 export function DynamicThemeProvider({ children }: DynamicThemeProviderProps) {
+  // Add safety check for React availability
+  if (typeof React === 'undefined' || !React.useReducer) {
+    // Fallback when React is not available
+    return <>{children}</>
+  }
+
   const [state, dispatch] = useReducer(themeReducer, initialState)
 
   // Initialize the color extraction system
