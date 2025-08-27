@@ -147,8 +147,10 @@ export async function GET(request: NextRequest) {
       const { clients, ...lead } = leadData
       return {
         ...lead,
-        // Use dynamically fetched communications count
-        communications_count: communicationsCounts[lead.account_id] || 0,
+        // Use cached communications_count if available, otherwise use dynamically fetched count
+        communications_count: lead.communications_count !== undefined 
+          ? lead.communications_count 
+          : (communicationsCounts[lead.account_id] || 0),
         // next_step comes directly from leads table, no need to override
         created_at: formatDateTimeWithTime(lead.created_at),
         client: Array.isArray(clients) ? clients[0] : clients,

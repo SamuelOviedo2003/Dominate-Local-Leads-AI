@@ -2,8 +2,9 @@
 
 import { CallWindow } from '@/types/leads'
 import { useMemo, useCallback, memo } from 'react'
-import { Clock, Phone } from 'lucide-react'
+import { Clock, Phone, Headphones, PhoneCall } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
+import { MetallicTierCard } from '@/components/ui/MetallicTierCard'
 
 interface CallWindowsProps {
   callWindows?: CallWindow[] | null
@@ -16,9 +17,15 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Call Windows</h3>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative">
+            <PhoneCall className="w-6 h-6 text-blue-600" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
+        </div>
         <div className="flex items-center justify-center flex-1">
-          <LoadingSystem size="md" message="Loading call windows..." />
+          <LoadingSystem size="md" message="Loading call response data..." />
         </div>
       </div>
     )
@@ -28,10 +35,19 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
   if (error) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Call Windows</h3>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative">
+            <PhoneCall className="w-6 h-6 text-blue-600" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
+        </div>
         <div className="text-center flex-1 flex items-center justify-center">
           <div>
-            <div className="text-red-500 text-lg font-medium mb-2">Error Loading Call Windows</div>
+            <div className="text-red-500 text-lg font-medium mb-2 flex items-center gap-2 justify-center">
+              <Phone className="w-5 h-5" />
+              Error Loading Call Data
+            </div>
             <p className="text-gray-600">{error}</p>
           </div>
         </div>
@@ -49,18 +65,6 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
     })
   }, [])
 
-  const getMedalIcon = useCallback((medalTier: 'gold' | 'silver' | 'bronze' | null) => {
-    switch (medalTier) {
-      case 'gold':
-        return <span className="text-2xl" title="Gold Medal - Response time < 1 minute">🥇</span>
-      case 'silver':
-        return <span className="text-2xl" title="Silver Medal - Response time 1-2 minutes">🥈</span>
-      case 'bronze':
-        return <span className="text-2xl" title="Bronze Medal - Response time 2-5 minutes">🥉</span>
-      default:
-        return null
-    }
-  }, [])
 
   // Sort call windows by call number - only show actual calls, no placeholders
   const sortedCallWindows = useMemo(() => {
@@ -72,84 +76,74 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col w-full">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Call Windows</h3>
-      
-      <div className="overflow-y-auto space-y-3 pr-2 flex-1">
-        {sortedCallWindows.map((window) => {
-          const isCall1 = window.callNumber === 1
-          const isNoCaller = !window.calledAt && (window.status === 'No call' || !window.status)
-          
-          return (
-            <div 
-              key={window.callNumber} 
-              className="bg-white rounded-lg p-4 border border-gray-200 hover:border-purple-300 hover:shadow-md transition-all duration-200"
-            >
-              {/* Call Number with Medal and Info */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold">
-                    {window.callNumber}
-                  </div>
-                  
-                  {/* Medal for Call 1 - only show when in response time mode (working_hours = true) */}
-                  {isCall1 && window.medalTier && window.responseTime !== undefined && (
-                    <div className="flex items-center">
-                      {getMedalIcon(window.medalTier)}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Main Content */}
-                <div className="flex-1 text-right">
-                  {isCall1 ? (
-                    /* Call 1 - Conditional display based on working_hours */
-                    window.responseTime !== undefined ? (
-                      /* working_hours = true: Show response time */
-                      <div className="text-lg font-semibold text-purple-600">
-                        {window.responseTime || 'Not called'}
-                      </div>
-                    ) : (
-                      /* working_hours = false: Show timestamp like other calls */
-                      <div className="text-sm">
-                        {window.calledAt ? (
-                          <div className="text-green-700 font-medium">
-                            {formatTime(window.calledAt)}
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">
-                            Not called
-                          </span>
-                        )}
-                      </div>
-                    )
-                  ) : (
-                    /* Calls 2-6 - Show timestamp or "Not called" */
-                    <div className="text-sm">
-                      {window.calledAt ? (
-                        <div className="text-green-700 font-medium">
-                          {formatTime(window.calledAt)}
-                        </div>
-                      ) : (
-                        <span className="text-gray-500">
-                          Not called
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )
-        })}
+      {/* Header with Phone Icon */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="relative">
+          <PhoneCall className="w-6 h-6 text-blue-600" />
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
       </div>
 
+      {/* Call Performance Cards */}
+      <div className="overflow-y-auto space-y-4 pr-2 flex-1">
+        {sortedCallWindows.map((window) => (
+          <MetallicTierCard 
+            key={window.callNumber}
+            window={window}
+            formatTime={formatTime}
+          />
+        ))}
+      </div>
+
+      {/* Enhanced Empty State with Call Context */}
       {(!callWindows || callWindows.length === 0) && (
-        <div className="bg-gray-50 rounded-lg p-4 text-center flex-1 flex flex-col items-center justify-center">
-          <div className="text-gray-400 mb-2">
-            <Clock className="w-8 h-8 mx-auto" />
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 text-center flex-1 flex flex-col items-center justify-center border border-blue-100">
+          <div className="relative mb-4">
+            {/* Phone Icon with Animation */}
+            <div className="relative">
+              <Headphones className="w-12 h-12 text-blue-400 mx-auto" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full" />
+            </div>
+            {/* Sound Waves */}
+            <div className="absolute -left-8 top-1/2 transform -translate-y-1/2">
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-2 bg-blue-300 rounded animate-pulse" style={{animationDelay: '0ms'}} />
+                <div className="w-1 h-4 bg-blue-400 rounded animate-pulse" style={{animationDelay: '150ms'}} />
+                <div className="w-1 h-3 bg-blue-300 rounded animate-pulse" style={{animationDelay: '300ms'}} />
+              </div>
+            </div>
+            <div className="absolute -right-8 top-1/2 transform -translate-y-1/2">
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-3 bg-blue-300 rounded animate-pulse" style={{animationDelay: '100ms'}} />
+                <div className="w-1 h-4 bg-blue-400 rounded animate-pulse" style={{animationDelay: '250ms'}} />
+                <div className="w-1 h-2 bg-blue-300 rounded animate-pulse" style={{animationDelay: '400ms'}} />
+              </div>
+            </div>
           </div>
-          <p className="text-gray-500 text-sm">No call windows scheduled</p>
-          <p className="text-gray-400 text-xs mt-1">Call windows will appear when created</p>
+          
+          <div className="space-y-2">
+            <p className="text-gray-600 font-medium flex items-center gap-2 justify-center">
+              <Phone className="w-4 h-4" />
+              No Call Data Available
+            </p>
+            <p className="text-gray-500 text-sm">Call response times will appear here once you start making calls to leads</p>
+            <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-yellow-400 rounded-full" />
+                Gold: &lt;1min
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                Silver: 1-2min
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-amber-600 rounded-full" />
+                Bronze: 2-5min
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

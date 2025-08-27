@@ -21,6 +21,21 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
     return 'bg-green-500'
   }
 
+  const getRowBackground = (priority: 1 | 2 | 3 | null | undefined) => {
+    if (priority === 1) {
+      // High Priority: Reddish background tone
+      return 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500'
+    }
+    
+    if (priority === 2) {
+      // Medium Priority: Yellow background tone  
+      return 'bg-yellow-50 hover:bg-yellow-100 border-l-4 border-yellow-500'
+    }
+    
+    // Normal Priority: No background color
+    return 'hover:bg-gray-50'
+  }
+
   const getSourceColor = (source: string | null | undefined) => {
     if (!source) return 'text-gray-600 bg-gray-50'
     
@@ -37,46 +52,6 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
         return 'text-orange-600 bg-orange-50'
       default:
         return 'text-gray-600 bg-gray-50'
-    }
-  }
-
-  const getCallPriorityConfig = (callNowStatus: 1 | 2 | 3 | null | undefined) => {
-    if (!callNowStatus || callNowStatus === 3) {
-      // Normal priority or no status - subtle gray indicator
-      return {
-        bgColor: 'bg-gray-100',
-        textColor: 'text-gray-600',
-        label: 'Normal',
-        icon: '●'
-      }
-    }
-    
-    if (callNowStatus === 1) {
-      // High priority - distinct red shade (darker than scoring system)
-      return {
-        bgColor: 'bg-red-600',
-        textColor: 'text-white',
-        label: 'High Priority',
-        icon: '🔥'
-      }
-    }
-    
-    if (callNowStatus === 2) {
-      // Medium priority - distinct orange (different from scoring system yellow)
-      return {
-        bgColor: 'bg-orange-500',
-        textColor: 'text-white',
-        label: 'Medium Priority',
-        icon: '⚡'
-      }
-    }
-
-    // Fallback
-    return {
-      bgColor: 'bg-gray-100',
-      textColor: 'text-gray-600',
-      label: 'Normal',
-      icon: '●'
     }
   }
 
@@ -111,10 +86,11 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
     }
   }
 
-  const handleRowClick = async (leadId: string) => {
+
+  const handleRowClick = (leadId: string) => {
     setNavigatingId(leadId)
     try {
-      await router.push(`/${navigationTarget}/${leadId}`)
+      router.push(`/${navigationTarget}/${leadId}`)
     } catch (error) {
       setNavigatingId(null)
     }
@@ -155,13 +131,10 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
                   Lead Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Source
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Comms
+                  Communications Count
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
@@ -172,71 +145,71 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {leads.map((lead) => (
-                <tr 
-                  key={lead.lead_id}
-                  onClick={() => handleRowClick(lead.lead_id)}
-                  className={`hover:bg-gray-50 cursor-pointer transition-colors relative ${
-                    navigatingId === lead.lead_id ? 'bg-purple-50' : ''
-                  }`}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {navigatingId === lead.lead_id ? (
-                        <div className="h-8 w-8 rounded-full flex items-center justify-center mr-3">
-                          <div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
-                        </div>
-                      ) : (
-                        <div 
-                          className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3 ${getScoreColor(lead.score)}`}
-                        >
-                          {Math.round(lead.score)}
-                        </div>
-                      )}
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {lead.first_name} {lead.last_name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {lead.service || ''}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {(() => {
-                      const priorityConfig = getCallPriorityConfig(lead.call_now_status)
-                      return (
-                        <div className="flex items-center">
-                          <div 
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${priorityConfig.bgColor} ${priorityConfig.textColor}`}
-                            title={priorityConfig.label}
-                          >
-                            <span className="mr-1">{priorityConfig.icon}</span>
-                            <span className="hidden sm:inline">{priorityConfig.label}</span>
+              {leads.map((lead) => {
+                const rowBackground = getRowBackground(lead.call_now_status)
+                
+                return (
+                  <tr 
+                    key={lead.lead_id}
+                    onClick={() => handleRowClick(lead.lead_id)}
+                    className={`cursor-pointer transition-all duration-200 ${
+                      rowBackground
+                    } ${
+                      navigatingId === lead.lead_id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
+                    }`}
+                  >
+                    {/* Lead Name with Score Circle */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {navigatingId === lead.lead_id ? (
+                          <div className="h-8 w-8 rounded-full flex items-center justify-center mr-3">
+                            <div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
+                          </div>
+                        ) : (
+                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3 ${
+                            getScoreColor(lead.score)
+                          }`}>
+                            {Math.round(lead.score)}
+                          </div>
+                        )}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {lead.first_name} {lead.last_name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {lead.service || ''}
                           </div>
                         </div>
-                      )
-                    })()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getSourceColor(lead.source)}`}>
-                      {formatSourceDisplay(lead.source)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900 font-medium">
-                      {lead.communications_count || 0}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDateTime(lead.created_at)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {lead.next_step || 'Not set'}
-                  </td>
-                </tr>
-              ))}
+                      </div>
+                    </td>
+                    
+                    
+                    {/* Source Column */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getSourceColor(lead.source)}`}>
+                        {formatSourceDisplay(lead.source)}
+                      </span>
+                    </td>
+                    
+                    {/* Communications Count Column */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm text-gray-900 font-medium">
+                        {lead.communications_count || 0}
+                      </span>
+                    </td>
+                    
+                    {/* Date Column */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDateTime(lead.created_at)}
+                    </td>
+                    
+                    {/* Next Step Column */}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {lead.next_step || 'Not set'}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
