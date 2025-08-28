@@ -24,6 +24,7 @@ interface UseIncomingCallsDataReturn {
   isLoading: boolean
   error: string | null
   refetch: () => void
+  fetchSourceCallerTypes: (source: string) => Promise<CallerTypeDistribution[] | null>
 }
 
 export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCallsDataProps): UseIncomingCallsDataReturn {
@@ -38,6 +39,37 @@ export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCall
     const date = new Date()
     date.setDate(date.getDate() - parseInt(period))
     return date.toISOString()
+  }
+
+  const fetchSourceCallerTypes = async (source: string): Promise<CallerTypeDistribution[] | null> => {
+    if (!businessId) return null
+
+    try {
+      const startDate = getStartDate(timePeriod)
+      const params = new URLSearchParams({
+        startDate,
+        businessId,
+        source
+      })
+
+      const response = await fetch(`/api/incoming-calls/source-caller-types?${params}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch source caller types')
+      }
+
+      const data: ApiResponse<CallerTypeDistribution[]> = await response.json()
+
+      if (data.success) {
+        return data.data
+      } else {
+        throw new Error(data.error || 'Failed to fetch source caller types')
+      }
+
+    } catch (err) {
+      console.error('Error fetching source caller types:', err)
+      return null
+    }
   }
 
   const fetchData = async () => {
@@ -123,6 +155,7 @@ export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCall
     recentCalls,
     isLoading,
     error,
-    refetch: fetchData
+    refetch: fetchData,
+    fetchSourceCallerTypes
   }
 }

@@ -255,3 +255,122 @@ export async function GET(request: NextRequest, context: RouteParams) {
     )
   }
 }
+
+/**
+ * PATCH handler for updating lead caller_type
+ */
+export async function PATCH(request: NextRequest, context: RouteParams) {
+  try {
+    // Check authentication
+    const user = await getAuthenticatedUserForAPI()
+    if (!user || !user.profile?.business_id) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Please log in' },
+        { status: 401 }
+      )
+    }
+
+    const { leadId } = await context.params
+    const { searchParams } = new URL(request.url)
+    const businessIdParam = searchParams.get('businessId')
+
+    if (!leadId || !businessIdParam) {
+      return NextResponse.json(
+        { error: 'Missing required parameters: leadId and businessId' },
+        { status: 400 }
+      )
+    }
+
+    // Convert leadId to number since database expects smallint
+    const leadIdNumber = parseInt(leadId, 10)
+    if (isNaN(leadIdNumber)) {
+      return NextResponse.json(
+        { error: 'leadId must be a valid number' },
+        { status: 400 }
+      )
+    }
+
+    // Convert businessId to number since database expects smallint
+    const requestedBusinessId = parseInt(businessIdParam, 10)
+    if (isNaN(requestedBusinessId)) {
+      return NextResponse.json(
+        { error: 'businessId must be a valid number' },
+        { status: 400 }
+      )
+    }
+
+    // Ensure user can only access their own business data (unless Super Admin)
+    const userBusinessId = parseInt(user.profile.business_id, 10)
+    if (user.profile.role !== 0 && requestedBusinessId !== userBusinessId) {
+      return NextResponse.json(
+        { error: 'Access denied - You can only access your own business data' },
+        { status: 403 }
+      )
+    }
+
+    // Parse request body
+    const body = await request.json()
+    const { caller_type } = body
+
+    // Validate caller_type
+    const validCallerTypes = ['Client', 'Sales person', 'Other', 'Looking for job']
+    if (caller_type !== null && !validCallerTypes.includes(caller_type)) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid caller_type. Must be one of: Client, Sales person, Other, Looking for job, or null' 
+        },
+        { status: 400 }
+      )
+    }
+
+    const supabase = await createClient()
+
+    // First verify the lead exists and belongs to the business
+    const { data: leadExists, error: leadCheckError } = await supabase
+      .from('leads')
+      .select('lead_id')
+      .eq('lead_id', leadIdNumber)
+      .eq('business_id', requestedBusinessId)
+      .single()
+
+    if (leadCheckError || !leadExists) {
+      return NextResponse.json(
+        { error: 'Lead not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Update the caller_type
+    const { data: updatedLead, error: updateError } = await supabase
+      .from('leads')
+      .update({ caller_type })
+      .eq('lead_id', leadIdNumber)
+      .eq('business_id', requestedBusinessId)
+      .select('lead_id, caller_type')
+      .single()
+
+    if (updateError) {
+      console.error('Lead update error:', updateError)
+      return NextResponse.json(
+        { error: 'Failed to update lead caller_type' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        lead_id: updatedLead.lead_id,
+        caller_type: updatedLead.caller_type
+      },
+      message: 'Caller type updated successfully'
+    })
+
+  } catch (error) {
+    console.error('PATCH /api/leads/[leadId] error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

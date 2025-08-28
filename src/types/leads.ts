@@ -22,6 +22,7 @@ export interface Lead {
   call_now_status?: 1 | 2 | 3 | null // Call priority: 1 = High (red), 2 = Medium (yellow), 3 = Normal (default)
   summary?: string | null // Summary field for lead information
   score_summary?: string | null // Score-based summary field
+  caller_type?: 'Client' | 'Sales person' | 'Other' | 'Looking for job' | null // Type of caller classification
 }
 
 export interface Client {
@@ -81,9 +82,12 @@ export interface IncomingCall {
   source: string | null
   caller_type: string | null
   duration: number
-  status: string
+  assigned_id: string | null
+  assigned_name: string | null
   created_at: string
   business_id: string
+  recording_url?: string | null
+  call_summary?: string | null
 }
 
 export interface SourceDistribution {

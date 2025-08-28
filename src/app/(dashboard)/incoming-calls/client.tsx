@@ -2,11 +2,11 @@
 
 import { useState } from 'react'
 import { useIncomingCallsData } from '@/hooks/useIncomingCallsData'
-import { IncomingCallsTimePeriod } from '@/types/leads'
-// Remove this import for now - will use inline component
-import { Phone, TrendingUp, Users, Calendar } from 'lucide-react'
-// Using simple custom charts without external dependencies
+import { IncomingCallsTimePeriod, CallerTypeDistribution } from '@/types/leads'
+import { Phone, Users, Calendar } from 'lucide-react'
 import { ComponentLoading } from '@/components/LoadingSystem'
+import { HoverCallerTypePopup } from '@/components/HoverCallerTypePopup'
+import RecentCallsPopup from '@/components/RecentCallsPopup'
 
 interface IncomingCallsClientProps {
   businessId: string
@@ -49,8 +49,15 @@ const timePeriodMapping: Record<string, IncomingCallsTimePeriod> = {
 // Pie chart colors
 const COLORS = ['#4F46E5', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
 
-// Simple bar chart component
-function SimpleBarChart({ data, title }: { data: Array<{name: string, value: number}>, title: string }) {
+// Simple bar chart component with hover support
+interface SimpleBarChartProps {
+  data: Array<{name: string, value: number}>
+  title: string
+  onItemHover?: (item: {name: string, value: number}, event: React.MouseEvent) => void
+  onItemLeave?: () => void
+}
+
+function SimpleBarChart({ data, title, onItemHover, onItemLeave }: SimpleBarChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -61,6 +68,7 @@ function SimpleBarChart({ data, title }: { data: Array<{name: string, value: num
 
   const maxValue = Math.max(...data.map(item => item.value))
   const colors = ['bg-indigo-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-amber-500', 'bg-red-500', 'bg-purple-500', 'bg-pink-500']
+  const hoverColors = ['hover:bg-indigo-600', 'hover:bg-cyan-600', 'hover:bg-emerald-600', 'hover:bg-amber-600', 'hover:bg-red-600', 'hover:bg-purple-600', 'hover:bg-pink-600']
 
   return (
     <div className="space-y-4">
@@ -72,11 +80,13 @@ function SimpleBarChart({ data, title }: { data: Array<{name: string, value: num
               <span className="text-sm font-medium text-gray-700">{item.name}</span>
               <span className="text-sm text-gray-600">{item.value}</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-2 relative">
               <div
-                className={`h-2 rounded-full ${colors[index % colors.length]}`}
+                className={`h-2 rounded-full transition-colors duration-200 cursor-pointer ${colors[index % colors.length]} ${hoverColors[index % hoverColors.length]}`}
                 style={{ width: `${Math.max(percentage, 5)}%` }}
-              ></div>
+                onMouseEnter={(e) => onItemHover?.(item, e)}
+                onMouseLeave={onItemLeave}
+              />
             </div>
           </div>
         )
@@ -85,38 +95,9 @@ function SimpleBarChart({ data, title }: { data: Array<{name: string, value: num
   )
 }
 
-// Sankey diagram component (simplified for now - would use D3 in production)
-function SankeyDiagram({ data }: { data: any[] }) {
-  if (!data || data.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        No Sankey data available for the selected period
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Source to Caller Type Flow</h3>
-      <div className="space-y-2">
-        {data.slice(0, 10).map((item, index) => (
-          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-              <span className="text-sm font-medium">{item.source}</span>
-              <span className="text-gray-400">→</span>
-              <span className="text-sm">{item.caller_type}</span>
-            </div>
-            <span className="text-sm font-medium text-indigo-600">{item.value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 // Recent calls table component
-function RecentCallsTable({ calls }: { calls: any[] }) {
+function RecentCallsTable({ calls, onCallClick }: { calls: any[], onCallClick: (callId: string) => void }) {
   if (!calls || calls.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -153,13 +134,17 @@ function RecentCallsTable({ calls }: { calls: any[] }) {
               Duration
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
+              Assigned
             </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {calls.map((call, index) => (
-            <tr key={call.incoming_call_id || index} className="hover:bg-gray-50">
+            <tr 
+              key={call.incoming_call_id || index} 
+              className="hover:bg-gray-50 cursor-pointer transition-colors"
+              onClick={() => onCallClick(call.incoming_call_id)}
+            >
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {formatDate(call.created_at)}
               </td>
@@ -174,11 +159,9 @@ function RecentCallsTable({ calls }: { calls: any[] }) {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                  call.status === 'completed' ? 'bg-green-100 text-green-800' :
-                  call.status === 'missed' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
+                  call.assigned_name ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                 }`}>
-                  {call.status}
+                  {call.assigned_name || 'Unassigned'}
                 </span>
               </td>
             </tr>
@@ -191,15 +174,31 @@ function RecentCallsTable({ calls }: { calls: any[] }) {
 
 export function IncomingCallsClient({ businessId, userRole }: IncomingCallsClientProps) {
   const [timePeriod, setTimePeriod] = useState<IncomingCallsTimePeriod>('30')
+  const [popupState, setPopupState] = useState<{
+    show: boolean
+    source: string
+    data: CallerTypeDistribution[] | null
+    isLoading: boolean
+    position: { x: number; y: number }
+  }>({
+    show: false,
+    source: '',
+    data: null,
+    isLoading: false,
+    position: { x: 0, y: 0 }
+  })
+  
+  // Recent Calls Popup State
+  const [selectedCallId, setSelectedCallId] = useState<string | null>(null)
   
   const {
     sourceDistribution,
     callerTypeDistribution,
-    sankeyData,
     recentCalls,
     isLoading,
     error,
-    refetch
+    refetch,
+    fetchSourceCallerTypes
   } = useIncomingCallsData({ timePeriod, businessId })
 
   const handleTimePeriodChange = (newPeriod: string) => {
@@ -207,6 +206,50 @@ export function IncomingCallsClient({ businessId, userRole }: IncomingCallsClien
     if (mappedPeriod) {
       setTimePeriod(mappedPeriod)
     }
+  }
+
+  const handleSourceHover = async (item: {name: string, value: number}, event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const position = {
+      x: rect.right + 10, // Position to the right of the bar
+      y: rect.top + rect.height / 2 // Center vertically
+    }
+
+    setPopupState({
+      show: true,
+      source: item.name,
+      data: null,
+      isLoading: true,
+      position
+    })
+
+    // Fetch source-specific caller type data
+    const data = await fetchSourceCallerTypes(item.name)
+    
+    setPopupState(prev => ({
+      ...prev,
+      data,
+      isLoading: false
+    }))
+  }
+
+  const handleSourceLeave = () => {
+    setPopupState({
+      show: false,
+      source: '',
+      data: null,
+      isLoading: false,
+      position: { x: 0, y: 0 }
+    })
+  }
+
+  // Recent Calls Popup Handlers
+  const handleCallClick = (callId: string) => {
+    setSelectedCallId(callId)
+  }
+
+  const handleCloseCallPopup = () => {
+    setSelectedCallId(null)
   }
 
   if (error) {
@@ -257,8 +300,8 @@ export function IncomingCallsClient({ businessId, userRole }: IncomingCallsClien
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Source Distribution Chart */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
+          {/* Source Distribution Chart with Hover Popup */}
+          <div className="bg-white rounded-lg shadow-sm border p-6 relative">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Phone className="w-5 h-5 mr-2 text-indigo-600" />
               Source Distribution
@@ -271,6 +314,8 @@ export function IncomingCallsClient({ businessId, userRole }: IncomingCallsClien
               <SimpleBarChart 
                 data={sourceDistribution ? sourceDistribution.map(item => ({ name: item.source, value: item.count })) : []}
                 title="Source Distribution"
+                onItemHover={handleSourceHover}
+                onItemLeave={handleSourceLeave}
               />
             )}
           </div>
@@ -294,21 +339,6 @@ export function IncomingCallsClient({ businessId, userRole }: IncomingCallsClien
           </div>
         </div>
 
-        {/* Sankey Diagram */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center mb-4">
-            <TrendingUp className="w-5 h-5 mr-2 text-indigo-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Call Flow Analysis</h3>
-          </div>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
-            </div>
-          ) : (
-            <SankeyDiagram data={sankeyData || []} />
-          )}
-        </div>
-
         {/* Recent Calls Table */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between mb-4">
@@ -325,9 +355,29 @@ export function IncomingCallsClient({ businessId, userRole }: IncomingCallsClien
               <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
             </div>
           ) : (
-            <RecentCallsTable calls={recentCalls || []} />
+            <RecentCallsTable calls={recentCalls || []} onCallClick={handleCallClick} />
           )}
         </div>
+
+        {/* Hover Popup */}
+        {popupState.show && (
+          <HoverCallerTypePopup
+            source={popupState.source}
+            data={popupState.data}
+            isLoading={popupState.isLoading}
+            position={popupState.position}
+            onClose={handleSourceLeave}
+          />
+        )}
+
+        {/* Recent Calls Popup */}
+        {selectedCallId && (
+          <RecentCallsPopup
+            callId={selectedCallId}
+            isOpen={!!selectedCallId}
+            onClose={handleCloseCallPopup}
+          />
+        )}
       </div>
     </div>
   )

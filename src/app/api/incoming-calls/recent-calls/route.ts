@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     // Fetch recent calls data (last 20 calls within the time period)
     const { data: recentCalls, error } = await supabase
       .from('incoming_calls')
-      .select('*')
+      .select('incoming_call_id, source, caller_type, duration, assigned_id, assigned, created_at, business_id, recording_url, call_summary')
       .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
       .order('created_at', { ascending: false })
@@ -70,9 +70,12 @@ export async function GET(request: NextRequest) {
       source: call.source,
       caller_type: call.caller_type,
       duration: call.duration || 0,
-      status: call.status || 'Unknown',
+      assigned_id: call.assigned_id || null,
+      assigned_name: call.assigned || null,
       created_at: call.created_at,
-      business_id: call.business_id
+      business_id: call.business_id,
+      recording_url: call.recording_url || null,
+      call_summary: call.call_summary || null
     }))
 
     return NextResponse.json({
