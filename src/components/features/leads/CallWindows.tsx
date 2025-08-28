@@ -16,7 +16,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
   // Handle loading state
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
+      <div className="bg-white rounded-lg shadow-sm p-8 h-full flex flex-col">
         <div className="flex items-center gap-3 mb-4">
           <div className="relative">
             <PhoneCall className="w-6 h-6 text-blue-600" />
@@ -34,7 +34,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
   // Handle error state
   if (error) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
+      <div className="bg-white rounded-lg shadow-sm p-8 h-full flex flex-col">
         <div className="flex items-center gap-3 mb-4">
           <div className="relative">
             <PhoneCall className="w-6 h-6 text-blue-600" />
@@ -75,7 +75,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
 
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col w-full">
+    <div className="bg-white rounded-lg shadow-sm p-8 h-full flex flex-col w-full">
       {/* Header with Phone Icon */}
       <div className="flex items-center gap-3 mb-6">
         <div className="relative">
@@ -86,7 +86,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
       </div>
 
       {/* Call Performance Cards */}
-      <div className="overflow-y-auto space-y-4 pr-2 flex-1">
+      <div className="overflow-y-auto space-y-6 pr-2 flex-1 px-2 py-2">
         {sortedCallWindows.map((window) => (
           <MetallicTierCard 
             key={window.callNumber}
@@ -129,18 +129,22 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
               No Call Data Available
             </p>
             <p className="text-gray-500 text-sm">Call response times will appear here once you start making calls to leads</p>
-            <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
+            <div className="mt-4 flex items-center justify-center gap-3 text-xs text-gray-400 flex-wrap">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-gradient-to-r from-slate-300 to-blue-300 rounded-full" />
+                Diamond: &lt;1min
+              </div>
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-yellow-400 rounded-full" />
-                Gold: &lt;1min
+                Gold: 1-2min
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-gray-400 rounded-full" />
-                Silver: 1-2min
+                Silver: 2-5min
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-amber-600 rounded-full" />
-                Bronze: 2-5min
+                Bronze: 5-10min
               </div>
             </div>
           </div>

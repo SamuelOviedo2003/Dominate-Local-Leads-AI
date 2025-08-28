@@ -3,7 +3,7 @@
 import { CallWindow } from '@/types/leads'
 import { memo } from 'react'
 import { PremiumMetallicCard } from './PremiumMetallicCard'
-import { Crown, Award, Medal, Phone, PhoneCall, PhoneOutgoing } from 'lucide-react'
+import { Crown, Award, Medal, Phone, PhoneCall, PhoneOutgoing, Gem } from 'lucide-react'
 
 interface MetallicTierCardProps {
   window: CallWindow
@@ -24,7 +24,7 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
           w-16 h-16 rounded-full text-white flex items-center justify-center relative
           shadow-lg ring-2
           ${shouldUsePremiumCard 
-            ? getCircleStyles(window.medalTier as 'gold' | 'silver' | 'bronze')
+            ? getCircleStyles(window.medalTier as 'diamond' | 'gold' | 'silver' | 'bronze')
             : 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-500/40 ring-blue-300/50'
           }
         `}>
@@ -32,7 +32,7 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
             {shouldUsePremiumCard ? (
               /* Premium Tier: Icon + Call Label */
               <>
-                {getTierIcon(window.medalTier as 'gold' | 'silver' | 'bronze')}
+                {getTierIcon(window.medalTier as 'diamond' | 'gold' | 'silver' | 'bronze')}
                 <span className="text-xs font-bold leading-none">
                   Call {window.callNumber}
                 </span>
@@ -65,7 +65,7 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
       <div className="text-right">
         <div className={`text-2xl font-bold ${
           shouldUsePremiumCard 
-            ? getTextColor(window.medalTier as 'gold' | 'silver' | 'bronze')
+            ? getTextColor(window.medalTier as 'diamond' | 'gold' | 'silver' | 'bronze')
             : 'text-gray-700'
         }`}>
           {isCall1 && window.responseTime !== undefined 
@@ -95,7 +95,7 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
 
   return shouldUsePremiumCard ? (
     <PremiumMetallicCard 
-      type={window.medalTier as 'gold' | 'silver' | 'bronze'}
+      type={window.medalTier as 'diamond' | 'gold' | 'silver' | 'bronze'}
       className="transition-all duration-300"
     >
       {cardContent}
@@ -121,8 +121,10 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
 }
 
 // Helper function to get tier icon
-const getTierIcon = (tier: 'gold' | 'silver' | 'bronze') => {
+const getTierIcon = (tier: 'diamond' | 'gold' | 'silver' | 'bronze') => {
   switch (tier) {
+    case 'diamond':
+      return <Gem className="w-4 h-4 text-white" />
     case 'gold':
       return <Crown className="w-4 h-4 text-white" />
     case 'silver':
@@ -135,8 +137,10 @@ const getTierIcon = (tier: 'gold' | 'silver' | 'bronze') => {
 }
 
 // Helper functions for styling
-const getCircleStyles = (tier: 'gold' | 'silver' | 'bronze') => {
+const getCircleStyles = (tier: 'diamond' | 'gold' | 'silver' | 'bronze') => {
   switch (tier) {
+    case 'diamond':
+      return 'bg-gradient-to-br from-slate-300 via-blue-300 to-slate-400 shadow-blue-400/50 ring-blue-200/60 after:absolute after:inset-0 after:rounded-full after:bg-gradient-to-t after:from-black/20 after:to-white/40'
     case 'gold':
       return 'bg-gradient-to-br from-yellow-400 via-amber-500 to-yellow-600 shadow-yellow-500/40 ring-yellow-300/50 after:absolute after:inset-0 after:rounded-full after:bg-gradient-to-t after:from-black/20 after:to-white/30'
     case 'silver':
@@ -148,8 +152,10 @@ const getCircleStyles = (tier: 'gold' | 'silver' | 'bronze') => {
   }
 }
 
-const getTextColor = (tier: 'gold' | 'silver' | 'bronze') => {
+const getTextColor = (tier: 'diamond' | 'gold' | 'silver' | 'bronze') => {
   switch (tier) {
+    case 'diamond':
+      return 'text-slate-600'
     case 'gold':
       return 'text-yellow-700'
     case 'silver':

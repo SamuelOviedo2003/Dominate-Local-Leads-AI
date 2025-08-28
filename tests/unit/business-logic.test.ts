@@ -5,13 +5,13 @@ import { test, expect } from '@playwright/test';
  * Testing core business logic functions and calculations
  */
 
-// Mock test data based on INITIAL.md specifications
+// Mock test data based on updated tier specifications
 const mockCallWindowData = [
   {
     callNumber: 1,
     createdAt: '2024-01-01T10:00:00Z',
     calledAt: '2024-01-01T10:00:30Z', // 30 seconds response time
-    medalTier: 'gold' as const,
+    medalTier: 'diamond' as const,
     responseTime: '< 1 min'
   },
   {
@@ -38,46 +38,62 @@ const mockLeadData = {
 };
 
 test.describe('Call Windows Medal System', () => {
-  test('should calculate gold medal for response time < 1 minute', async () => {
+  test('should calculate diamond medal for response time < 1 minute', async () => {
     const responseTimeMinutes = 0.5; // 30 seconds
     
     let medalTier = null;
-    if (responseTimeMinutes < 1) medalTier = 'gold';
-    else if (responseTimeMinutes < 2) medalTier = 'silver';
-    else if (responseTimeMinutes < 5) medalTier = 'bronze';
+    if (responseTimeMinutes < 1) medalTier = 'diamond';
+    else if (responseTimeMinutes < 2) medalTier = 'gold';
+    else if (responseTimeMinutes < 5) medalTier = 'silver';
+    else if (responseTimeMinutes < 10) medalTier = 'bronze';
+    
+    expect(medalTier).toBe('diamond');
+  });
+
+  test('should calculate gold medal for response time 1-2 minutes', async () => {
+    const responseTimeMinutes = 1.5; // 1.5 minutes
+    
+    let medalTier = null;
+    if (responseTimeMinutes < 1) medalTier = 'diamond';
+    else if (responseTimeMinutes < 2) medalTier = 'gold';
+    else if (responseTimeMinutes < 5) medalTier = 'silver';
+    else if (responseTimeMinutes < 10) medalTier = 'bronze';
     
     expect(medalTier).toBe('gold');
   });
 
-  test('should calculate silver medal for response time 1-2 minutes', async () => {
-    const responseTimeMinutes = 1.5; // 1.5 minutes
+  test('should calculate silver medal for response time 2-5 minutes', async () => {
+    const responseTimeMinutes = 3.5; // 3.5 minutes
     
     let medalTier = null;
-    if (responseTimeMinutes < 1) medalTier = 'gold';
-    else if (responseTimeMinutes < 2) medalTier = 'silver';
-    else if (responseTimeMinutes < 5) medalTier = 'bronze';
+    if (responseTimeMinutes < 1) medalTier = 'diamond';
+    else if (responseTimeMinutes < 2) medalTier = 'gold';
+    else if (responseTimeMinutes < 5) medalTier = 'silver';
+    else if (responseTimeMinutes < 10) medalTier = 'bronze';
     
     expect(medalTier).toBe('silver');
   });
 
-  test('should calculate bronze medal for response time 2-5 minutes', async () => {
-    const responseTimeMinutes = 3.5; // 3.5 minutes
+  test('should calculate bronze medal for response time 5-10 minutes', async () => {
+    const responseTimeMinutes = 7; // 7 minutes
     
     let medalTier = null;
-    if (responseTimeMinutes < 1) medalTier = 'gold';
-    else if (responseTimeMinutes < 2) medalTier = 'silver';
-    else if (responseTimeMinutes < 5) medalTier = 'bronze';
+    if (responseTimeMinutes < 1) medalTier = 'diamond';
+    else if (responseTimeMinutes < 2) medalTier = 'gold';
+    else if (responseTimeMinutes < 5) medalTier = 'silver';
+    else if (responseTimeMinutes < 10) medalTier = 'bronze';
     
     expect(medalTier).toBe('bronze');
   });
 
-  test('should have no medal for response time >= 5 minutes', async () => {
-    const responseTimeMinutes = 6; // 6 minutes
+  test('should have no medal for response time >= 10 minutes', async () => {
+    const responseTimeMinutes = 12; // 12 minutes
     
     let medalTier = null;
-    if (responseTimeMinutes < 1) medalTier = 'gold';
-    else if (responseTimeMinutes < 2) medalTier = 'silver';
-    else if (responseTimeMinutes < 5) medalTier = 'bronze';
+    if (responseTimeMinutes < 1) medalTier = 'diamond';
+    else if (responseTimeMinutes < 2) medalTier = 'gold';
+    else if (responseTimeMinutes < 5) medalTier = 'silver';
+    else if (responseTimeMinutes < 10) medalTier = 'bronze';
     
     expect(medalTier).toBe(null);
   });

@@ -136,7 +136,7 @@ export interface PropertyInfo {
 
 export interface CallWindow {
   callNumber: number // Call number (1-6)
-  medalTier?: 'gold' | 'silver' | 'bronze' | null // For Call 1 only
+  medalTier?: 'diamond' | 'gold' | 'silver' | 'bronze' | null // For Call 1 only
   responseTime?: string // For Call 1 only - human-readable format
   status?: 'No call' | 'called' // For calls 2-6
   calledAt: string | null // Exact timestamp when call was made

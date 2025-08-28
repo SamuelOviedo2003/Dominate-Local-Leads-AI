@@ -47,6 +47,7 @@ test.describe('CallWindows Component', () => {
     await page.goto('/');
     
     const medalTests = [
+      { medalTier: 'diamond', expectedEmoji: '💎' },
       { medalTier: 'gold', expectedEmoji: '🥇' },
       { medalTier: 'silver', expectedEmoji: '🥈' },
       { medalTier: 'bronze', expectedEmoji: '🥉' },
@@ -57,6 +58,8 @@ test.describe('CallWindows Component', () => {
       const result = await page.evaluate((tier) => {
         // Mock getMedalIcon function
         switch (tier) {
+          case 'diamond':
+            return '💎';
           case 'gold':
             return '🥇';
           case 'silver':
@@ -107,6 +110,31 @@ test.describe('CallWindows Component', () => {
     expect(sorted[0].callNumber).toBe(1);
     expect(sorted[1].callNumber).toBe(2);
     expect(sorted[2].callNumber).toBe(3);
+  });
+
+  test('should validate new medal tier thresholds', async ({ page }) => {
+    await page.goto('/');
+    
+    const tierTests = [
+      { responseTime: 0.5, expectedTier: 'diamond', description: '30 seconds should be diamond' },
+      { responseTime: 1.5, expectedTier: 'gold', description: '1.5 minutes should be gold' },
+      { responseTime: 3.0, expectedTier: 'silver', description: '3 minutes should be silver' },
+      { responseTime: 7.0, expectedTier: 'bronze', description: '7 minutes should be bronze' },
+      { responseTime: 12.0, expectedTier: null, description: '12 minutes should have no medal' }
+    ];
+    
+    for (const { responseTime, expectedTier, description } of tierTests) {
+      const result = await page.evaluate((minutes) => {
+        // Mock medal tier calculation logic
+        if (minutes < 1) return 'diamond';
+        else if (minutes < 2) return 'gold';
+        else if (minutes < 5) return 'silver';
+        else if (minutes < 10) return 'bronze';
+        return null;
+      }, responseTime);
+      
+      expect(result).toBe(expectedTier);
+    }
   });
 });
 

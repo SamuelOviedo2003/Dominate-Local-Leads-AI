@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react'
 
-type MetallicType = 'gold' | 'silver' | 'bronze'
+type MetallicType = 'diamond' | 'gold' | 'silver' | 'bronze'
 
 interface PremiumMetallicCardProps {
   type: MetallicType
@@ -19,6 +19,38 @@ const getMetallicStyles = (type: MetallicType) => {
   `
 
   switch (type) {
+    case 'diamond':
+      return {
+        container: `${baseStyles}
+          bg-gradient-to-br from-slate-50/95 via-blue-50/95 to-white/95
+          border-2 border-transparent
+          shadow-xl shadow-slate-300/60
+          hover:shadow-2xl hover:shadow-blue-400/60
+          ring-1 ring-blue-300/30
+          before:absolute before:inset-0 before:rounded-2xl
+          before:bg-gradient-to-r before:from-blue-300/15 before:via-slate-200/25 before:to-white/15
+          before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500
+          after:absolute after:inset-0 after:rounded-2xl
+          after:bg-gradient-to-br after:from-transparent after:via-blue-100/10 after:to-slate-100/15
+        `,
+        border: `
+          absolute inset-0 rounded-2xl
+          bg-gradient-to-r from-slate-300 via-blue-300 to-slate-400
+          p-[2px]
+          shadow-inner shadow-blue-400/40
+        `,
+        innerBorder: `
+          absolute inset-[2px] rounded-[14px]
+          bg-gradient-to-br from-slate-50/98 via-blue-50/98 to-white/98
+        `,
+        shimmer: `
+          absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100
+          bg-gradient-to-r from-transparent via-blue-200/40 to-transparent
+          transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%]
+          transition-all duration-1000 ease-out
+        `
+      }
+
     case 'gold':
       return {
         container: `${baseStyles}

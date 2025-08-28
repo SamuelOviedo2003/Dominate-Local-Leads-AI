@@ -10,20 +10,22 @@ interface RouteParams {
 }
 
 /**
- * Format response time in minutes to human-readable string
+ * Format response time in minutes to minutes:seconds format for accuracy
  */
 function formatResponseTime(minutes: number): string {
-  if (minutes < 1) {
-    return '< 1 min'
-  } else if (minutes < 60) {
-    return `${Math.round(minutes)} min`
-  } else {
+  if (minutes >= 60) {
+    // Keep existing hour format for times over 60 minutes
     const hours = Math.floor(minutes / 60)
-    const remainingMinutes = Math.round(minutes % 60)
+    const remainingMinutes = Math.floor(minutes % 60)
     if (remainingMinutes === 0) {
       return `${hours}h`
     }
     return `${hours}h ${remainingMinutes}m`
+  } else {
+    // Convert to minutes:seconds format for times under 60 minutes
+    const wholeMinutes = Math.floor(minutes)
+    const seconds = Math.round((minutes - wholeMinutes) * 60)
+    return `${wholeMinutes}:${seconds.toString().padStart(2, '0')}`
   }
 }
 
@@ -52,7 +54,7 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
       if (workingHours) {
         // working_hours = true: Keep existing functionality (response time and medals)
         let responseTimeMinutes: number | null = null
-        let medalTier: 'gold' | 'silver' | 'bronze' | null = null
+        let medalTier: 'diamond' | 'gold' | 'silver' | 'bronze' | null = null
         
         if (window.created_at && window.called_at) {
           const createdTime = new Date(window.created_at).getTime()
@@ -62,13 +64,15 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
           
           // Determine medal tier based on response time
           if (responseTimeMinutes < 1) {
-            medalTier = 'gold' // < 1 minute = Gold
+            medalTier = 'diamond' // < 1 minute = Diamond
           } else if (responseTimeMinutes < 2) {
-            medalTier = 'silver' // 1-2 minutes = Silver  
+            medalTier = 'gold' // 1-2 minutes = Gold  
           } else if (responseTimeMinutes < 5) {
-            medalTier = 'bronze' // 2-5 minutes = Bronze
+            medalTier = 'silver' // 2-5 minutes = Silver
+          } else if (responseTimeMinutes < 10) {
+            medalTier = 'bronze' // 5-10 minutes = Bronze
           }
-          // >= 5 minutes = No medal (null)
+          // >= 10 minutes = No medal (null)
         }
         
         return {
