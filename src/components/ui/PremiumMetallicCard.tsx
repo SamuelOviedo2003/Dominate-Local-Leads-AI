@@ -12,7 +12,7 @@ interface PremiumMetallicCardProps {
 
 const getMetallicStyles = (type: MetallicType) => {
   const baseStyles = `
-    rounded-2xl p-6 transition-all duration-500 ease-out
+    rounded-2xl p-3 transition-all duration-500 ease-out
     transform hover:-translate-y-2 hover:scale-[1.02]
     relative overflow-hidden group cursor-default
     backdrop-blur-sm

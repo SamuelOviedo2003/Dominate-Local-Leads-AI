@@ -3,7 +3,7 @@
 import { CallWindow } from '@/types/leads'
 import { memo } from 'react'
 import { PremiumMetallicCard } from './PremiumMetallicCard'
-import { Crown, Award, Medal, Phone, PhoneCall, PhoneOutgoing, Gem } from 'lucide-react'
+import { Crown, Award, Medal, Phone, PhoneCall, PhoneOutgoing, Gem, X } from 'lucide-react'
 
 interface MetallicTierCardProps {
   window: CallWindow
@@ -19,29 +19,31 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
   const cardContent = (
     <div className="flex items-center justify-between">
       {/* Call Number Circle with Enhanced Call Context */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <div className={`
-          w-16 h-16 rounded-full text-white flex items-center justify-center relative
+          w-12 h-12 rounded-full text-white flex items-center justify-center relative
           shadow-lg ring-2
           ${shouldUsePremiumCard 
             ? getCircleStyles(window.medalTier as 'diamond' | 'gold' | 'silver' | 'bronze')
-            : 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-500/40 ring-blue-300/50'
+            : window.calledAt 
+              ? 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-500/40 ring-blue-300/50'
+              : 'bg-gradient-to-br from-red-600 to-red-700 shadow-red-500/40 ring-red-300/50'
           }
         `}>
-          <div className="flex flex-col items-center justify-center relative z-10 gap-0.5">
+          <div className="flex flex-col items-center justify-center relative z-10 gap-0">
             {shouldUsePremiumCard ? (
               /* Premium Tier: Icon + Call Label */
               <>
                 {getTierIcon(window.medalTier as 'diamond' | 'gold' | 'silver' | 'bronze')}
-                <span className="text-xs font-bold leading-none">
+                <span className="text-[9px] font-semibold leading-none">
                   Call {window.callNumber}
                 </span>
               </>
             ) : (
               /* Standard: Complete Call Label */
               <div className="flex flex-col items-center justify-center">
-                <span className="text-xs font-medium leading-none">Call</span>
-                <span className="text-lg font-bold leading-none">
+                <span className="text-[9px] font-semibold leading-none">Call</span>
+                <span className="text-sm font-bold leading-none">
                   {window.callNumber}
                 </span>
               </div>
@@ -54,7 +56,7 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
               {window.calledAt ? (
                 <PhoneCall className="w-2.5 h-2.5 text-green-600" />
               ) : (
-                <Phone className="w-2.5 h-2.5 text-gray-400" />
+                <X className="w-2.5 h-2.5 text-red-600" />
               )}
             </div>
           )}
@@ -63,7 +65,7 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
       
       {/* Response Time or Status with Call Context */}
       <div className="text-right">
-        <div className={`text-2xl font-bold ${
+        <div className={`text-sm font-bold ${
           shouldUsePremiumCard 
             ? getTextColor(window.medalTier as 'diamond' | 'gold' | 'silver' | 'bronze')
             : 'text-gray-700'
@@ -101,17 +103,22 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
       {cardContent}
     </PremiumMetallicCard>
   ) : (
-    <div className="
-      rounded-xl p-5 transition-all duration-300 transform hover:-translate-y-1
-      bg-gradient-to-br from-white to-blue-50/30
-      border-2 border-blue-200/50 hover:border-blue-300/70
-      shadow-sm hover:shadow-md hover:shadow-blue-200/20
+    <div className={`
+      rounded-xl p-3 transition-all duration-300 transform hover:-translate-y-1
+      ${window.calledAt
+        ? 'bg-gradient-to-br from-white to-blue-50/30 border-2 border-blue-200/50 hover:border-blue-300/70 shadow-sm hover:shadow-md hover:shadow-blue-200/20'
+        : 'bg-gradient-to-br from-white to-red-50/30 border-2 border-red-200/50 hover:border-red-300/70 shadow-sm hover:shadow-md hover:shadow-red-200/20'
+      }
       relative overflow-hidden
-    ">
+    `}>
       {/* Subtle call-themed background pattern */}
       <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-2 right-2 w-4 h-4 border-2 border-blue-300 rounded-full" />
-        <div className="absolute bottom-2 left-2 w-3 h-3 border border-blue-200 rounded-full" />
+        <div className={`absolute top-2 right-2 w-4 h-4 border-2 rounded-full ${
+          window.calledAt ? 'border-blue-300' : 'border-red-300'
+        }`} />
+        <div className={`absolute bottom-2 left-2 w-3 h-3 border rounded-full ${
+          window.calledAt ? 'border-blue-200' : 'border-red-200'
+        }`} />
       </div>
       <div className="relative z-10">
         {cardContent}
@@ -124,13 +131,13 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
 const getTierIcon = (tier: 'diamond' | 'gold' | 'silver' | 'bronze') => {
   switch (tier) {
     case 'diamond':
-      return <Gem className="w-4 h-4 text-white" />
+      return <Gem className="w-3 h-3 text-white" />
     case 'gold':
-      return <Crown className="w-4 h-4 text-white" />
+      return <Crown className="w-3 h-3 text-white" />
     case 'silver':
-      return <Award className="w-4 h-4 text-white" />
+      return <Award className="w-3 h-3 text-white" />
     case 'bronze':
-      return <Medal className="w-4 h-4 text-white" />
+      return <Medal className="w-3 h-3 text-white" />
     default:
       return null
   }
