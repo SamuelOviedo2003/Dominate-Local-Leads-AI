@@ -33,7 +33,7 @@ export default async function LoginPage() {
         <div className="text-center mb-8 animate-slide-down">
           <div className="relative inline-block animate-logo-entrance">
             <ImageWithFallback
-              src="/images/DominateLocalLeadsLogo.webp"
+              src="/images/DominateLocalLeadsLogo.png"
               alt="Dominate Local Leads AI"
               className="mx-auto h-auto max-h-24 object-contain drop-shadow-2xl transition-transform duration-300 hover:scale-105"
               fallbackBehavior="hide"

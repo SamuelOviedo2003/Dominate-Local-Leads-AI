@@ -30,8 +30,18 @@ export async function forgotPassword(formData: FormData) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
                    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://yourapp.com')
 
+    console.log('=== FORGOT PASSWORD DEBUG ===')
     console.log(`Attempting password reset for email: ${email}`)
+    console.log(`Environment: ${process.env.NODE_ENV}`)
+    console.log(`Site URL: ${siteUrl}`)
     console.log(`Redirect URL will be: ${siteUrl}/auth/confirm?next=/account/update-password`)
+    console.log(`Full reset URL: ${siteUrl}/auth/confirm?token_hash=[TOKEN]&type=recovery&next=/account/update-password`)
+
+    // Validate site URL format
+    if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
+      console.error('❌ Invalid site URL format:', siteUrl)
+      redirect('/login?error=Configuration error. Please contact support.&mode=forgotPassword')
+    }
 
     // Send password reset email using Supabase
     // The redirectTo URL will be used after the user clicks the email link
@@ -39,7 +49,9 @@ export async function forgotPassword(formData: FormData) {
       redirectTo: `${siteUrl}/auth/confirm?next=/account/update-password`
     })
 
-    console.log('Supabase resetPasswordForEmail response:', { data, error })
+    console.log('Supabase resetPasswordForEmail response:')
+    console.log('  - Data:', JSON.stringify(data, null, 2))
+    console.log('  - Error:', error ? JSON.stringify(error, null, 2) : 'None')
 
     if (error) {
       console.error('Password reset email error details:', {
@@ -64,7 +76,8 @@ export async function forgotPassword(formData: FormData) {
       }
     }
 
-    console.log('Password reset email sent successfully')
+    console.log('✅ Password reset email sent successfully')
+    console.log('=== END FORGOT PASSWORD DEBUG ===')
     // Success - redirect with success message
     redirect('/login?success=If an account with that email exists, you will receive a password reset link&mode=forgotPassword')
 

@@ -106,7 +106,7 @@ export default function UniversalHeader({
   // Initialize fallback color extraction when no business data
   useEffect(() => {
     if (!user.businessData?.avatar_url) {
-      extractColors('/images/DominateLocalLeadsLogo.webp', 'main-logo')
+      extractColors('/images/DominateLocalLeadsLogo.png', 'main-logo')
     }
   }, [user.businessData?.avatar_url]) // Removed extractColors to prevent infinite loop
 
@@ -142,7 +142,7 @@ export default function UniversalHeader({
                 /* Fallback to main logo if no business data */
                 <div className="relative group">
                   <ImageWithFallback
-                    src="/images/DominateLocalLeadsLogo.webp"
+                    src="/images/DominateLocalLeadsLogo.png"
                     alt="Dominate Local Leads AI"
                     className="h-10 w-auto object-contain drop-shadow-lg transition-transform duration-300 group-hover:scale-105"
                     fallbackBehavior="placeholder"
