@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   console.log('=== AUTH DEBUG ENDPOINT ===')
 
-  const debugInfo = {
+  const debugInfo: any = {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     
