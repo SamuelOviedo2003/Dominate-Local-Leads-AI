@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useState } from 'react'
 import { LeadWithClient } from '@/types/leads'
 
@@ -87,7 +88,13 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
   }
 
 
-  const handleRowClick = (leadId: string) => {
+  const handleRowClick = (e: React.MouseEvent, leadId: string) => {
+    // Allow default behavior for right-clicks, ctrl+clicks, middle clicks, etc.
+    if (e.ctrlKey || e.metaKey || e.button === 1 || e.button === 2) {
+      return
+    }
+    
+    e.preventDefault()
     setNavigatingId(leadId)
     try {
       router.push(`/${navigationTarget}/${leadId}`)
@@ -147,17 +154,22 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
             <tbody className="bg-white divide-y divide-gray-200">
               {leads.map((lead) => {
                 const rowBackground = getRowBackground(lead.call_now_status)
+                const leadUrl = `/${navigationTarget}/${lead.lead_id}`
                 
                 return (
-                  <tr 
+                  <Link 
                     key={lead.lead_id}
-                    onClick={() => handleRowClick(lead.lead_id)}
-                    className={`cursor-pointer transition-all duration-200 ${
-                      rowBackground
-                    } ${
-                      navigatingId === lead.lead_id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
-                    }`}
+                    href={leadUrl}
+                    className="contents"
                   >
+                    <tr 
+                      onClick={(e) => handleRowClick(e, lead.lead_id)}
+                      className={`cursor-pointer transition-all duration-200 ${
+                        rowBackground
+                      } ${
+                        navigatingId === lead.lead_id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
+                      }`}
+                    >
                     {/* Lead Name with Score Circle */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -207,7 +219,8 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {lead.next_step || 'Not set'}
                     </td>
-                  </tr>
+                    </tr>
+                  </Link>
                 )
               })}
             </tbody>

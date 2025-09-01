@@ -2,7 +2,9 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { login } from './actions'
-import LoginForm from '@/components/LoginForm'
+import { signup } from './signup-actions'
+import { forgotPassword } from './forgot-password-actions'
+import AuthForm from '@/components/AuthForm'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import { ComponentLoading } from '@/components/LoadingSystem'
 
@@ -47,19 +49,12 @@ export default async function LoginPage() {
           <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-brand-orange-400/20 via-brand-orange-300/20 to-brand-slate-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
           
           <div className="relative z-10">
-            <h1 className="text-3xl font-bold text-white text-center mb-8 animate-slide-up">
-              Welcome Back
-            </h1>
-            <p className="text-white/80 text-center mb-8 animate-fade-in">
-              Sign in to your account to continue
-            </p>
-            
             <Suspense fallback={
               <div className="py-8">
-                <ComponentLoading message="Loading login form..." />
+                <ComponentLoading message="Loading authentication form..." />
               </div>
             }>
-              <LoginForm loginAction={login} />
+              <AuthForm loginAction={login} signupAction={signup} forgotPasswordAction={forgotPassword} />
             </Suspense>
           </div>
         </div>
