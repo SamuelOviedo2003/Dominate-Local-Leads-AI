@@ -7,12 +7,11 @@ import { InlineLoading } from '@/components/LoadingSystem'
 interface AuthFormProps {
   loginAction: (formData: FormData) => void
   signupAction: (formData: FormData) => void
-  forgotPasswordAction: (formData: FormData) => void
 }
 
-type AuthMode = 'login' | 'signup' | 'forgotPassword'
+type AuthMode = 'login' | 'signup'
 
-export default function AuthForm({ loginAction, signupAction, forgotPasswordAction }: AuthFormProps) {
+export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
   const success = searchParams.get('success')
@@ -30,8 +29,6 @@ export default function AuthForm({ loginAction, signupAction, forgotPasswordActi
         loginAction(formData)
       } else if (authMode === 'signup') {
         signupAction(formData)
-      } else if (authMode === 'forgotPassword') {
-        forgotPasswordAction(formData)
       }
     })
   }
@@ -58,27 +55,17 @@ export default function AuthForm({ loginAction, signupAction, forgotPasswordActi
     setFocusedField(null)
   }
 
-  const switchToForgotPassword = () => {
-    setAuthMode('forgotPassword')
-    setShowPassword(false)
-    setShowConfirmPassword(false)
-    setFocusedField(null)
-  }
-
   return (
     <div className="relative">
       {/* Header Section */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-white mb-4 animate-slide-up">
-          {authMode === 'login' ? 'Welcome Back' : 
-           authMode === 'signup' ? 'Create Account' : 'Reset Password'}
+          {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
         </h1>
         <p className="text-white/80 animate-fade-in">
           {authMode === 'login' 
             ? 'Sign in to your account to continue'
-            : authMode === 'signup'
-            ? 'Join us to start dominating local leads'
-            : 'Enter your email to receive a password reset link'
+            : 'Join us to start dominating local leads'
           }
         </p>
       </div>
@@ -189,26 +176,25 @@ export default function AuthForm({ loginAction, signupAction, forgotPasswordActi
             </div>
           </div>
 
-          {/* Password Field - Only for Login and Signup */}
-          {authMode !== 'forgotPassword' && (
-            <div className="relative group">
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  disabled={isPending}
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                  className={`peer w-full px-4 py-3 pl-11 pr-11 bg-white/10 border border-white/20 rounded-xl text-white placeholder-transparent 
-                    focus:outline-none focus:ring-2 focus:ring-brand-orange-400/50 focus:border-brand-orange-400/50 focus:bg-white/15
-                    backdrop-blur-sm transition-all duration-300 transform
-                    ${focusedField === 'password' ? 'scale-[1.02] shadow-lg shadow-brand-orange-500/20' : ''}
-                    ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
-                    disabled:opacity-50 disabled:cursor-not-allowed`}
-                  placeholder="Password"
-                />
+          {/* Password Field */}
+          <div className="relative group">
+            <div className="relative">
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                disabled={isPending}
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+                className={`peer w-full px-4 py-3 pl-11 pr-11 bg-white/10 border border-white/20 rounded-xl text-white placeholder-transparent 
+                  focus:outline-none focus:ring-2 focus:ring-brand-orange-400/50 focus:border-brand-orange-400/50 focus:bg-white/15
+                  backdrop-blur-sm transition-all duration-300 transform
+                  ${focusedField === 'password' ? 'scale-[1.02] shadow-lg shadow-brand-orange-500/20' : ''}
+                  ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
+                  disabled:opacity-50 disabled:cursor-not-allowed`}
+                placeholder="Password"
+              />
               <label 
                 htmlFor="password" 
                 className={`absolute left-11 top-3 text-white/60 text-sm transition-all duration-300 pointer-events-none
@@ -247,7 +233,6 @@ export default function AuthForm({ loginAction, signupAction, forgotPasswordActi
               </button>
             </div>
           </div>
-          )}
 
           {/* Confirm Password Field - Only for Signup */}
           {authMode === 'signup' && (
@@ -339,19 +324,12 @@ export default function AuthForm({ loginAction, signupAction, forgotPasswordActi
                 </svg>
                 Sign In to Continue
               </>
-            ) : authMode === 'signup' ? (
+            ) : (
               <>
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
                 Create Account
-              </>
-            ) : (
-              <>
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l4 4m0 0l4-4m-4 4v11m6-15a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Send Reset Link
               </>
             )}
           </span>
@@ -360,45 +338,20 @@ export default function AuthForm({ loginAction, signupAction, forgotPasswordActi
         {/* Mode Switch */}
         <div className="text-center pt-4 space-y-2">
           {authMode === 'login' ? (
-            <>
-              <p className="text-white/70 text-sm">
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={switchToSignup}
-                  disabled={isPending}
-                  className="text-brand-orange-400 hover:text-brand-orange-300 font-medium transition-colors duration-300 underline decoration-transparent hover:decoration-current disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Create Account
-                </button>
-              </p>
-              <p className="text-white/70 text-sm">
-                Forgot your password?{' '}
-                <button
-                  type="button"
-                  onClick={switchToForgotPassword}
-                  disabled={isPending}
-                  className="text-brand-orange-400 hover:text-brand-orange-300 font-medium transition-colors duration-300 underline decoration-transparent hover:decoration-current disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Reset Password
-                </button>
-              </p>
-            </>
-          ) : authMode === 'signup' ? (
             <p className="text-white/70 text-sm">
-              Already have an account?{' '}
+              Don't have an account?{' '}
               <button
                 type="button"
-                onClick={switchToLogin}
+                onClick={switchToSignup}
                 disabled={isPending}
                 className="text-brand-orange-400 hover:text-brand-orange-300 font-medium transition-colors duration-300 underline decoration-transparent hover:decoration-current disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Back to Sign In
+                Create Account
               </button>
             </p>
           ) : (
             <p className="text-white/70 text-sm">
-              Remember your password?{' '}
+              Already have an account?{' '}
               <button
                 type="button"
                 onClick={switchToLogin}

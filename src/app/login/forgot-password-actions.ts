@@ -26,9 +26,25 @@ export async function forgotPassword(formData: FormData) {
   }
 
   try {
-    // Get the site URL from environment or use localhost for development
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                   (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://yourapp.com')
+    // Get the site URL from environment with proper fallback handling
+    let siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+    
+    // If not set, provide appropriate fallbacks based on environment
+    if (!siteUrl) {
+      if (process.env.NODE_ENV === 'development') {
+        siteUrl = 'http://localhost:3000'
+        console.warn('⚠️  NEXT_PUBLIC_SITE_URL not set, using development fallback:', siteUrl)
+      } else {
+        console.error('❌ CRITICAL: NEXT_PUBLIC_SITE_URL must be set in production environment')
+        redirect('/login?error=Server configuration error. Please contact support.&mode=forgotPassword')
+      }
+    }
+    
+    // Ensure the site URL doesn't contain localhost in production
+    if (process.env.NODE_ENV === 'production' && siteUrl.includes('localhost')) {
+      console.error('❌ CRITICAL: Production environment using localhost URL:', siteUrl)
+      redirect('/login?error=Server configuration error. Please contact support.&mode=forgotPassword')
+    }
 
     console.log('=== FORGOT PASSWORD DEBUG ===')
     console.log(`Attempting password reset for email: ${email}`)

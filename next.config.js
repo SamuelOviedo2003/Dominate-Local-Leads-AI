@@ -11,6 +11,12 @@ const nextConfig = {
   // Enable standalone output for optimal Docker deployment
   output: 'standalone',
   
+  // Ensure public assets are properly handled in standalone builds
+  trailingSlash: false,
+  
+  // Asset prefix for proper static file handling
+  assetPrefix: process.env.NODE_ENV === 'production' ? undefined : '',
+  
   // TypeScript configuration
   typescript: {
     tsconfigPath: './tsconfig.json',
