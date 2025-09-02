@@ -2,11 +2,11 @@
 
 import { memo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { PropertyOverview } from '@/components/features/leads/PropertyOverview'
+import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
+import { PropertyInformation } from '@/components/features/leads/PropertyInformation'
 import { useCompany } from '@/contexts/CompanyContext'
 import { useLeadDetailsData } from '@/hooks/useLeadDetailsData'
-import ImageWithFallback from '@/components/ImageWithFallback'
 
 const PropertyDetailsPage = () => {
   const params = useParams()
@@ -22,7 +22,8 @@ const PropertyDetailsPage = () => {
     isCommunicationsLoading,
     leadInfoError,
     communicationsError,
-    error
+    error,
+    refetch
   } = useLeadDetailsData({
     leadId,
     businessId: businessId || ''
@@ -79,46 +80,25 @@ const PropertyDetailsPage = () => {
           </button>
         </div>
 
-        {/* Top Section: Property Info + Property Image */}
+        {/* Top Section: Lead Info + Property Information */}
         <div className="flex flex-col lg:flex-row gap-6 mb-6">
-          {/* Left section - Property Information (70-75% width) */}
+          {/* Left section - Lead Information (70-75% width) */}
           <div className="flex-1 lg:flex-[3] min-h-[540px] h-[540px]">
-            <div className="bg-white rounded-lg shadow-sm p-6 h-full overflow-y-auto">
-              <div className="mb-4">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Property Details
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  {leadDetails?.lead.first_name} {leadDetails?.lead.last_name}
-                </p>
-              </div>
-              
-              <PropertyOverview 
-                property={leadDetails?.property || null} 
-              />
-            </div>
+            <LeadInformation 
+              lead={leadDetails?.lead || null}
+              property={leadDetails?.property || null}
+              isLoading={isLeadInfoLoading}
+              error={leadInfoError}
+            />
           </div>
           
-          {/* Right section - Property Image (25-30% width) */}
+          {/* Right section - Property Information (25-30% width) */}
           <div className="lg:flex-1 lg:max-w-[320px] h-[540px]">
-            <div className="bg-white rounded-lg shadow-sm h-full overflow-hidden">
-              {leadDetails?.property?.house_url ? (
-                <ImageWithFallback
-                  src={leadDetails.property.house_url}
-                  alt="Property"
-                  className="w-full h-full object-cover"
-                  fallbackBehavior="placeholder"
-                  fallbackText="IMAGE COMING SOON"
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center">
-                  <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <div className="text-gray-500 text-lg font-medium">IMAGE COMING SOON</div>
-                </div>
-              )}
-            </div>
+            <PropertyInformation 
+              property={leadDetails?.property || null}
+              isLoading={isLeadInfoLoading}
+              error={leadInfoError}
+            />
           </div>
         </div>
 
