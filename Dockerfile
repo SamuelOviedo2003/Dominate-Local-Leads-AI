@@ -57,7 +57,6 @@ RUN --mount=type=cache,target=/root/.npm \
 
 # Copy source code
 COPY src ./src
-COPY public ./public
 COPY scripts ./scripts
 COPY next.config.js ./
 COPY tsconfig.json ./
@@ -75,8 +74,8 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 # Set NODE_ENV back to production for the build
 ENV NODE_ENV=production
 
-# Build the application with standalone output
-RUN npm run build
+# Build the application with standalone output (skip post-build script)
+RUN npm run build:no-post
 
 # =========================================
 # Stage 4: Production Runtime
@@ -89,8 +88,7 @@ USER nextjs
 # Copy standalone application from builder
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# Copy public assets from standalone build (includes post-build script output)
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone/public ./public
+# Note: No public directory copy needed - Next.js will serve from CDN/external source
 
 # Expose the port the app runs on
 EXPOSE 3000

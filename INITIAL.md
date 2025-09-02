@@ -50,6 +50,22 @@ A comprehensive lead management system for roofing businesses that tracks leads,
 - **Requirement**: System must support different user roles (including Super Admin with role 0)
 - **Requirement**: Each user must be associated with business data from `business_clients` table
 
+#### Signup System
+- **Requirement**: New users can create accounts with email, password, and full name
+- **Requirement**: Password confirmation must match original password
+- **Requirement**: Email confirmation required before account activation
+- **Requirement**: Profile creation handled automatically by database triggers
+- **Requirement**: New users default to business_id 1 and role 1 (non-admin)
+- **Requirement**: Comprehensive error handling with user-friendly messages
+- **Requirement**: Signup errors redirect to login page with error mode
+
+#### Authentication Flow Fixes
+- **Fixed**: All signup error redirects now go to `/login?error=...&mode=signup` instead of non-existent `/signup` routes
+- **Fixed**: Database trigger conflicts resolved - profile creation now handled exclusively by `handle_new_user()` trigger
+- **Fixed**: Email confirmation flow properly implemented with success/error messaging
+- **Fixed**: NEXT_REDIRECT errors no longer caught in try-catch blocks to allow proper redirects
+- **Removed**: Forgot password functionality completely disabled until proper email service configuration
+
 #### SQL Queries Required
 ```sql
 -- Fetch user profile after authentication
@@ -68,8 +84,15 @@ SELECT * FROM business_clients WHERE avatar_url IS NOT NULL;
 - **Requirement**: Login forms must be centered on screen
 - **Requirement**: Background must use animated gradient (blue to indigo to purple)
 - **Requirement**: Forms must use glass morphism effect with backdrop blur
-- **Requirement**: Company logo must display above form (`/public/images/DominateLocalLeadsLogo.webp`)
+- **Requirement**: Company logo must display above form using LoginLogo component
 - **Requirement**: Logo must maintain natural aspect ratio
+- **Fixed**: Logo implementation completely redesigned for production reliability:
+  - Uses custom LoginLogo component with robust fallback system
+  - Implements plain HTML img tags instead of Next.js Image component
+  - Primary logo: `/images/DominateLocalLeadsLogo.png`
+  - Fallback options: Multiple image formats with error handling
+  - Enhanced loading states and visual feedback
+  - Resolves Docker deployment static asset serving issues
 
 #### Authentication Flow
 - **Requirement**: Unauthenticated users must redirect to login page
@@ -307,13 +330,14 @@ ORDER BY l.created_at DESC;
 - **Requirement**: Must display calls numbered 1-6 with only relevant call data
 - **Requirement**: Must calculate and display response time between creation and first call for Call 1 only
 - **Requirement**: Must implement medal tier system for Call 1 based on response time performance:
-  - Gold Medal: Response time < 1 minute (🥇)
-  - Silver Medal: Response time 1-2 minutes (🥈)
-  - Bronze Medal: Response time 2-5 minutes (🥉)
-  - No Medal: Response time ≥ 5 minutes
+  - Diamond Medal: Response time < 1 minute (💎)
+  - Gold Medal: Response time 1-2 minutes (🥇)
+  - Silver Medal: Response time 2-5 minutes (🥈)
+  - Bronze Medal: Response time 5-10 minutes (🥉)
+  - No Medal: Response time ≥ 10 minutes
 - **Requirement**: Must show call status for Calls 2-6 (called vs No call)
 - **Requirement**: Must display call timestamps when calls were made
-- **Requirement**: Must format response times in human-readable format (< 1 min, 5 min, 1h 30m)
+- **Requirement**: Must format response times in precise minutes:seconds format for Call 1 (0:45, 1:30, 5:00) with hour format for times over 60 minutes (1h 30m)
 - **Requirement**: Must remove WINDOW START, WINDOW END, and CALL STATUS fields from display
 
 #### SQL Queries Required
@@ -338,7 +362,7 @@ ORDER BY call_window ASC;
 -- Simplified business logic calculations performed in application:
 -- Filter out unscheduled call windows (ones without created_at or placeholders)
 -- responseTimeMinutes: (called_at - created_at) in minutes for Call 1 only
--- medalTier: 'gold' (<1min), 'silver' (1-2min), 'bronze' (2-5min), null (≥5min) for Call 1
+-- medalTier: 'diamond' (<1min), 'gold' (1-2min), 'silver' (2-5min), 'bronze' (5-10min), null (≥10min) for Call 1
 -- status: 'called' vs 'No call' for Calls 2-6
 -- calledAt: Exact timestamp when call was made
 -- Only display actual calls, no empty placeholders
@@ -366,18 +390,22 @@ ORDER BY created_at ASC;
 - **Requirement**: Must include back navigation to New Leads
 - **Requirement**: Communications must expand vertically (no internal scroll)
 
-#### Call Windows UI Requirements (Simplified and Modern)
-- **Requirement**: Must display only essential call information without redundant labels
-- **Requirement**: Must show call numbers in circles without additional "Call X" text
-- **Requirement**: Must remove all caps labels (RESPONSE TIME, CALLED AT, CALL STATUS)
-- **Requirement**: Must display Call 1 with number, medal, and response time value only
-- **Requirement**: Must display Calls 2-6 with number and status ("Not called" or exact timestamp)
+#### Call Windows UI Requirements (Modern Vertical Design)
+- **Requirement**: Must display call items in single vertical column layout with compact spacing
+- **Requirement**: Must show call numbers in circles (w-12 h-12) with tier-specific icons and compact labels
+- **Requirement**: Must implement visual state differentiation for call status:
+  - Called items: Blue gradient theme with phone icons (PhoneCall component)
+  - Not called items: Red gradient theme with X icons for clear status indication
+- **Requirement**: Must display Call 1 with medal tier recognition and response time value
+- **Requirement**: Must display Calls 2-6 with call status ("Not called" or exact timestamp)
 - **Requirement**: Must use "Not called" instead of "No call" for better language clarity
-- **Requirement**: Must show medal icons (🥇🥈🥉) prominently for Call 1 performance recognition
-- **Requirement**: Must display response times in user-friendly format (< 1 min, 5 min, 1h 30m)
-- **Requirement**: Must use clean card design with subtle borders and hover effects
-- **Requirement**: Must provide clear visual hierarchy through layout and spacing
-- **Requirement**: Must be responsive across desktop and mobile layouts
+- **Requirement**: Must show medal icons (💎🥇🥈🥉) prominently for Call 1 performance recognition
+- **Requirement**: Must display response times in precise minutes:seconds format (0:45, 1:30, 5:00) with hour format for extended times
+- **Requirement**: Must use premium metallic card design for tier items with tier-specific styling and shimmer effects
+- **Requirement**: Must fit exactly 6 call items within 540px container height without overflow or scrolling
+- **Requirement**: Must use optimized spacing: container padding p-4, item spacing space-y-1, bottom margin mb-3
+- **Requirement**: Must implement responsive design with single column layout (max-w-md) centered within container
+- **Requirement**: Must provide proper visual hierarchy through consistent sizing and color coding
 
 #### Symmetrical Layout Requirements (Enhanced)
 - **Requirement**: Must implement perfect symmetrical layout with Lead Info card (left) and Call Windows (right)
@@ -407,12 +435,14 @@ ORDER BY created_at ASC;
 
 ### Functional Requirements
 
-#### Analytics Dashboard
-- **Requirement**: Must display source distribution pie chart
-- **Requirement**: Must display caller type distribution pie chart
-- **Requirement**: Must show Sankey diagram linking sources to caller types
-- **Requirement**: Must display recent calls table
+#### Analytics Dashboard (Enhanced Interactive Experience)
+- **Requirement**: Must display source distribution bar chart with interactive hover functionality
+- **Requirement**: Must display caller type distribution bar chart
+- **Requirement**: Must show source-specific caller type breakdown in hover popups when hovering over source distribution items
+- **Requirement**: Must display recent calls table with assigned personnel information
 - **Requirement**: Must include time period filter (7/15/30/60/90 days)
+- **Requirement**: Must provide interactive hover experience: hover over source distribution bars to see caller type breakdown for that specific source
+- **Requirement**: Must use compact popup windows that appear on hover and disappear when cursor moves away
 
 #### SQL Queries Required
 ```sql
@@ -432,28 +462,113 @@ AND caller_type != 'Unknown'
 GROUP BY caller_type
 ORDER BY count DESC;
 
--- Sankey relationships
-SELECT source, caller_type, COUNT(*) as value
+-- Source-specific caller type distribution (for hover popups)
+SELECT caller_type, COUNT(*) as count
 FROM incoming_calls
 WHERE created_at >= $startDate
-AND source IS NOT NULL AND source != 'Unknown'
-AND caller_type IS NOT NULL AND caller_type != 'Unknown'
-GROUP BY source, caller_type
-ORDER BY value DESC;
+AND business_id = $businessId
+AND source = $hoveredSource
+AND caller_type IS NOT NULL
+AND caller_type != 'Unknown'
+GROUP BY caller_type
+ORDER BY count DESC;
 
--- Recent calls table
-SELECT *
+-- Recent calls table (with assigned personnel)
+SELECT incoming_call_id, source, caller_type, duration, assigned_id, assigned, created_at, business_id
 FROM incoming_calls
 WHERE created_at >= $startDate
+AND business_id = $businessId
 ORDER BY created_at DESC
 LIMIT 20;
 ```
 
 ### UI Requirements
-- **Requirement**: Must use responsive grid layout for charts
-- **Requirement**: Must exclude "Unknown" values from visualizations
-- **Requirement**: Must show hover tooltips on charts
-- **Requirement**: Table must display: Date & Time, Source, Caller Type, Duration, Status
+
+#### Interactive Hover System
+- **Requirement**: Must implement smooth hover interactions on source distribution bars
+- **Requirement**: Must display compact, square-ish popup windows positioned near hovered elements
+- **Requirement**: Must show loading states in popups while fetching source-specific caller type data
+- **Requirement**: Must use fade-in/slide-up animations for popup appearance and disappearance
+- **Requirement**: Must position popups intelligently to avoid screen edge clipping
+- **Requirement**: Must provide visual hover feedback on source distribution bars (color transitions)
+
+#### Layout and Design
+- **Requirement**: Must use responsive grid layout for main charts (source distribution and caller type distribution)
+- **Requirement**: Must exclude "Unknown" values from all visualizations
+- **Requirement**: Must remove standalone Call Flow Analysis section (transformed into hover functionality)
+- **Requirement**: Must maintain consistent purple/indigo theme throughout hover popups
+- **Requirement**: Must ensure popup windows are compact and professional in appearance
+
+#### Recent Calls Table
+- **Requirement**: Table must display: Date & Time, Source, Caller Type, Duration, Assigned
+- **Requirement**: Must replace Status column with Assigned column showing personnel names
+- **Requirement**: Must use assigned_id to fetch assigned person's name from database
+- **Requirement**: Must display "Unassigned" for calls without assigned personnel
+- **Requirement**: Must use badge styling: blue badges for assigned calls, gray badges for unassigned calls
+- **Requirement**: Must handle null/undefined assigned names gracefully with fallback text
+- **Requirement**: Must support clickable table rows that open Recent Calls popup for detailed call information
+
+#### Recent Calls Popup (New Feature)
+- **Requirement**: Must open when clicking any row in the Recent Calls table
+- **Requirement**: Must display call details in modal overlay with backdrop blur
+- **Requirement**: Must show call date/time, call summary, and caller type dropdown
+- **Requirement**: Must include custom integrated audio player for call recordings
+- **Requirement**: Must support caller type editing with auto-save functionality
+- **Requirement**: Must close on ESC key, backdrop click, or X button
+- **Requirement**: Must be fully responsive across desktop, tablet, and mobile devices
+
+#### Recent Calls Popup Components
+
+##### Modal Behavior
+- **Requirement**: Must center on screen with proper z-index layering
+- **Requirement**: Must use backdrop blur effect with click-to-close functionality
+- **Requirement**: Must prevent body scrolling when open
+- **Requirement**: Must support ESC key to close with proper event listener cleanup
+- **Requirement**: Must handle click outside to close without interfering with internal clicks
+
+##### Audio Player Integration
+- **Requirement**: Must display custom audio player with microphone icon when recording_url exists
+- **Requirement**: Must show blue circular play/pause button with proper state management
+- **Requirement**: Must include progress bar that updates during playback with accurate time display
+- **Requirement**: Must display current time and total duration (format: M:SS)
+- **Requirement**: Must support seeking via progress bar interaction
+- **Requirement**: Must handle audio loading states with spinner animation
+- **Requirement**: Must gracefully handle missing recordings with "No recording available" message
+- **Requirement**: Must properly cleanup audio resources on component unmount
+
+##### Call Summary Display
+- **Requirement**: Must display call summary text without background styling
+- **Requirement**: Must handle missing/null summary gracefully
+- **Requirement**: Must use clean typography matching Communications section styling
+- **Requirement**: Must support multi-line content with proper spacing
+
+##### Caller Type Management
+- **Requirement**: Must display dropdown with options: Client, Sales person, Other, Looking for job
+- **Requirement**: Must show current caller_type as selected option
+- **Requirement**: Must implement auto-save on selection change via PATCH API call
+- **Requirement**: Must show loading spinner during save operation
+- **Requirement**: Must use optimistic UI updates for immediate feedback
+- **Requirement**: Must validate caller_type values against allowed options
+- **Requirement**: Must handle save errors gracefully without breaking UI
+
+#### Additional SQL Queries Required
+```sql
+-- Fetch individual call details for popup
+SELECT incoming_call_id, source, caller_type, duration, assigned_id, assigned, created_at, business_id, recording_url, call_summary
+FROM incoming_calls
+WHERE incoming_call_id = $callId
+AND business_id = $businessId;
+
+-- Update caller type
+UPDATE incoming_calls 
+SET caller_type = $callerType
+WHERE incoming_call_id = $callId
+AND business_id = $businessId;
+```
+
+#### API Endpoints Required
+- **Endpoint**: `/api/incoming-calls/[callId]` (GET) - Fetch individual call details with authentication and business validation
+- **Endpoint**: `/api/incoming-calls/[callId]` (PATCH) - Update caller type with validation and error handling
 
 ---
 
@@ -668,8 +783,10 @@ DELETE FROM profiles WHERE id = $userId;
 - **Key Fields**: id, email, full_name, avatar_url, role, business_id
 
 #### incoming_calls
-- **Purpose**: Store call analytics data
-- **Key Fields**: incoming_call_id, source, caller_type, duration, status, created_at
+- **Purpose**: Store call analytics data with assigned personnel tracking and detailed call information
+- **Key Fields**: incoming_call_id, source, caller_type, duration, assigned_id, assigned, created_at, business_id, recording_url, call_summary
+- **Enhanced Features**: Personnel assignment tracking, source-specific caller type filtering, interactive hover data support, audio recording storage, call summary text storage
+- **Recent Enhancement**: Added recording_url (TEXT) and call_summary (TEXT) fields for Recent Calls popup functionality
 
 #### leads_calls
 - **Purpose**: Store appointment setter call data
@@ -705,6 +822,24 @@ DELETE FROM profiles WHERE id = $userId;
 - **Environment Variables**: 
   - NEXT_PUBLIC_SUPABASE_URL
   - NEXT_PUBLIC_SUPABASE_ANON_KEY
+  - NEXT_PUBLIC_SITE_URL (required for production deployments)
+
+### Production Deployment Requirements
+- **Build Type**: Next.js standalone build optimized for production
+- **Static Assets**: Public folder assets automatically copied to standalone build
+- **Logo Requirements**: Production logo path must resolve to `/images/DominateLocalLeadsLogo.png`
+- **Post-Build Processing**: Automated script copies public assets to standalone build directory
+- **Environment Configuration**: Production NEXT_PUBLIC_SITE_URL must be set to actual domain
+- **Docker Build Requirements**: 
+  - Dockerfile must include `COPY scripts ./scripts` in builder stage
+  - Scripts directory contains essential post-build.js for asset copying
+  - Build process requires scripts directory to be available in container
+  - **Fixed**: Static assets now copied directly from `/app/public` to `./public` for reliable serving
+  - **Fixed**: Resolves logo display issues in containerized production deployments
+- **Deployment Commands**: 
+  - Development: `npm run dev`
+  - Production Build: `npm run build` (includes asset copy)
+  - Production Build for Sliplane: `npm run build:sliplane`
 
 ### Performance Requirements
 - **Page Load**: Under 3 seconds
