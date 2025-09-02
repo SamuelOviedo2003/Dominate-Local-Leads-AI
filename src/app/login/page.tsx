@@ -1,11 +1,11 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { login } from './actions'
 import { signup } from './signup-actions'
 import AuthForm from '@/components/AuthForm'
 import ImageWithFallback from '@/components/ImageWithFallback'
+import LoginLogo from '@/components/LoginLogo'
 import { ComponentLoading } from '@/components/LoadingSystem'
 
 export const dynamic = 'force-dynamic'
@@ -32,14 +32,7 @@ export default async function LoginPage() {
         {/* Company Logo */}
         <div className="text-center mb-8 animate-slide-down">
           <div className="relative inline-block animate-logo-entrance">
-            <Image
-              src="/images/DominateLocalLeadsLogoLogIn.webp"
-              alt="Dominate Local Leads AI"
-              width={400}
-              height={96}
-              priority
-              className="mx-auto h-auto max-h-24 object-contain drop-shadow-2xl transition-transform duration-300 hover:scale-105"
-            />
+            <LoginLogo className="mx-auto h-auto max-h-24 object-contain drop-shadow-2xl transition-transform duration-300 hover:scale-105" />
             {/* Subtle glow effect behind logo */}
             <div className="absolute inset-0 -z-10 bg-gradient-to-r from-brand-orange-500/20 via-brand-orange-400/30 to-brand-orange-300/20 rounded-full blur-xl scale-150 opacity-0 animate-logo-glow"></div>
           </div>
