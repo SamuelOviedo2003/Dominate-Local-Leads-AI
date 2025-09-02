@@ -10,9 +10,10 @@ interface LeadsTableProps {
   isLoading: boolean
   error: string | null
   navigationTarget?: 'lead-details' | 'property-details'
+  usePriorityColors?: boolean
 }
 
-export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-details' }: LeadsTableProps) {
+export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-details', usePriorityColors = false }: LeadsTableProps) {
   const router = useRouter()
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
 
@@ -23,17 +24,20 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
   }
 
   const getRowBackground = (priority: 1 | 2 | 3 | null | undefined) => {
-    if (priority === 1) {
-      // High Priority: Reddish background tone
-      return 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500'
+    // Only apply priority colors if usePriorityColors is true
+    if (usePriorityColors) {
+      if (priority === 1) {
+        // High Priority: Reddish background tone
+        return 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500'
+      }
+      
+      if (priority === 2) {
+        // Medium Priority: Yellow background tone  
+        return 'bg-yellow-50 hover:bg-yellow-100 border-l-4 border-yellow-500'
+      }
     }
     
-    if (priority === 2) {
-      // Medium Priority: Yellow background tone  
-      return 'bg-yellow-50 hover:bg-yellow-100 border-l-4 border-yellow-500'
-    }
-    
-    // Normal Priority: No background color
+    // Normal Priority or default style: No background color
     return 'hover:bg-gray-50'
   }
 

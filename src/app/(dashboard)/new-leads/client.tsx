@@ -83,6 +83,7 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           leads={recentLeads}
           isLoading={isRecentLeadsLoading}
           error={recentLeadsError}
+          usePriorityColors={true}
         />
       </div>
     </div>
