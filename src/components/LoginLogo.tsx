@@ -7,44 +7,27 @@ interface LoginLogoProps {
   className?: string
 }
 
-const LOGO_SOURCES = [
-  '/images/DominateLocalLeadsLogoLogIn.webp',
-  '/images/DominateLocalLeadsLogo.png', 
-  '/images/DominateLocalLeadsLogo.webp'
-]
+// Use only the correct login logo
+const LOGIN_LOGO_PATH = '/images/DominateLocalLeadsLogoLogIn.webp'
 
 export default function LoginLogo({ className = '' }: LoginLogoProps) {
-  const [currentLogoIndex, setCurrentLogoIndex] = useState(0)
   const [hasError, setHasError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  const currentLogo: string = LOGO_SOURCES[currentLogoIndex] || LOGO_SOURCES[0]!
-
   const handleError = () => {
-    console.warn(`Failed to load logo: ${currentLogo}`)
-    
-    // Try next logo source
-    if (currentLogoIndex < LOGO_SOURCES.length - 1) {
-      setCurrentLogoIndex(prevIndex => prevIndex + 1)
-      setIsLoading(true)
-      setHasError(false)
-    } else {
-      // All logo sources failed
-      console.error('All logo sources failed to load')
-      setHasError(true)
-      setIsLoading(false)
-    }
+    console.error(`Failed to load login logo: ${LOGIN_LOGO_PATH}`)
+    setHasError(true)
+    setIsLoading(false)
   }
 
   const handleLoad = () => {
     setIsLoading(false)
     setHasError(false)
-    console.log(`Successfully loaded logo: ${currentLogo}`)
+    console.log(`Successfully loaded login logo: ${LOGIN_LOGO_PATH}`)
   }
 
   // Reset when component mounts
   useEffect(() => {
-    setCurrentLogoIndex(0)
     setHasError(false)
     setIsLoading(true)
   }, [])
@@ -67,7 +50,7 @@ export default function LoginLogo({ className = '' }: LoginLogoProps) {
   return (
     <div className="relative">
       <Image
-        src={currentLogo}
+        src={LOGIN_LOGO_PATH}
         alt="Dominate Local Leads AI"
         width={400}
         height={96}
@@ -75,7 +58,7 @@ export default function LoginLogo({ className = '' }: LoginLogoProps) {
         className={className}
         onError={handleError}
         onLoad={handleLoad}
-        unoptimized={currentLogo.includes('webp')} // Disable optimization for WebP to avoid potential issues
+        unoptimized={true} // Disable optimization to ensure logo loads in production
       />
       
       {/* Loading indicator */}
