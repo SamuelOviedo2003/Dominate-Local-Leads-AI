@@ -92,7 +92,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# public - REMOVED: Next.js needs public directory for static assets
 
 # Storybook build outputs
 .out
