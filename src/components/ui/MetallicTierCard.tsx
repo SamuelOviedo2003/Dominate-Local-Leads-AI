@@ -16,6 +16,29 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
   // Determine if we should use the premium metallic card
   const shouldUsePremiumCard = window.medalTier && isCall1 && window.responseTime !== undefined
   
+  // New logic for Call 1 color coding
+  const getCall1ColorScheme = () => {
+    if (window.calledAt) {
+      // Called: Blue color scheme
+      return 'blue'
+    } else if (window.calledOut) {
+      // Called out but not answered: Blue color scheme
+      return 'blue'
+    } else {
+      // Not called: Red color scheme
+      return 'red'
+    }
+  }
+  
+  // Get the appropriate icon for Call 1
+  const getCall1Icon = () => {
+    if (window.calledAt) {
+      return <PhoneCall className="w-2.5 h-2.5 text-green-600" />
+    } else {
+      return <X className="w-2.5 h-2.5 text-red-600" />
+    }
+  }
+  
   const cardContent = (
     <div className="flex items-center justify-between">
       {/* Call Number Circle with Enhanced Call Context */}
@@ -25,9 +48,13 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
           shadow-lg ring-2
           ${shouldUsePremiumCard 
             ? getCircleStyles(window.medalTier as 'diamond' | 'gold' | 'silver' | 'bronze')
-            : window.calledAt 
-              ? 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-500/40 ring-blue-300/50'
-              : 'bg-gradient-to-br from-red-600 to-red-700 shadow-red-500/40 ring-red-300/50'
+            : isCall1
+              ? (getCall1ColorScheme() === 'blue' 
+                  ? 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-500/40 ring-blue-300/50'
+                  : 'bg-gradient-to-br from-red-600 to-red-700 shadow-red-500/40 ring-red-300/50')
+              : window.calledAt 
+                ? 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-500/40 ring-blue-300/50'
+                : 'bg-gradient-to-br from-red-600 to-red-700 shadow-red-500/40 ring-red-300/50'
           }
         `}>
           <div className="flex flex-col items-center justify-center relative z-10 gap-0">
@@ -53,10 +80,12 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
           {/* Call Status Indicator */}
           {!shouldUsePremiumCard && (
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
-              {window.calledAt ? (
-                <PhoneCall className="w-2.5 h-2.5 text-green-600" />
-              ) : (
-                <X className="w-2.5 h-2.5 text-red-600" />
+              {isCall1 ? getCall1Icon() : (
+                window.calledAt ? (
+                  <PhoneCall className="w-2.5 h-2.5 text-green-600" />
+                ) : (
+                  <X className="w-2.5 h-2.5 text-red-600" />
+                )
               )}
             </div>
           )}
@@ -70,12 +99,29 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
             ? getTextColor(window.medalTier as 'diamond' | 'gold' | 'silver' | 'bronze')
             : 'text-gray-700'
         }`}>
-          {isCall1 && window.responseTime !== undefined 
-            ? (window.responseTime || 'No response')
-            : window.calledAt 
-              ? formatTime(window.calledAt)
-              : 'Not called'
-          }
+          {(() => {
+            console.log(`[DEBUG] MetallicTierCard rendering for Call ${window.callNumber}:`, {
+              isCall1,
+              responseTime: window.responseTime,
+              responseTimeUndefined: window.responseTime === undefined,
+              calledAt: window.calledAt,
+              calledOut: window.calledOut
+            })
+            
+            if (isCall1 && window.responseTime !== undefined) {
+              console.log('[DEBUG] Using responseTime path')
+              return window.responseTime || 'No response'
+            } else if (isCall1 && !window.calledAt && window.calledOut) {
+              console.log('[DEBUG] Using calledOut formatting path')
+              return formatTime(window.calledOut)
+            } else if (window.calledAt) {
+              console.log('[DEBUG] Using calledAt formatting path')
+              return formatTime(window.calledAt)
+            } else {
+              console.log('[DEBUG] Using "Not called" path')
+              return 'Not called'
+            }
+          })()} 
         </div>
         {/* Response Time Label for Call 1 */}
         {isCall1 && window.responseTime && (
@@ -105,19 +151,27 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
   ) : (
     <div className={`
       rounded-xl p-3 transition-all duration-300 transform hover:-translate-y-1
-      ${window.calledAt
-        ? 'bg-gradient-to-br from-white to-blue-50/30 border-2 border-blue-200/50 hover:border-blue-300/70 shadow-sm hover:shadow-md hover:shadow-blue-200/20'
-        : 'bg-gradient-to-br from-white to-red-50/30 border-2 border-red-200/50 hover:border-red-300/70 shadow-sm hover:shadow-md hover:shadow-red-200/20'
+      ${isCall1
+        ? (getCall1ColorScheme() === 'blue'
+            ? 'bg-gradient-to-br from-white to-blue-50/30 border-2 border-blue-200/50 hover:border-blue-300/70 shadow-sm hover:shadow-md hover:shadow-blue-200/20'
+            : 'bg-gradient-to-br from-white to-red-50/30 border-2 border-red-200/50 hover:border-red-300/70 shadow-sm hover:shadow-md hover:shadow-red-200/20')
+        : window.calledAt
+          ? 'bg-gradient-to-br from-white to-blue-50/30 border-2 border-blue-200/50 hover:border-blue-300/70 shadow-sm hover:shadow-md hover:shadow-blue-200/20'
+          : 'bg-gradient-to-br from-white to-red-50/30 border-2 border-red-200/50 hover:border-red-300/70 shadow-sm hover:shadow-md hover:shadow-red-200/20'
       }
       relative overflow-hidden
     `}>
       {/* Subtle call-themed background pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className={`absolute top-2 right-2 w-4 h-4 border-2 rounded-full ${
-          window.calledAt ? 'border-blue-300' : 'border-red-300'
+          isCall1 
+            ? (getCall1ColorScheme() === 'blue' ? 'border-blue-300' : 'border-red-300')
+            : window.calledAt ? 'border-blue-300' : 'border-red-300'
         }`} />
         <div className={`absolute bottom-2 left-2 w-3 h-3 border rounded-full ${
-          window.calledAt ? 'border-blue-200' : 'border-red-200'
+          isCall1 
+            ? (getCall1ColorScheme() === 'blue' ? 'border-blue-200' : 'border-red-200')
+            : window.calledAt ? 'border-blue-200' : 'border-red-200'
         }`} />
       </div>
       <div className="relative z-10">

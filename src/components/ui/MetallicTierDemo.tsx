@@ -2,17 +2,12 @@
 
 import { CallWindow } from '@/types/leads'
 import { MetallicTierCard } from '@/components/ui/MetallicTierCard'
+import { formatCallWindowTime } from '@/lib/utils/dateFormat'
 
 const MetallicTierDemo = () => {
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    })
+    // Use EST timezone for demo purposes
+    return formatCallWindowTime(dateString, 'America/New_York')
   }
 
   // Demo data for all tier types
@@ -21,33 +16,46 @@ const MetallicTierDemo = () => {
       callNumber: 1,
       medalTier: 'gold',
       responseTime: '< 1 min',
-      calledAt: '2025-08-27T10:00:30Z'
+      calledAt: '2025-08-27T10:00:30Z',
+      calledOut: null
     },
     {
       callNumber: 2,
       medalTier: 'silver',
       responseTime: '1.5 min',
-      calledAt: '2025-08-27T10:01:30Z'
+      calledAt: '2025-08-27T10:01:30Z',
+      calledOut: null
     },
     {
       callNumber: 3,
       medalTier: 'bronze',
       responseTime: '3.2 min',
-      calledAt: '2025-08-27T10:03:12Z'
+      calledAt: '2025-08-27T10:03:12Z',
+      calledOut: null
     },
     {
       callNumber: 4,
       medalTier: null,
       responseTime: undefined,
       calledAt: '2025-08-27T10:06:00Z',
-      status: 'called'
+      status: 'called',
+      calledOut: null
     },
     {
       callNumber: 5,
       medalTier: null,
       responseTime: undefined,
       calledAt: null,
-      status: 'No call'
+      status: 'No call',
+      calledOut: null
+    },
+    {
+      callNumber: 1,
+      medalTier: null,
+      responseTime: undefined,
+      calledAt: null,
+      status: undefined,
+      calledOut: '2025-09-01T17:34:12.635+00:00'
     }
   ]
 
@@ -103,6 +111,13 @@ const MetallicTierDemo = () => {
                   <div className="font-medium text-gray-500">Not Called</div>
                   <div>No call made yet</div>
                   <div className="text-xs">Waiting state with subtle styling</div>
+                </div>
+              )}
+              {!window.medalTier && window.calledOut && !window.calledAt && (
+                <div className="space-y-1">
+                  <div className="font-medium text-blue-700">Called Out</div>
+                  <div>Call attempted - Shows formatted timestamp</div>
+                  <div className="text-xs">Blue styling indicates call was attempted</div>
                 </div>
               )}
             </div>

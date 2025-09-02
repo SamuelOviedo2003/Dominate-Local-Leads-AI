@@ -144,6 +144,7 @@ export interface CallWindow {
   responseTime?: string // For Call 1 only - human-readable format
   status?: 'No call' | 'called' // For calls 2-6
   calledAt: string | null // Exact timestamp when call was made
+  calledOut: string | null // Called out value for Call 1 when called_at is null
 }
 
 export interface LeadDetails {
@@ -151,6 +152,7 @@ export interface LeadDetails {
   property: PropertyInfo | null
   communications: Communication[]
   callWindows: CallWindow[]
+  businessTimezone: string // IANA timezone identifier (e.g., 'America/New_York')
 }
 
 export type MessageType = 'email' | 'sms' | 'call' | 'voicemail'

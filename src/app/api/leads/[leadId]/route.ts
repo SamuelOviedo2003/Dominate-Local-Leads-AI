@@ -48,6 +48,7 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
   const processedWindows: CallWindow[] = sortedData.map(window => {
     const callNumber = window.call_window
     const calledAt = window.called_at
+    const calledOut = window.called_out
     
     if (callNumber === 1) {
       // Special processing for Call 1 - conditional logic based on working_hours
@@ -75,30 +76,39 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
           // >= 10 minutes = No medal (null)
         }
         
-        return {
+        const result = {
           callNumber: callNumber as 1,
           medalTier,
           responseTime: responseTimeMinutes !== null ? formatResponseTime(responseTimeMinutes) : undefined,
-          calledAt
+          calledAt,
+          calledOut
         }
+        
+        console.log(`[DEBUG] Call 1 with working_hours=true result:`, result)
+        return result
       } else {
         // working_hours = false: Record just the time when the call was made (like other calls)
-        const status = calledAt ? 'called' : 'No call'
+        const status: 'called' | 'No call' = calledAt ? 'called' : 'No call'
         
-        return {
+        const result = {
           callNumber: callNumber as 1,
           status,
-          calledAt
+          calledAt,
+          calledOut
         }
+        
+        console.log(`[DEBUG] Call 1 with working_hours=false result:`, result)
+        return result
       }
     } else {
       // Processing for Calls 2-6 - show call status and time
-      const status = calledAt ? 'called' : 'No call'
+      const status: 'called' | 'No call' = calledAt ? 'called' : 'No call'
       
       return {
         callNumber,
         status,
-        calledAt
+        calledAt,
+        calledOut: null // Only relevant for Call 1
       }
     }
   })
@@ -176,6 +186,22 @@ export async function GET(request: NextRequest, context: RouteParams) {
 
     const lead: Lead = leadData
 
+    // Fetch business timezone information
+    const { data: businessData, error: businessError } = await supabase
+      .from('business_clients')
+      .select('time_zone')
+      .eq('business_id', requestedBusinessId)
+      .single()
+
+    let businessTimezone = 'UTC' // Default fallback
+    if (businessData && !businessError) {
+      businessTimezone = businessData.time_zone || 'UTC'
+      console.log(`[DEBUG] Business timezone fetched for business_id ${requestedBusinessId}:`, businessTimezone)
+    } else {
+      console.warn('Business timezone fetch warning:', businessError)
+      console.log(`[DEBUG] Using fallback timezone: ${businessTimezone}`)
+    }
+
     // Fetch property information using account_id from lead
     const { data: propertyData, error: propertyError } = await supabase
       .from('clients')
@@ -237,9 +263,15 @@ export async function GET(request: NextRequest, context: RouteParams) {
       lead,
       property,
       communications,
-      callWindows
+      callWindows,
+      businessTimezone
     }
 
+    console.log(`[DEBUG] Final response structure for lead ${leadId}:`, {
+      businessTimezone,
+      callWindowsCount: callWindows.length,
+      hasBusinessTimezone: !!leadDetails.businessTimezone
+    })
 
     return NextResponse.json({
       data: leadDetails,

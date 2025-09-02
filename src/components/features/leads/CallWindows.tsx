@@ -5,14 +5,26 @@ import { useMemo, useCallback, memo } from 'react'
 import { Clock, Phone, Headphones, PhoneCall } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { MetallicTierCard } from '@/components/ui/MetallicTierCard'
+import { formatCallWindowTime } from '@/lib/utils/dateFormat'
 
 interface CallWindowsProps {
   callWindows?: CallWindow[] | null
   isLoading?: boolean
   error?: string | null
+  businessTimezone?: string // IANA timezone identifier
 }
 
-const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: CallWindowsProps) => {
+const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, businessTimezone = 'UTC' }: CallWindowsProps) => {
+  // Debug logging
+  console.log('[DEBUG] CallWindows component received:', {
+    businessTimezone,
+    callWindowsCount: callWindows?.length || 0,
+    callWindowsData: callWindows?.map(cw => ({ 
+      callNumber: cw.callNumber, 
+      calledAt: cw.calledAt 
+    }))
+  })
+
   // Handle loading state
   if (isLoading) {
     return (
@@ -55,15 +67,11 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null }: 
     )
   }
   const formatTime = useCallback((dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    })
-  }, [])
+    console.log(`[DEBUG] Formatting time "${dateString}" with timezone "${businessTimezone}"`)
+    const formatted = formatCallWindowTime(dateString, businessTimezone)
+    console.log(`[DEBUG] Formatted result: "${formatted}"`)
+    return formatted
+  }, [businessTimezone])
 
 
   // Sort call windows by call number - only show actual calls, no placeholders

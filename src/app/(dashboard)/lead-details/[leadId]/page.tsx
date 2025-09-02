@@ -101,6 +101,7 @@ const LeadDetailsPage = () => {
               callWindows={leadDetails?.callWindows || null}
               isLoading={isCallWindowsLoading}
               error={callWindowsError}
+              businessTimezone={leadDetails?.businessTimezone}
             />
           </div>
         </div>
