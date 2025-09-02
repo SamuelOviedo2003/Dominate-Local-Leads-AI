@@ -33,7 +33,7 @@ export default async function LoginPage() {
         <div className="text-center mb-8 animate-slide-down">
           <div className="relative inline-block animate-logo-entrance">
             <Image
-              src="/images/DominateLocalLeadsLogo.png"
+              src="/images/DominateLocalLeadsLogoLogIn.webp"
               alt="Dominate Local Leads AI"
               width={400}
               height={96}
