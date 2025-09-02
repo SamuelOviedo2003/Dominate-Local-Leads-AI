@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image'
 
 interface LoginLogoProps {
   className?: string
 }
 
-// Use only the correct login logo
-const LOGIN_LOGO_PATH = '/images/DominateLocalLeadsLogoLogIn.webp'
+// Use PNG logo for maximum reliability  
+const LOGIN_LOGO_PATH = '/images/DominateLocalLeadsLogo.png'
 
 export default function LoginLogo({ className = '' }: LoginLogoProps) {
   const [hasError, setHasError] = useState(false)
@@ -49,16 +48,15 @@ export default function LoginLogo({ className = '' }: LoginLogoProps) {
 
   return (
     <div className="relative">
-      <Image
+      <img
         src={LOGIN_LOGO_PATH}
         alt="Dominate Local Leads AI"
         width={400}
         height={96}
-        priority
         className={className}
         onError={handleError}
         onLoad={handleLoad}
-        unoptimized={true} // Disable optimization to ensure logo loads in production
+        style={{ maxHeight: '96px', width: 'auto' }}
       />
       
       {/* Loading indicator */}
