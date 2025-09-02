@@ -58,6 +58,7 @@ RUN --mount=type=cache,target=/root/.npm \
 # Copy source code
 COPY src ./src
 COPY public ./public
+COPY scripts ./scripts
 COPY next.config.js ./
 COPY tsconfig.json ./
 COPY tailwind.config.js ./
