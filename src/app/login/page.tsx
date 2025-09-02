@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { login } from './actions'
 import { signup } from './signup-actions'
@@ -31,9 +32,12 @@ export default async function LoginPage() {
         {/* Company Logo */}
         <div className="text-center mb-8 animate-slide-down">
           <div className="relative inline-block animate-logo-entrance">
-            <img
-              src="/images/DominateLocalLeadsLogo.png"
+            <Image
+              src="/images/DominateLocalLeadsLogo.webp"
               alt="Dominate Local Leads AI"
+              width={400}
+              height={96}
+              priority
               className="mx-auto h-auto max-h-24 object-contain drop-shadow-2xl transition-transform duration-300 hover:scale-105"
             />
             {/* Subtle glow effect behind logo */}

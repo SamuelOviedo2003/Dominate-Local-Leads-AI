@@ -89,7 +89,8 @@ USER nextjs
 # Copy standalone application from builder
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+# Copy public assets from standalone build (includes post-build script output)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone/public ./public
 
 # Expose the port the app runs on
 EXPOSE 3000
