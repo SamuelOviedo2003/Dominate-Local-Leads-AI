@@ -4,13 +4,37 @@ export interface Profile {
   full_name: string | null
   avatar_url: string | null
   role: number
-  business_id: string
+  business_id: string // Auth system returns as string
+  created_at: string
+  updated_at: string
+}
+
+// Normalized version with proper types for database operations
+export interface ProfileNormalized {
+  id: string
+  email: string
+  full_name: string | null
+  avatar_url: string | null
+  role: number
+  business_id: number // Converted to number for database operations
   created_at: string
   updated_at: string
 }
 
 export interface BusinessClient {
-  business_id: string
+  business_id: string // Database returns as string from query
+  company_name: string
+  avatar_url: string | null
+  city: string | null
+  state: string | null
+  time_zone: string
+  created_at: string
+  updated_at: string
+}
+
+// Normalized version with proper types
+export interface BusinessClientNormalized {
+  business_id: number // Normalized to number for consistency
   company_name: string
   avatar_url: string | null
   city: string | null

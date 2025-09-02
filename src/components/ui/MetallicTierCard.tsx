@@ -100,25 +100,13 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
             : 'text-gray-700'
         }`}>
           {(() => {
-            console.log(`[DEBUG] MetallicTierCard rendering for Call ${window.callNumber}:`, {
-              isCall1,
-              responseTime: window.responseTime,
-              responseTimeUndefined: window.responseTime === undefined,
-              calledAt: window.calledAt,
-              calledOut: window.calledOut
-            })
-            
             if (isCall1 && window.responseTime !== undefined) {
-              console.log('[DEBUG] Using responseTime path')
               return window.responseTime || 'No response'
             } else if (isCall1 && !window.calledAt && window.calledOut) {
-              console.log('[DEBUG] Using calledOut formatting path')
               return formatTime(window.calledOut)
             } else if (window.calledAt) {
-              console.log('[DEBUG] Using calledAt formatting path')
               return formatTime(window.calledAt)
             } else {
-              console.log('[DEBUG] Using "Not called" path')
               return 'Not called'
             }
           })()} 

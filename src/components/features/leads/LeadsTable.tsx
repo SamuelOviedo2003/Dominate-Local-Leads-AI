@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, memo, useCallback } from 'react'
 import { LeadWithClient } from '@/types/leads'
 
 interface LeadsTableProps {
@@ -13,17 +13,17 @@ interface LeadsTableProps {
   usePriorityColors?: boolean
 }
 
-export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-details', usePriorityColors = false }: LeadsTableProps) {
+function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead-details', usePriorityColors = false }: LeadsTableProps) {
   const router = useRouter()
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
 
-  const getScoreColor = (score: number) => {
+  const getScoreColor = useCallback((score: number) => {
     if (score <= 33) return 'bg-red-500'
     if (score <= 66) return 'bg-yellow-500'
     return 'bg-green-500'
-  }
+  }, [])
 
-  const getRowBackground = (priority: 1 | 2 | 3 | null | undefined) => {
+  const getRowBackground = useCallback((priority: 1 | 2 | 3 | null | undefined) => {
     // Only apply priority colors if usePriorityColors is true
     if (usePriorityColors) {
       if (priority === 1) {
@@ -39,7 +39,7 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
     
     // Normal Priority or default style: No background color
     return 'hover:bg-gray-50'
-  }
+  }, [usePriorityColors])
 
   const getSourceColor = (source: string | null | undefined) => {
     if (!source) return 'text-gray-600 bg-gray-50'
@@ -238,3 +238,6 @@ export function LeadsTable({ leads, isLoading, error, navigationTarget = 'lead-d
     </div>
   )
 }
+
+// Export memoized component for performance optimization
+export const LeadsTable = memo(LeadsTableComponent)

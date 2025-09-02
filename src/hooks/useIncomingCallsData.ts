@@ -145,7 +145,69 @@ export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCall
   }
 
   useEffect(() => {
-    fetchData()
+    const abortController = new AbortController()
+    
+    const fetchDataWithAbort = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        if (!businessId) {
+          setSourceDistribution(null)
+          setCallerTypeDistribution(null)
+          setSankeyData(null)
+          setRecentCalls(null)
+          setIsLoading(false)
+          return
+        }
+
+        const startDate = getStartDate(timePeriod)
+        const params = new URLSearchParams({
+          startDate,
+          businessId
+        })
+
+        // Fetch all data in parallel with abort signal
+        const [sourceRes, callerTypeRes, sankeyRes, recentRes] = await Promise.all([
+          fetch(`/api/incoming-calls/source-distribution?${params}`, {
+            signal: abortController.signal
+          }).then(res => res.json()),
+          fetch(`/api/incoming-calls/caller-type-distribution?${params}`, {
+            signal: abortController.signal
+          }).then(res => res.json()),
+          fetch(`/api/incoming-calls/sankey-data?${params}`, {
+            signal: abortController.signal
+          }).then(res => res.json()),
+          fetch(`/api/incoming-calls/recent-calls?${params}`, {
+            signal: abortController.signal
+          }).then(res => res.json())
+        ])
+
+        // Only update state if request wasn't aborted
+        if (!abortController.signal.aborted) {
+          setSourceDistribution(sourceRes.data || [])
+          setCallerTypeDistribution(callerTypeRes.data || [])
+          setSankeyData(sankeyRes.data || [])
+          setRecentCalls(recentRes.data || [])
+        }
+      } catch (error: any) {
+        // Don't set error if request was aborted
+        if (!abortController.signal.aborted) {
+          setError('Failed to fetch incoming calls data')
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    fetchDataWithAbort()
+
+    // Cleanup function to abort requests
+    return () => {
+      abortController.abort()
+    }
   }, [timePeriod, businessId])
 
   return {

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
 import { LeadDetails, Lead, PropertyInfo, Communication, CallWindow } from '@/types/leads'
+import { logger } from '@/lib/logging'
+import { validateRequest, leadIdSchema, businessIdSchema, updateCallerTypeSchema } from '@/lib/validation'
+import { requireValidBusinessId, requireValidLeadId } from '@/lib/type-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -84,7 +87,7 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
           calledOut
         }
         
-        console.log(`[DEBUG] Call 1 with working_hours=true result:`, result)
+        logger.businessLogic('Call 1 with working_hours=true', result)
         return result
       } else {
         // working_hours = false: Record just the time when the call was made (like other calls)
@@ -97,7 +100,7 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
           calledOut
         }
         
-        console.log(`[DEBUG] Call 1 with working_hours=false result:`, result)
+        logger.businessLogic('Call 1 with working_hours=false', result)
         return result
       }
     } else {
@@ -118,6 +121,9 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
 }
 
 export async function GET(request: NextRequest, context: RouteParams) {
+  const { leadId } = await context.params
+  let leadIdNumber: number | undefined
+  
   try {
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
@@ -128,7 +134,6 @@ export async function GET(request: NextRequest, context: RouteParams) {
       )
     }
 
-    const { leadId } = await context.params
     const { searchParams } = new URL(request.url)
     const businessIdParam = searchParams.get('businessId')
 
@@ -139,27 +144,23 @@ export async function GET(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // Convert leadId to number since database expects smallint
-    const leadIdNumber = parseInt(leadId, 10)
-    if (isNaN(leadIdNumber)) {
-      return NextResponse.json(
-        { error: 'leadId must be a valid number' },
-        { status: 400 }
-      )
-    }
+    // Validate and convert parameters using type-safe utilities
+    let requestedBusinessId: number
 
-    // Convert businessId to number since database expects smallint
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
+    try {
+      leadIdNumber = requireValidLeadId(leadId, 'GET /api/leads/[leadId]')
+      requestedBusinessId = requireValidBusinessId(businessIdParam, 'GET /api/leads/[leadId]')
+    } catch (error) {
+      logger.error('Parameter validation failed', { leadId, businessIdParam, error: error instanceof Error ? error.message : error })
       return NextResponse.json(
-        { error: 'businessId must be a valid number' },
+        { error: error instanceof Error ? error.message : 'Invalid parameters' },
         { status: 400 }
       )
     }
 
     // Ensure user can only access their own business data (unless Super Admin)
-    const userBusinessId = parseInt(user.profile.business_id, 10)
-    if (user.profile.role !== 0 && requestedBusinessId !== userBusinessId) {
+    const userBusinessId = requireValidBusinessId(user.profile?.business_id, 'User business validation')
+    if (user.profile?.role !== 0 && requestedBusinessId !== userBusinessId) {
       return NextResponse.json(
         { error: 'Access denied - You can only access your own business data' },
         { status: 403 }
@@ -177,7 +178,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
       .single()
 
     if (leadError || !leadData) {
-      console.error('Lead fetch error:', leadError)
+      logger.error('Lead fetch failed', { leadId: leadIdNumber, businessId: requestedBusinessId, error: leadError })
       return NextResponse.json(
         { error: 'Lead not found' },
         { status: 404 }
@@ -196,10 +197,9 @@ export async function GET(request: NextRequest, context: RouteParams) {
     let businessTimezone = 'UTC' // Default fallback
     if (businessData && !businessError) {
       businessTimezone = businessData.time_zone || 'UTC'
-      console.log(`[DEBUG] Business timezone fetched for business_id ${requestedBusinessId}:`, businessTimezone)
+      logger.dbDebug('Business timezone fetch', 'business_clients', { businessId: requestedBusinessId, timezone: businessTimezone })
     } else {
-      console.warn('Business timezone fetch warning:', businessError)
-      console.log(`[DEBUG] Using fallback timezone: ${businessTimezone}`)
+      logger.warn('Business timezone fetch failed, using fallback', { businessId: requestedBusinessId, error: businessError, fallback: businessTimezone })
     }
 
     // Fetch property information using account_id from lead
@@ -224,7 +224,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
     const communications: Communication[] = communicationsData || []
 
     if (communicationsError) {
-      console.warn('Communications fetch warning:', communicationsError)
+      logger.warn('Communications fetch failed', { accountId: lead.account_id, error: communicationsError })
       // Don't fail the entire request for communications errors
     }
 
@@ -239,11 +239,10 @@ export async function GET(request: NextRequest, context: RouteParams) {
     let callWindows: CallWindow[] = []
     
     if (callWindowsError) {
-      console.error(`[ERROR] Call windows fetch failed:`, {
-        error: callWindowsError,
+      logger.error('Call windows fetch failed', {
         accountId: lead.account_id,
         businessId: requestedBusinessId,
-        errorDetails: {
+        error: {
           message: callWindowsError.message,
           code: callWindowsError.code,
           hint: callWindowsError.hint
@@ -267,7 +266,8 @@ export async function GET(request: NextRequest, context: RouteParams) {
       businessTimezone
     }
 
-    console.log(`[DEBUG] Final response structure for lead ${leadId}:`, {
+    logger.apiDebug('/api/leads/[leadId]', 'GET', {
+      leadId,
       businessTimezone,
       callWindowsCount: callWindows.length,
       hasBusinessTimezone: !!leadDetails.businessTimezone
@@ -280,7 +280,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
     })
 
   } catch (error) {
-    console.error('Unexpected error:', error)
+    logger.error('Unexpected error in GET /api/leads/[leadId]', { error, leadId: leadIdNumber })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -382,7 +382,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       .single()
 
     if (updateError) {
-      console.error('Lead update error:', updateError)
+      logger.error('Lead caller_type update failed', { leadId: leadIdNumber, businessId: requestedBusinessId, error: updateError })
       return NextResponse.json(
         { error: 'Failed to update lead caller_type' },
         { status: 500 }
@@ -399,7 +399,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
     })
 
   } catch (error) {
-    console.error('PATCH /api/leads/[leadId] error:', error)
+    logger.error('Unexpected error in PATCH /api/leads/[leadId]', { error, leadId: context.params })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
 import { IncomingCall } from '@/types/leads'
+import { createSecureAPIHandler, addSecurityHeaders } from '@/lib/api-middleware'
+import { updateCallerTypeSchema } from '@/lib/validation'
+import { requireValidBusinessId } from '@/lib/type-utils'
+import { logger } from '@/lib/logging'
 
 export const dynamic = 'force-dynamic'
 

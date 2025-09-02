@@ -2,6 +2,8 @@
  * Date formatting utilities with timezone support
  */
 
+import { logger } from '@/lib/logging'
+
 /**
  * Format a date string to a user-friendly format using the specified timezone
  * @param dateString - ISO 8601 date string
@@ -17,10 +19,10 @@ export function formatCallWindowTime(
     use24Hour?: boolean
   } = {}
 ): string {
-  console.log(`[DEBUG] formatCallWindowTime called with:`, { dateString, timezone, options })
+  logger.debug('formatCallWindowTime called', { dateString, timezone, options })
   
   if (!dateString) {
-    console.log(`[DEBUG] Empty dateString, returning 'Invalid date'`)
+    logger.debug('Empty dateString provided', { dateString })
     return 'Invalid date'
   }
   
@@ -68,11 +70,11 @@ export function formatCallWindowTime(
       formattedDate += ` ${dayPeriod}`
     }
     
-    console.log(`[DEBUG] Successfully formatted date: "${formattedDate}"`)
+    logger.debug('Successfully formatted date', { input: dateString, output: formattedDate, timezone })
     return formattedDate
     
   } catch (error) {
-    console.error('Error formatting date:', error)
+    logger.error('Date formatting failed', { dateString, timezone, error })
     return 'Invalid date'
   }
 }

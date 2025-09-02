@@ -6,6 +6,7 @@ import { Clock, Phone, Headphones, PhoneCall } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { MetallicTierCard } from '@/components/ui/MetallicTierCard'
 import { formatCallWindowTime } from '@/lib/utils/dateFormat'
+import { logger } from '@/lib/logging'
 
 interface CallWindowsProps {
   callWindows?: CallWindow[] | null
@@ -16,7 +17,7 @@ interface CallWindowsProps {
 
 const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, businessTimezone = 'UTC' }: CallWindowsProps) => {
   // Debug logging
-  console.log('[DEBUG] CallWindows component received:', {
+  logger.debug('CallWindows component received props', {
     businessTimezone,
     callWindowsCount: callWindows?.length || 0,
     callWindowsData: callWindows?.map(cw => ({ 
@@ -67,9 +68,9 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
     )
   }
   const formatTime = useCallback((dateString: string) => {
-    console.log(`[DEBUG] Formatting time "${dateString}" with timezone "${businessTimezone}"`)
+    logger.debug('Formatting call window time', { dateString, businessTimezone })
     const formatted = formatCallWindowTime(dateString, businessTimezone)
-    console.log(`[DEBUG] Formatted result: "${formatted}"`)
+    logger.debug('Call window time formatted', { input: dateString, output: formatted, timezone: businessTimezone })
     return formatted
   }, [businessTimezone])
 
