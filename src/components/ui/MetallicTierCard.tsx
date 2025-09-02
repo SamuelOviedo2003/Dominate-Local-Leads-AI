@@ -123,20 +123,53 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
             }
           })()} 
         </div>
-        {/* Response Time Label for Call 1 */}
-        {isCall1 && window.responseTime && (
-          <div className="text-xs text-gray-500 mt-1 flex items-center gap-1 justify-end">
-            <Phone className="w-3 h-3" />
-            Response Time
-          </div>
-        )}
-        {/* Call Time Label for other calls */}
-        {!isCall1 && window.calledAt && (
-          <div className="text-xs text-gray-500 mt-1 flex items-center gap-1 justify-end">
-            <PhoneCall className="w-3 h-3" />
-            Call Time
-          </div>
-        )}
+        {/* New Label System */}
+        {(() => {
+          // Determine label text and color based on new requirements
+          let labelText = ''
+          let labelColor = ''
+          
+          if (isCall1) {
+            if (window.responseTime) {
+              // Call 1 with response time - show "In time" 
+              labelText = 'In time'
+              labelColor = 'text-green-600'
+            } else if (window.calledOut && !window.calledAt) {
+              // Call 1 with called_out but no called_at - show "Not in time"
+              labelText = 'Not in time'
+              labelColor = 'text-red-600'
+            } else if (!window.calledAt) {
+              // Call 1 not called - NO additional label (only existing bold black text)
+              labelText = ''
+              labelColor = ''
+            } else {
+              // Call 1 with called_at - show "In time"
+              labelText = 'In time'
+              labelColor = 'text-green-600'
+            }
+          } else {
+            // Other calls
+            if (window.calledAt) {
+              labelText = 'In time'
+              labelColor = 'text-green-600'
+            } else {
+              // Not called - NO additional label (only existing bold black text)
+              labelText = ''
+              labelColor = ''
+            }
+          }
+          
+          // Only render label if there's text to show
+          if (labelText) {
+            return (
+              <div className={`text-xs mt-1 flex justify-end ${labelColor}`}>
+                {labelText}
+              </div>
+            )
+          }
+          
+          return null
+        })()}
       </div>
     </div>
   )
