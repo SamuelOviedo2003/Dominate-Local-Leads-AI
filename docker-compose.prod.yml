@@ -42,6 +42,9 @@ services:
       - ENABLE_PERFORMANCE_MONITORING=true
       - DOCKER_CONTAINER=true
       - PERFORMANCE_LOG_STDOUT=true
+      # CRITICAL: Production site URL for password reset redirects
+      # This MUST match the Site URL configured in Supabase Dashboard
+      - NEXT_PUBLIC_SITE_URL=https://dominatelocalleadsai.sliplane.app
 
   nginx:
     # Production Nginx configuration

@@ -55,8 +55,15 @@ export async function forgotPassword(formData: FormData) {
     console.log('=== FORGOT PASSWORD DEBUG ===')
     console.log(`Attempting password reset for email: ${email}`)
     console.log(`Environment: ${process.env.NODE_ENV}`)
-    console.log(`Site URL: ${siteUrl}`)
+    console.log(`NEXT_PUBLIC_SITE_URL env var: ${process.env.NEXT_PUBLIC_SITE_URL || 'NOT SET'}`)
+    console.log(`Final Site URL: ${siteUrl}`)
     console.log(`Redirect URL will be: ${siteUrl}/auth/reset-password`)
+    console.log(``)
+    console.log(`🚨 IMPORTANT: If users report localhost URLs in production errors,`)
+    console.log(`   check Supabase Dashboard → Authentication → URL Configuration:`)
+    console.log(`   - Site URL should be: https://dominatelocalleadsai.sliplane.app`)
+    console.log(`   - Add to Redirect URLs: ${siteUrl}/auth/reset-password`)
+    console.log(`   - Error redirects use the Site URL from Supabase Dashboard!`)
 
     // Validate site URL format
     if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
