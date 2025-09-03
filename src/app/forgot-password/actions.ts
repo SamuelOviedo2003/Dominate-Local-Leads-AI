@@ -36,15 +36,20 @@ export async function forgotPassword(formData: FormData) {
         siteUrl = 'http://localhost:3001'
         console.warn('⚠️  NEXT_PUBLIC_SITE_URL not set, using development fallback:', siteUrl)
       } else {
-        console.error('❌ CRITICAL: NEXT_PUBLIC_SITE_URL must be set in production environment')
-        redirect('/forgot-password?error=Server configuration error. Please contact support.')
+        // In production, try to determine the URL from request headers or use known production URL
+        const prodUrl = 'https://dominatelocalleadsai.sliplane.app'
+        console.warn('⚠️  NEXT_PUBLIC_SITE_URL not set in production, using fallback:', prodUrl)
+        console.warn('⚠️  Please set NEXT_PUBLIC_SITE_URL environment variable in production for proper configuration')
+        siteUrl = prodUrl
       }
     }
     
     // Ensure the site URL doesn't contain localhost in production
     if (process.env.NODE_ENV === 'production' && siteUrl.includes('localhost')) {
+      const prodUrl = 'https://dominatelocalleadsai.sliplane.app'
       console.error('❌ CRITICAL: Production environment using localhost URL:', siteUrl)
-      redirect('/forgot-password?error=Server configuration error. Please contact support.')
+      console.warn('⚠️  Using production fallback URL:', prodUrl)
+      siteUrl = prodUrl
     }
 
     console.log('=== FORGOT PASSWORD DEBUG ===')
@@ -99,13 +104,14 @@ export async function forgotPassword(formData: FormData) {
     redirect('/forgot-password?success=If an account with that email exists, you will receive a password reset link')
 
   } catch (error) {
-    console.error('Unexpected password reset error:', error)
-    
     // Check if it's a redirect error (this is normal Next.js behavior)
     if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+      // Don't log NEXT_REDIRECT as an error - it's expected behavior
       throw error // Re-throw redirect errors
     }
     
+    // Only log actual unexpected errors
+    console.error('Unexpected password reset error:', error)
     redirect('/forgot-password?error=An unexpected error occurred. Please try again')
   }
 }
