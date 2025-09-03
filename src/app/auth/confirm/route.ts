@@ -7,11 +7,11 @@ import { createClient } from '@/lib/supabase/server'
  * 
  * This route handles:
  * 1. Email confirmations for new signups (type=email)
- * 2. Password reset confirmations (type=recovery)  
+ * 2. Password reset confirmations (type=recovery) - redirects to /auth/reset-password
  * 3. Email change confirmations (type=email_change)
  * 
- * For password reset, it redirects to /account/update-password
- * For other confirmations, it redirects to the specified 'next' URL or dashboard
+ * Note: Password reset links now go directly to /auth/reset-password with code parameter
+ * This route provides backward compatibility for recovery types that might still land here
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -56,15 +56,30 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     console.log('✅ Supabase client created successfully')
 
-    // Verify the OTP token hash
-    console.log('🔄 Attempting token verification...')
-    const { data, error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    })
+    // For password recovery, redirect to the new reset password page with code
+    if (type === 'recovery') {
+      console.log('🔄 Recovery type detected, redirecting to new reset password flow')
+      const code = searchParams.get('code') || token_hash
+      if (code) {
+        const redirectUrl = new URL(`/auth/reset-password?code=${code}`, request.url)
+        console.log('🔄 Redirecting to:', redirectUrl.toString())
+        return NextResponse.redirect(redirectUrl)
+      }
+    }
+
+    // For other types, use the modern exchangeCodeForSession approach
+    console.log('🔄 Attempting code exchange for session...')
+    const code = searchParams.get('code') || token_hash
+    
+    if (!code) {
+      console.error('❌ No code available for session exchange')
+      return NextResponse.redirect(new URL('/login?error=Invalid confirmation link - missing code', request.url))
+    }
+
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error) {
-      console.error('❌ Token verification failed:')
+      console.error('❌ Code exchange failed:')
       console.error('  - Error message:', error.message)
       console.error('  - Error code:', error.status || 'N/A')
       console.error('  - Error details:', JSON.stringify(error, null, 2))
@@ -75,7 +90,7 @@ export async function GET(request: NextRequest) {
       // Provide more specific error messages based on type and error
       if (type === 'recovery') {
         errorMessage = 'Password reset link has expired or is invalid. Please request a new one.'
-        redirectPath = '/login'
+        redirectPath = '/forgot-password'
       } else if (type === 'email') {
         errorMessage = 'Email confirmation link has expired or is invalid. Please sign up again.'
         redirectPath = '/login'
@@ -96,24 +111,24 @@ export async function GET(request: NextRequest) {
     }
 
     if (!data.user) {
-      console.error('❌ No user returned from token verification')
+      console.error('❌ No user returned from code exchange')
       console.error('  - Data received:', JSON.stringify(data, null, 2))
       return NextResponse.redirect(new URL('/login?error=Authentication failed. No user data received.', request.url))
     }
 
     // Success! Enhanced success logging
-    console.log('✅ Token verification successful!')
+    console.log('✅ Code exchange successful!')
     console.log('  - User ID:', data.user.id)
     console.log('  - User email:', data.user.email)
-    console.log('  - Type verified:', type)
+    console.log('  - Type processed:', type)
     console.log('  - Session created:', !!data.session)
     
     // Determine the correct redirect URL based on type
     let redirectUrl = next
     if (type === 'recovery') {
-      // For password reset, always redirect to update password page
-      redirectUrl = '/account/update-password'
-      console.log('🔄 Password reset flow - redirecting to update password page')
+      // For password reset, redirect to new reset password page (backup flow)
+      redirectUrl = '/auth/reset-password'
+      console.log('🔄 Password reset flow - redirecting to reset password page')
     } else {
       console.log('🔄 Other auth flow - redirecting to:', next)
     }
@@ -125,7 +140,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(finalRedirectUrl)
 
   } catch (error) {
-    console.error('❌ Unexpected error during token verification:')
+    console.error('❌ Unexpected error during code exchange:')
     console.error('  - Error:', error)
     console.error('  - Stack:', error instanceof Error ? error.stack : 'N/A')
     console.error('=== END AUTH CONFIRM DEBUG (ERROR) ===')

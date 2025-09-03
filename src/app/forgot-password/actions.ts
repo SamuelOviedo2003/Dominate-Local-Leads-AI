@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server'
  * 2. Calls Supabase resetPasswordForEmail with proper redirect URL
  * 3. Handles error reporting and success redirects
  * 4. Follows PKCE flow patterns for Next.js 14 App Router
+ * 5. Uses the new /auth/reset-password endpoint as specified
  */
 export async function forgotPassword(formData: FormData) {
   const supabase = await createClient()
@@ -22,7 +23,7 @@ export async function forgotPassword(formData: FormData) {
 
   // Input validation
   if (!email || !email.includes('@') || email.length < 5) {
-    redirect('/login?error=Please enter a valid email address&mode=forgotPassword')
+    redirect('/forgot-password?error=Please enter a valid email address')
   }
 
   try {
@@ -32,37 +33,36 @@ export async function forgotPassword(formData: FormData) {
     // If not set, provide appropriate fallbacks based on environment
     if (!siteUrl) {
       if (process.env.NODE_ENV === 'development') {
-        siteUrl = 'http://localhost:3000'
+        siteUrl = 'http://localhost:3001'
         console.warn('⚠️  NEXT_PUBLIC_SITE_URL not set, using development fallback:', siteUrl)
       } else {
         console.error('❌ CRITICAL: NEXT_PUBLIC_SITE_URL must be set in production environment')
-        redirect('/login?error=Server configuration error. Please contact support.&mode=forgotPassword')
+        redirect('/forgot-password?error=Server configuration error. Please contact support.')
       }
     }
     
     // Ensure the site URL doesn't contain localhost in production
     if (process.env.NODE_ENV === 'production' && siteUrl.includes('localhost')) {
       console.error('❌ CRITICAL: Production environment using localhost URL:', siteUrl)
-      redirect('/login?error=Server configuration error. Please contact support.&mode=forgotPassword')
+      redirect('/forgot-password?error=Server configuration error. Please contact support.')
     }
 
     console.log('=== FORGOT PASSWORD DEBUG ===')
     console.log(`Attempting password reset for email: ${email}`)
     console.log(`Environment: ${process.env.NODE_ENV}`)
     console.log(`Site URL: ${siteUrl}`)
-    console.log(`Redirect URL will be: ${siteUrl}/auth/confirm?next=/account/update-password`)
-    console.log(`Full reset URL: ${siteUrl}/auth/confirm?token_hash=[TOKEN]&type=recovery&next=/account/update-password`)
+    console.log(`Redirect URL will be: ${siteUrl}/auth/reset-password`)
 
     // Validate site URL format
     if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
       console.error('❌ Invalid site URL format:', siteUrl)
-      redirect('/login?error=Configuration error. Please contact support.&mode=forgotPassword')
+      redirect('/forgot-password?error=Configuration error. Please contact support.')
     }
 
     // Send password reset email using Supabase
     // The redirectTo URL will be used after the user clicks the email link
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${siteUrl}/auth/confirm?next=/account/update-password`
+      redirectTo: `${siteUrl}/auth/reset-password`
     })
 
     console.log('Supabase resetPasswordForEmail response:')
@@ -79,23 +79,24 @@ export async function forgotPassword(formData: FormData) {
       
       // Handle specific Supabase errors
       if (error.message.includes('rate limit') || error.message.includes('Rate limit')) {
-        redirect('/login?error=Too many password reset attempts. Please try again later&mode=forgotPassword')
+        redirect('/forgot-password?error=Too many password reset attempts. Please try again later')
       } else if (error.message.includes('invalid email') || error.message.includes('Invalid email')) {
-        redirect('/login?error=Please enter a valid email address&mode=forgotPassword')
+        redirect('/forgot-password?error=Please enter a valid email address')
       } else if (error.message.includes('User not found') || error.message.includes('user not found')) {
-        // For security, don't reveal that user doesn't exist
-        redirect('/login?success=If an account with that email exists, you will receive a password reset link&mode=forgotPassword')
+        // For security, don't reveal that user doesn't exist - show neutral success message
+        redirect('/forgot-password?success=If an account with that email exists, you will receive a password reset link')
       } else {
         // For security, don't reveal specific errors to client but log them
         console.error('Supabase resetPasswordForEmail error:', error.message)
-        redirect('/login?success=If an account with that email exists, you will receive a password reset link&mode=forgotPassword')
+        redirect('/forgot-password?success=If an account with that email exists, you will receive a password reset link')
       }
     }
 
     console.log('✅ Password reset email sent successfully')
     console.log('=== END FORGOT PASSWORD DEBUG ===')
-    // Success - redirect with success message
-    redirect('/login?success=If an account with that email exists, you will receive a password reset link&mode=forgotPassword')
+    
+    // Success - redirect with neutral success message to prevent account enumeration
+    redirect('/forgot-password?success=If an account with that email exists, you will receive a password reset link')
 
   } catch (error) {
     console.error('Unexpected password reset error:', error)
@@ -105,6 +106,6 @@ export async function forgotPassword(formData: FormData) {
       throw error // Re-throw redirect errors
     }
     
-    redirect('/login?error=An unexpected error occurred. Please try again&mode=forgotPassword')
+    redirect('/forgot-password?error=An unexpected error occurred. Please try again')
   }
 }

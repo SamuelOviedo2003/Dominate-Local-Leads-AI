@@ -2,6 +2,7 @@
 
 import { useState, useRef, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { InlineLoading } from '@/components/LoadingSystem'
 
 interface AuthFormProps {
@@ -335,8 +336,21 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
           </span>
         </button>
 
-        {/* Mode Switch */}
-        <div className="text-center pt-4 space-y-2">
+        {/* Mode Switch and Additional Links */}
+        <div className="text-center pt-4 space-y-3">
+          {/* Forgot Password Link - Only show in login mode */}
+          {authMode === 'login' && (
+            <div>
+              <Link
+                href="/forgot-password"
+                className="text-brand-orange-400 hover:text-brand-orange-300 font-medium transition-colors duration-300 underline decoration-transparent hover:decoration-current text-sm"
+              >
+                Forgot your password?
+              </Link>
+            </div>
+          )}
+
+          {/* Mode Switch */}
           {authMode === 'login' ? (
             <p className="text-white/70 text-sm">
               Don't have an account?{' '}
