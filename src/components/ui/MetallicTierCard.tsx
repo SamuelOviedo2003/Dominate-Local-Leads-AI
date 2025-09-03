@@ -118,8 +118,11 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
           let labelColor = ''
           
           if (isCall1) {
-            if (window.responseTime) {
-              // Call 1 with response time - show "In time" 
+            // For Call 1: only show "In time" if response time < 10 minutes (medalTier exists)
+            // Medal tiers are: Diamond (<1min), Gold (1-2min), Silver (2-5min), Bronze (5-10min)
+            // No medal tier means >= 10 minutes, so should not show "In time"
+            if (window.medalTier) {
+              // Has medal tier (Diamond, Gold, Silver, Bronze) = response time < 10 minutes
               labelText = 'In time'
               labelColor = 'text-green-600'
             } else if (window.calledOut && !window.calledAt) {
@@ -130,11 +133,8 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
               // Call 1 not called - NO additional label (only existing bold black text)
               labelText = ''
               labelColor = ''
-            } else {
-              // Call 1 with called_at - show "In time"
-              labelText = 'In time'
-              labelColor = 'text-green-600'
             }
+            // Note: Call 1 with called_at but no medalTier (>= 10 minutes) gets no label
           } else {
             // Other calls
             if (window.calledAt) {

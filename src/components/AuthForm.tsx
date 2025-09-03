@@ -338,8 +338,8 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
 
         {/* Mode Switch and Additional Links */}
         <div className="text-center pt-4 space-y-3">
-          {/* Forgot Password Link - Only show in login mode */}
-          {authMode === 'login' && (
+          {/* Forgot Password Link - Temporarily disabled */}
+          {/* {authMode === 'login' && (
             <div>
               <Link
                 href="/forgot-password"
@@ -348,7 +348,7 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
                 Forgot your password?
               </Link>
             </div>
-          )}
+          )} */}
 
           {/* Mode Switch */}
           {authMode === 'login' ? (
