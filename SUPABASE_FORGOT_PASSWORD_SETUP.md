@@ -20,11 +20,14 @@ Navigate to **Authentication > Settings** in your Supabase Dashboard:
 ```
 Site URL: https://dominatelocalleadsai.sliplane.app
 ```
-- **Development**: `http://localhost:3001`
-- **Staging**: `https://your-staging-domain.com` (if applicable)
-- **Production**: `https://dominatelocalleadsai.sliplane.app`
 
-**Important**: Use exact URLs without trailing slashes.
+**CRITICAL FOR PRODUCTION**: The Site URL in Supabase Dashboard MUST be set to:
+`https://dominatelocalleadsai.sliplane.app`
+
+**Important Notes**: 
+- Use exact URL without trailing slashes
+- This affects email template generation - localhost URLs will appear in emails if this is not set correctly
+- The application now hardcodes the production URL to prevent issues, but Supabase email templates still use the dashboard Site URL
 
 #### Redirect URLs Configuration
 Add the following to **Redirect URLs** (one per line):
@@ -161,25 +164,28 @@ Before deploying to production:
 
 **CRITICAL FOR PRODUCTION DEPLOYMENT:**
 
-1. **Update Site URL**:
+❗ **URGENT FIX REQUIRED**: If users are receiving localhost URLs in password reset emails, follow these steps immediately:
+
+1. **Update Site URL in Supabase Dashboard**:
    - Navigate to Authentication → Settings in Supabase Dashboard
-   - Change Site URL from development to: `https://dominatelocalleadsai.sliplane.app`
+   - Change Site URL from `http://localhost:3001` to: `https://dominatelocalleadsai.sliplane.app`
+   - **This is the root cause** - email templates use the Site URL from the dashboard
 
 2. **Add Production Redirect URL**:
    - In Authentication → Settings → Redirect URLs section
    - Add: `https://dominatelocalleadsai.sliplane.app/auth/reset-password`
-   - **Important**: Keep the development URL `http://localhost:3001/auth/reset-password` for local testing
+   - Keep the development URL `http://localhost:3001/auth/reset-password` for local testing
 
-3. **Verify Redirect URLs Configuration**:
-   - Your Redirect URLs should include both:
-     - `http://localhost:3001/auth/reset-password` (for development)
-     - `https://dominatelocalleadsai.sliplane.app/auth/reset-password` (for production)
-   - **Do not remove the development URL** - both can coexist safely
+3. **Verify Configuration**:
+   - Site URL: `https://dominatelocalleadsai.sliplane.app`
+   - Redirect URLs should include:
+     - `http://localhost:3001/auth/reset-password` (development)
+     - `https://dominatelocalleadsai.sliplane.app/auth/reset-password` (production)
 
-4. **Test Email Generation**:
+4. **Test Immediately After Changes**:
    - Send a test password reset email in production
-   - Verify the email contains the correct production URL
-   - Confirm the link opens the reset page successfully
+   - Verify the email contains `https://dominatelocalleadsai.sliplane.app/auth/reset-password`
+   - If still showing localhost, double-check Site URL setting in dashboard
 
 ### Application Deployment
 1. Set `NEXT_PUBLIC_SITE_URL` to production domain

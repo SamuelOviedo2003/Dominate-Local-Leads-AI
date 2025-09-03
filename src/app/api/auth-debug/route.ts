@@ -43,19 +43,22 @@ export async function GET(request: NextRequest) {
     // URL configuration analysis
     url_analysis: {
       current_request_url: request.url,
-      site_url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-      auth_confirm_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/confirm`,
-      update_password_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/account/update-password`
+      site_url: 'https://dominatelocalleadsai.sliplane.app',
+      auth_confirm_url: 'https://dominatelocalleadsai.sliplane.app/auth/confirm',
+      auth_reset_password_url: 'https://dominatelocalleadsai.sliplane.app/auth/reset-password',
+      note: 'Using hardcoded production URL to prevent localhost issues in email redirects'
     },
 
     // Expected email template variables
     email_template_guidance: {
-      recovery_template_should_contain: '{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/account/update-password',
+      recovery_template_note: 'Password reset emails now use the redirectTo URL from resetPasswordForEmail call',
+      recovery_redirect_url: 'https://dominatelocalleadsai.sliplane.app/auth/reset-password',
       signup_template_should_contain: '{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next={{ .RedirectTo }}',
       notes: [
-        'Make sure to use {{ .SiteURL }} instead of hardcoded URLs',
+        'Password reset: redirectTo URL hardcoded in forgotPassword action to prevent localhost issues',
+        'Signup confirmation: Make sure to use {{ .SiteURL }} instead of hardcoded URLs',
         'The type parameter must match the auth flow (recovery, email, etc.)',
-        'For recovery emails, next should point to /account/update-password'
+        'For recovery emails, URL is controlled by resetPasswordForEmail redirectTo parameter'
       ]
     },
 
@@ -71,8 +74,8 @@ export async function GET(request: NextRequest) {
           'Link already used (tokens are single-use)'
         ],
         solutions: [
-          'Add http://localhost:3000/** to Supabase redirect URLs',
-          'Verify Site URL in dashboard matches NEXT_PUBLIC_SITE_URL',
+          'Ensure https://dominatelocalleadsai.sliplane.app/auth/reset-password is in Supabase redirect URLs',
+          'Verify Site URL in dashboard is set to https://dominatelocalleadsai.sliplane.app',
           'Check email template uses correct token_hash parameter',
           'Request a fresh password reset if token expired'
         ]
@@ -85,8 +88,9 @@ export async function GET(request: NextRequest) {
           'Multiple auth flows conflicting'
         ],
         solutions: [
-          'Ensure recovery type redirects to update-password page',
-          'Check email template includes proper type=recovery parameter'
+          'Password reset emails now redirect directly to /auth/reset-password',
+          'Check that hardcoded production URL is being used in forgotPassword action',
+          'Verify Supabase dashboard redirect URLs include production domain'
         ]
       }
     ]

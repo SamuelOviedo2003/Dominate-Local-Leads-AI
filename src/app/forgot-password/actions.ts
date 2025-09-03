@@ -27,49 +27,20 @@ export async function forgotPassword(formData: FormData) {
   }
 
   try {
-    // Get the site URL from environment with proper fallback handling
-    let siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-    
-    // If not set, provide appropriate fallbacks based on environment
-    if (!siteUrl) {
-      if (process.env.NODE_ENV === 'development') {
-        siteUrl = 'http://localhost:3001'
-        console.warn('⚠️  NEXT_PUBLIC_SITE_URL not set, using development fallback:', siteUrl)
-      } else {
-        // In production, try to determine the URL from request headers or use known production URL
-        const prodUrl = 'https://dominatelocalleadsai.sliplane.app'
-        console.warn('⚠️  NEXT_PUBLIC_SITE_URL not set in production, using fallback:', prodUrl)
-        console.warn('⚠️  Please set NEXT_PUBLIC_SITE_URL environment variable in production for proper configuration')
-        siteUrl = prodUrl
-      }
-    }
-    
-    // Ensure the site URL doesn't contain localhost in production
-    if (process.env.NODE_ENV === 'production' && siteUrl.includes('localhost')) {
-      const prodUrl = 'https://dominatelocalleadsai.sliplane.app'
-      console.error('❌ CRITICAL: Production environment using localhost URL:', siteUrl)
-      console.warn('⚠️  Using production fallback URL:', prodUrl)
-      siteUrl = prodUrl
-    }
+    // Always use production URL for email redirects to eliminate localhost issues
+    const siteUrl = 'https://dominatelocalleadsai.sliplane.app'
 
     console.log('=== FORGOT PASSWORD DEBUG ===')
     console.log(`Attempting password reset for email: ${email}`)
     console.log(`Environment: ${process.env.NODE_ENV}`)
-    console.log(`NEXT_PUBLIC_SITE_URL env var: ${process.env.NEXT_PUBLIC_SITE_URL || 'NOT SET'}`)
-    console.log(`Final Site URL: ${siteUrl}`)
+    console.log(`Production Site URL: ${siteUrl}`)
     console.log(`Redirect URL will be: ${siteUrl}/auth/reset-password`)
+    console.log(`✅ Using hardcoded production URL to prevent localhost issues`)
     console.log(``)
-    console.log(`🚨 IMPORTANT: If users report localhost URLs in production errors,`)
-    console.log(`   check Supabase Dashboard → Authentication → URL Configuration:`)
-    console.log(`   - Site URL should be: https://dominatelocalleadsai.sliplane.app`)
-    console.log(`   - Add to Redirect URLs: ${siteUrl}/auth/reset-password`)
-    console.log(`   - Error redirects use the Site URL from Supabase Dashboard!`)
-
-    // Validate site URL format
-    if (!siteUrl.startsWith('http://') && !siteUrl.startsWith('https://')) {
-      console.error('❌ Invalid site URL format:', siteUrl)
-      redirect('/forgot-password?error=Configuration error. Please contact support.')
-    }
+    console.log(`📧 Email links will always use: ${siteUrl}/auth/reset-password`)
+    console.log(`⚠️  Ensure Supabase Dashboard → Authentication → URL Configuration includes:`)
+    console.log(`   - Site URL: https://dominatelocalleadsai.sliplane.app`)
+    console.log(`   - Redirect URLs: ${siteUrl}/auth/reset-password`)
 
     // Send password reset email using Supabase
     // The redirectTo URL will be used after the user clicks the email link
