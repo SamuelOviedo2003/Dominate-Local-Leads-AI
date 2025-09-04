@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { TimePeriod } from '@/types/leads'
+import { BusinessSwitcherData } from '@/types/auth'
 import { useDashboardData } from '@/hooks/useDashboardData'
 // TEMPORARILY DISABLED: Appointment setters functionality commented out due to missing time_speed column
 // import { useAppointmentSetters } from '@/hooks/useAppointmentSetters'
@@ -10,18 +11,19 @@ import {
   TimePeriodFilter 
 } from '@/components/features/leads'
 import { PlatformSpendCard } from '@/components/features/dashboard/PlatformSpendCard'
-import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
+import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface DashboardClientProps {
-  businessId: string
   userRole?: number
+  accessibleBusinesses: BusinessSwitcherData[]
 }
 
-export function DashboardClient({ businessId, userRole }: DashboardClientProps) {
+export function DashboardClient({ userRole, accessibleBusinesses }: DashboardClientProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30')
   
   // Get the effective business ID (user's own or selected company for superadmin)
-  const effectiveBusinessId = useEffectiveBusinessId()
+  const { currentBusinessId } = useBusinessContext()
+  const effectiveBusinessId = currentBusinessId || ''
   
   // TEMPORARILY DISABLED: Appointment setters functionality commented out due to missing time_speed column
   /*

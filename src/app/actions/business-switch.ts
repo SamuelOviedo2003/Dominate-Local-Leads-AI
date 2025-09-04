@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { BusinessSwitcherData } from '@/types/auth'
 
 /**
@@ -25,10 +26,11 @@ export async function switchBusiness(businessId: string): Promise<{
       }
     }
 
-    // Get user profile to check role
-    const { data: profile, error: profileError } = await supabase
+    // Get user profile to check role using service role to avoid RLS recursion
+    const supabaseService = createServiceRoleClient()
+    const { data: profile, error: profileError } = await supabaseService
       .from('profiles')
-      .select('role, business_id')
+      .select('role')
       .eq('id', user.id)
       .single()
 
@@ -105,8 +107,9 @@ export async function getAvailableBusinesses(): Promise<{
       }
     }
 
-    // Get user profile to check role
-    const { data: profile, error: profileError } = await supabase
+    // Get user profile to check role using service role to avoid RLS recursion  
+    const supabaseService = createServiceRoleClient()
+    const { data: profile, error: profileError } = await supabaseService
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -176,10 +179,11 @@ export async function validateBusinessAccess(businessId: string): Promise<{
       }
     }
 
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
+    // Get user profile using service role to avoid RLS recursion
+    const supabaseService = createServiceRoleClient()
+    const { data: profile, error: profileError } = await supabaseService
       .from('profiles')
-      .select('role, business_id')
+      .select('role')
       .eq('id', user.id)
       .single()
 
@@ -203,8 +207,15 @@ export async function validateBusinessAccess(businessId: string): Promise<{
 
       canAccess = !businessError && !!business
     } else {
-      // Regular users can only access their own business
-      canAccess = profile.business_id?.toString() === businessId
+      // Regular users can only access businesses in their profile_businesses table
+      const { data: access, error: accessError } = await supabase
+        .from('profile_businesses')
+        .select('business_id')
+        .eq('profile_id', user.id)
+        .eq('business_id', parseInt(businessId, 10))
+        .single()
+        
+      canAccess = !accessError && !!access
     }
 
     return {

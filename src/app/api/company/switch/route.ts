@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateCompanyAccess, getSuperAdminCompanies, getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { validateBusinessSwitchAccess, getUserAccessibleBusinesses, getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
 import { BusinessSwitcherData } from '@/types/auth'
 
 export const dynamic = 'force-dynamic'
@@ -15,14 +15,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Only superadmins can switch companies
-    if (user.profile?.role !== 0) {
-      return NextResponse.json(
-        { success: false, error: 'Insufficient permissions - only superadmins can switch companies' },
-        { status: 403 }
-      )
-    }
-
     const body = await request.json()
     const { companyId } = body
 
@@ -33,38 +25,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate access to the requested company
-    const hasAccess = await validateCompanyAccess(companyId)
+    // Validate access to the requested business using RLS system
+    const accessResult = await validateBusinessSwitchAccess(user.id, companyId)
     
-    if (!hasAccess) {
+    if (!accessResult.success) {
       return NextResponse.json(
-        { success: false, error: 'Access denied to the requested company' },
+        { success: false, error: accessResult.error || 'Access denied to the requested business' },
         { status: 403 }
       )
     }
 
-    // Get available companies to find the requested company details
-    const availableCompanies = await getSuperAdminCompanies()
-    const selectedCompany = availableCompanies.find(c => c.business_id === companyId)
+    // Get user's accessible businesses to find the requested company details
+    const accessibleBusinesses = await getUserAccessibleBusinesses()
+    const selectedCompany = accessibleBusinesses.find(c => c.business_id === companyId)
 
     if (!selectedCompany) {
       return NextResponse.json(
-        { success: false, error: 'Company not found in available companies' },
+        { success: false, error: 'Business not found in accessible businesses' },
         { status: 404 }
       )
     }
 
-    // Update the user's profile to switch their business_id
-    const { updateUserBusinessId } = await import('@/lib/auth-helpers')
-    const updateResult = await updateUserBusinessId(user.id, companyId)
-    
-    if (!updateResult.success) {
-      return NextResponse.json(
-        { success: false, error: updateResult.error || 'Failed to update user business context' },
-        { status: 500 }
-      )
-    }
-
+    // In the new system, we don't update the database - business switching is session-based
+    // The frontend will handle updating the session context
     return NextResponse.json({
       success: true,
       data: {
@@ -93,20 +76,19 @@ export async function GET() {
       )
     }
 
-    // Only superadmins can access all companies
-    if (user.profile?.role !== 0) {
+    // Get accessible businesses for the current user (works for both super admins and regular users)
+    const businesses = await getUserAccessibleBusinesses()
+
+    if (businesses.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Insufficient permissions - only superadmins can access all companies' },
+        { success: false, error: 'No businesses associated with your account' },
         { status: 403 }
       )
     }
 
-    // Get available companies for the current user
-    const companies = await getSuperAdminCompanies()
-
     return NextResponse.json({
       success: true,
-      data: companies
+      data: businesses
     })
 
   } catch (error) {

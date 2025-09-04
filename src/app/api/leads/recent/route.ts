@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
 import { LeadWithClient } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user || !user.profile) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -36,19 +36,22 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Ensure user can only access their own business data (unless Super Admin)
-    const userBusinessId = parseInt(user.profile.business_id, 10)
-    if (user.profile.role !== 0 && requestedBusinessId !== userBusinessId) {
-      return NextResponse.json(
-        { error: 'Access denied - You can only access your own business data' },
-        { status: 403 }
-      )
+    // Validate business access using RLS system (for both super admins and regular users)
+    if (businessIdParam) {
+      const hasAccess = await validateBusinessAccessForAPI(user, businessIdParam)
+      if (!hasAccess) {
+        return NextResponse.json(
+          { error: 'Access denied - You do not have access to this business data' },
+          { status: 403 }
+        )
+      }
     }
 
     const supabase = await createClient()
 
     // Fetch leads with clients data - filter for stage = 1 OR stage = 2 (Recent Leads)
-    const { data: leadsData, error: leadsError } = await supabase
+    // RLS policies will automatically filter results based on user's accessible businesses
+    let query = supabase
       .from('leads')
       .select(`
         *,
@@ -61,9 +64,15 @@ export async function GET(request: NextRequest) {
         )
       `)
       .gte('created_at', startDate)
-      .eq('business_id', requestedBusinessId)
       .in('stage', [1, 2])
       .order('created_at', { ascending: false })
+    
+    // If a specific business ID is requested, filter by it (in addition to RLS filtering)
+    if (businessIdParam) {
+      query = query.eq('business_id', requestedBusinessId)
+    }
+    
+    const { data: leadsData, error: leadsError } = await query
 
     if (leadsError) {
       console.error('Database error:', leadsError)
@@ -99,12 +108,19 @@ export async function GET(request: NextRequest) {
     let callWindowsData: any[] = []
     if (accountIds.length > 0) {
       
-      const { data: fetchedCallWindows, error: callWindowsError } = await supabase
+      // Build call windows query with RLS filtering
+      let callWindowsQuery = supabase
         .from('call_windows')
         .select('account_id, window_start_at, window_end_at, called_at, called_out, business_id')
         .in('account_id', accountIds)
-        .eq('business_id', requestedBusinessId)
         .order('window_start_at', { ascending: true })
+      
+      // If a specific business ID is requested, filter by it (in addition to RLS filtering)
+      if (businessIdParam) {
+        callWindowsQuery = callWindowsQuery.eq('business_id', requestedBusinessId)
+      }
+      
+      const { data: fetchedCallWindows, error: callWindowsError } = await callWindowsQuery
 
 
       if (callWindowsError) {

@@ -8,7 +8,7 @@ import {
   LeadsTable, 
   TimePeriodFilter 
 } from '@/components/features/leads'
-import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
+import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface NewLeadsClientProps {
   businessId: string
@@ -19,7 +19,8 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30')
   
   // Get the effective business ID (user's own or selected company for superadmin)
-  const effectiveBusinessId = useEffectiveBusinessId()
+  const { currentBusinessId } = useBusinessContext()
+  const effectiveBusinessId = currentBusinessId || ''
   
   const {
     metrics,

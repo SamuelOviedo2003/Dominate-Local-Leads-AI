@@ -10,7 +10,6 @@ interface CompanyContextType {
   setAvailableCompanies: (companies: BusinessSwitcherData[]) => void
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
-  userBusinessId?: string
   userRole?: number
 }
 
@@ -20,7 +19,6 @@ interface CompanyProviderProps {
   children: ReactNode
   initialCompany?: BusinessSwitcherData | null
   availableCompanies?: BusinessSwitcherData[]
-  userBusinessId?: string
   userRole?: number
 }
 
@@ -28,7 +26,6 @@ export function CompanyProvider({
   children, 
   initialCompany = null,
   availableCompanies = [],
-  userBusinessId,
   userRole
 }: CompanyProviderProps) {
   const [selectedCompany, setSelectedCompanyState] = useState<BusinessSwitcherData | null>(initialCompany)
@@ -66,7 +63,6 @@ export function CompanyProvider({
         setAvailableCompanies,
         isLoading,
         setIsLoading,
-        userBusinessId,
         userRole
       }}
     >
@@ -86,16 +82,16 @@ export function useCompany() {
 /**
  * Hook to get the effective business ID for data fetching
  * For superadmins, returns the selected company's business_id
- * For regular users, returns their own business_id
+ * For regular users, returns the first available business from their accessible businesses
  */
 export function useEffectiveBusinessId(): string {
-  const { selectedCompany, userBusinessId, userRole } = useCompany()
+  const { selectedCompany, availableCompanies, userRole } = useCompany()
   
   // If user is superadmin (role 0) and has selected a company, use that
   if (userRole === 0 && selectedCompany) {
     return selectedCompany.business_id
   }
   
-  // Otherwise, use the user's own business_id
-  return userBusinessId || ''
+  // Otherwise, use the first available business (for regular users this will be their assigned business)
+  return selectedCompany?.business_id || availableCompanies[0]?.business_id || ''
 }

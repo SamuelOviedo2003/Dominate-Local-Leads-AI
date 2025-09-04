@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { BusinessSwitcherData, CompanySwitchResponse, AvailableCompaniesResponse } from '@/types/auth'
-import { useCompany } from '@/contexts/CompanyContext'
+import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface UseCompanySwitchingReturn {
   switchCompany: (companyId: string) => Promise<{ success: boolean; error?: string }>
@@ -13,7 +13,7 @@ interface UseCompanySwitchingReturn {
 export function useCompanySwitching(): UseCompanySwitchingReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { setSelectedCompany, availableCompanies } = useCompany()
+  const { setCurrentBusinessId } = useBusinessContext()
 
   const switchCompany = async (companyId: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true)
@@ -37,13 +37,11 @@ export function useCompanySwitching(): UseCompanySwitchingReturn {
       }
 
       if (result.data?.company) {
-        // Update the selected company in context
-        setSelectedCompany(result.data.company)
+        // Update the business context (session-based, no database update)
+        setCurrentBusinessId(result.data.company.business_id)
         
-        // Since we've updated the user's business_id in the database,
-        // we need to refresh the page to ensure all server-side components
-        // and cached data reflect the new business context
-        window.location.reload()
+        // Page refresh is no longer needed since we're using session-based business context
+        // The UI will update automatically through the business context
       }
 
       return { success: true }

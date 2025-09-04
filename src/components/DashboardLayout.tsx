@@ -2,7 +2,7 @@ import { ReactNode } from 'react'
 import { getHeaderData } from '@/lib/auth-helpers'
 import UniversalHeader from './UniversalHeader'
 import { logout } from '@/app/home/actions'
-import { CompanyProvider } from '@/contexts/CompanyContext'
+import { BusinessContextProvider } from '@/contexts/BusinessContext'
 import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
 
 interface DashboardLayoutProps {
@@ -12,22 +12,15 @@ interface DashboardLayoutProps {
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, availableBusinesses } = await getHeaderData()
 
-  // Determine initial company for superadmin (their own company)
-  const initialCompany = user.businessData ? {
-    business_id: user.businessData.business_id.toString(),
-    company_name: user.businessData.company_name,
-    avatar_url: user.businessData.avatar_url,
-    city: user.businessData.city,
-    state: user.businessData.state
-  } : null
+  // For the new profile_businesses system, use the first available business as initial
+  // or null if no businesses are available (which should be handled by individual pages)
+  const initialBusinessId = availableBusinesses.length > 0 ? availableBusinesses[0].business_id : undefined
 
   return (
     <DynamicThemeProvider>
-      <CompanyProvider 
-        initialCompany={initialCompany}
-        availableCompanies={availableBusinesses}
-        userBusinessId={user.businessData?.business_id.toString()}
-        userRole={user.profile?.role}
+      <BusinessContextProvider 
+        initialBusinesses={availableBusinesses}
+        currentBusinessId={initialBusinessId}
       >
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <UniversalHeader 
@@ -40,7 +33,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
             {children}
           </main>
         </div>
-      </CompanyProvider>
+      </BusinessContextProvider>
     </DynamicThemeProvider>
   )
 }

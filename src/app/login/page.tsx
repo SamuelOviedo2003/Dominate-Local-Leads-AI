@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
 import { login } from './actions'
 import { signup } from './signup-actions'
 import AuthForm from '@/components/AuthForm'
@@ -11,11 +12,11 @@ import { ComponentLoading } from '@/components/LoadingSystem'
 export const dynamic = 'force-dynamic'
 
 export default async function LoginPage() {
-  const supabase = await createClient()
+  // Use proper authentication validation that checks session validity and business access
+  // This prevents redirect loops caused by invalid/expired sessions
+  const authenticatedUser = await getAuthenticatedUserForAPI()
   
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (user) {
+  if (authenticatedUser) {
     redirect('/dashboard')
   }
 

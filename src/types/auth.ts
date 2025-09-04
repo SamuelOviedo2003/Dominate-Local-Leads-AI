@@ -3,7 +3,7 @@ export interface Profile {
   email: string
   full_name: string | null
   avatar_url: string | null
-  role: number
+  role: number | null // Allow null roles for backward compatibility
   business_id: string // Auth system returns as string
   telegram_id: string | null
   ghl_id: string | null
@@ -17,7 +17,7 @@ export interface ProfileNormalized {
   email: string
   full_name: string | null
   avatar_url: string | null
-  role: number
+  role: number | null // Allow null roles for backward compatibility
   business_id: number // Converted to number for database operations
   telegram_id: string | null
   ghl_id: string | null
@@ -52,7 +52,8 @@ export interface AuthUser {
   id: string
   email: string
   profile?: Profile
-  businessData?: BusinessClient
+  accessibleBusinesses?: BusinessSwitcherData[]
+  currentBusinessId?: string
 }
 
 export interface NavigationItem {
@@ -81,5 +82,20 @@ export interface CompanySwitchResponse {
 export interface AvailableCompaniesResponse {
   success: boolean
   data?: BusinessSwitcherData[]
+  error?: string
+}
+
+export interface BusinessContext {
+  currentBusinessId: string | null
+  availableBusinesses: BusinessSwitcherData[]
+  isLoading: boolean
+}
+
+export interface SetBusinessContextRequest {
+  businessId: string
+}
+
+export interface SetBusinessContextResponse {
+  success: boolean
   error?: string
 }

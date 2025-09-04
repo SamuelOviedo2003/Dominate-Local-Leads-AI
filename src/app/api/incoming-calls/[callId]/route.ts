@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
 import { IncomingCall } from '@/types/leads'
 import { createSecureAPIHandler, addSecurityHeaders } from '@/lib/api-middleware'
 import { updateCallerTypeSchema } from '@/lib/validation'
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
   try {
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -52,12 +52,10 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
     }
 
     // Check if user has access to this business data
-    const userBusinessId = parseInt(user.profile.business_id, 10)
-    const callBusinessId = parseInt(callData.business_id, 10)
-    
-    if (user.profile.role !== 0 && callBusinessId !== userBusinessId) {
+    const hasAccess = await validateBusinessAccessForAPI(user, callData.business_id.toString())
+    if (!hasAccess) {
       return NextResponse.json(
-        { error: 'Access denied - You can only access your own business data' },
+        { error: 'Access denied - You do not have access to this business data' },
         { status: 403 }
       )
     }
@@ -94,7 +92,7 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
   try {
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -139,12 +137,10 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
     }
 
     // Check if user has access to this business data
-    const userBusinessId = parseInt(user.profile.business_id, 10)
-    const callBusinessId = parseInt(existingCall.business_id, 10)
-    
-    if (user.profile.role !== 0 && callBusinessId !== userBusinessId) {
+    const hasAccess = await validateBusinessAccessForAPI(user, existingCall.business_id.toString())
+    if (!hasAccess) {
       return NextResponse.json(
-        { error: 'Access denied - You can only access your own business data' },
+        { error: 'Access denied - You do not have access to this business data' },
         { status: 403 }
       )
     }

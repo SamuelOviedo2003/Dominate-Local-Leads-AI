@@ -6,7 +6,7 @@ import { useSalesmanData } from '@/hooks/useSalesmanData'
 import { TimePeriodFilter } from '@/components/features/leads/TimePeriodFilter'
 import { LeadsTable } from '@/components/features/leads/LeadsTable'
 import { TrendingUp, DollarSign, Target, Award, BarChart3, Calendar } from 'lucide-react'
-import { useEffectiveBusinessId } from '@/contexts/CompanyContext'
+import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface SalesmanClientProps {
   businessId: string
@@ -17,7 +17,8 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30')
   
   // Get the effective business ID (user's own or selected company for superadmin)
-  const effectiveBusinessId = useEffectiveBusinessId()
+  const { currentBusinessId } = useBusinessContext()
+  const effectiveBusinessId = currentBusinessId || ''
   
   const {
     metrics,

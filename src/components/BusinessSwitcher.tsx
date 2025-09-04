@@ -5,29 +5,26 @@ import { ChevronDown, Building2, Check } from 'lucide-react'
 import { BusinessSwitcherData } from '@/types/auth'
 import ImageWithFallback from './ImageWithFallback'
 import { useCompanySwitching } from '@/hooks/useCompanySwitching'
+import { useBusinessContext, useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useDynamicTheme } from '@/contexts/DynamicThemeContext'
 import { ExtractedColors, invalidateColorCache } from '@/lib/color-extraction'
 
 interface BusinessSwitcherProps {
-  businesses: BusinessSwitcherData[]
-  currentBusinessId?: string
   isMobile?: boolean
   showDropdown?: boolean
-  businessData?: BusinessSwitcherData
   onBusinessChange?: (businessId: string) => void
 }
 
 export default function BusinessSwitcher({ 
-  businesses, 
-  currentBusinessId, 
   isMobile = false,
   showDropdown = true,
-  businessData,
   onBusinessChange 
 }: BusinessSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { switchCompany, isLoading } = useCompanySwitching()
+  const { availableBusinesses, currentBusinessId } = useBusinessContext()
+  const currentBusiness = useCurrentBusiness()
   const { extractColors } = useDynamicTheme()
 
   // Close dropdown when clicking outside
@@ -44,7 +41,7 @@ export default function BusinessSwitcher({
     }
   }, [])
 
-  const currentBusiness = businessData || businesses.find(b => b.business_id === currentBusinessId)
+  // currentBusiness is now provided by useCurrentBusiness() hook
 
   // Initialize color extraction on mount and when business changes
   useEffect(() => {
@@ -79,7 +76,7 @@ export default function BusinessSwitcher({
   }
 
   // If no dropdown functionality is needed, just display the company info
-  if (!showDropdown || (showDropdown && businesses.length <= 1)) {
+  if (!showDropdown || (showDropdown && availableBusinesses.length <= 1)) {
     return (
       <div className="flex items-center space-x-3 group">
         {/* Company Logo/Avatar */}
@@ -196,7 +193,7 @@ export default function BusinessSwitcher({
 
           {/* Business List */}
           <div className="py-1" role="listbox">
-            {businesses.map((business) => {
+            {availableBusinesses.map((business) => {
               const isSelected = business.business_id === currentBusinessId
               
               return (

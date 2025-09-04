@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
 import { CallerTypeDistribution } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user) {
       console.warn('Unauthorized access attempt to source-caller-types endpoint')
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -115,12 +115,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Ensure user can only access their own business data (unless Super Admin)
-    const userBusinessId = parseInt(user.profile.business_id, 10)
-    if (user.profile.role !== 0 && requestedBusinessId !== userBusinessId) {
-      console.warn(`Access denied: User ${user.profile.id} tried to access business ${requestedBusinessId}, but only has access to ${userBusinessId}`)
+    // Validate business access using the new profile_businesses system
+    const hasAccess = await validateBusinessAccessForAPI(user, businessIdParam!)
+    if (!hasAccess) {
+      console.warn(`Access denied: User ${user.profile.id} tried to access business ${requestedBusinessId}`)
       return NextResponse.json(
-        { error: 'Access denied - You can only access your own business data' },
+        { error: 'Access denied - You do not have access to this business data' },
         { status: 403 }
       )
     }

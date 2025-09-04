@@ -155,7 +155,8 @@ async function getRateLimitKey(
     case 'business':
       try {
         const user = await getAuthenticatedUserForAPI()
-        const businessId = user?.profile?.business_id ? requireValidBusinessId(user.profile.business_id) : null
+        // Use the first accessible business for rate limiting key, or fallback to user ID
+        const businessId = user?.accessibleBusinesses?.[0]?.business_id
         return businessId ? `business:${businessId}` : `user:${user?.id || 'anonymous'}`
       } catch {
         return `ip:${request.headers.get('x-forwarded-for') || '127.0.0.1'}`
@@ -176,7 +177,7 @@ export async function requireAuthentication(
   try {
     const user = await getAuthenticatedUserForAPI()
     
-    if (!user || !user.profile?.business_id) {
+    if (!user || !user.profile) {
       logger.warn('Unauthenticated API access attempt', {
         url: request.url,
         method: request.method,
@@ -325,7 +326,7 @@ export function createSecureAPIHandler<TInput = any, TOutput = any>(config: {
         endpoint: config.endpoint,
         duration,
         userId: user?.id,
-        businessId: user?.profile?.business_id
+        accessibleBusinesses: user?.accessibleBusinesses?.length || 0
       })
       
       return NextResponse.json({

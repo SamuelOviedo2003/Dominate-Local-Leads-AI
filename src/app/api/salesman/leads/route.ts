@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
 import { LeadWithClient } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/salesman/leads
- * Fetches leads in stage 3 (Bookings) with client information
+ * Fetches leads for bookings analysis with client information
  * 
  * Query Parameters:
  * - startDate: ISO string for filtering leads created after this date
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -47,18 +47,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Ensure user can only access their own business data (unless Super Admin)
-    const userBusinessId = parseInt(user.profile.business_id, 10)
-    if (user.profile.role !== 0 && requestedBusinessId !== userBusinessId) {
+    // Validate user has access to the requested business using the new profile_businesses system
+    const hasAccess = await validateBusinessAccessForAPI(user, businessIdParam)
+    if (!hasAccess) {
       return NextResponse.json(
-        { error: 'Access denied - You can only access your own business data' },
+        { error: 'Access denied - You do not have permission to access this business' },
         { status: 403 }
       )
     }
 
     const supabase = await createClient()
 
-    // Fetch leads with clients data - filter for stage = 3 (Bookings)
+    // Fetch leads with clients data - get all leads for bookings analysis
+    // (Bookings metrics work with all leads regardless of stage)
     const { data: leadsData, error: leadsError } = await supabase
       .from('leads')
       .select(`
@@ -73,13 +74,12 @@ export async function GET(request: NextRequest) {
       `)
       .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
-      .eq('stage', 3)
       .order('created_at', { ascending: false })
 
     if (leadsError) {
       console.error('Database error:', leadsError)
       return NextResponse.json(
-        { error: 'Failed to fetch bookings leads data' },
+        { error: 'Failed to fetch salesman leads data' },
         { status: 500 }
       )
     }

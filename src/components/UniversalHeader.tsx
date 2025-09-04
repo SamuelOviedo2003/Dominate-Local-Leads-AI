@@ -25,6 +25,15 @@ const navigationItems: NavigationItem[] = [
   { name: 'Incoming Calls', href: '/incoming-calls' },
 ]
 
+// Profile Management is only visible to super admins
+const getNavigationItemsForUser = (isSuperAdmin: boolean): NavigationItem[] => {
+  const items = [...navigationItems]
+  if (isSuperAdmin) {
+    items.push({ name: 'Profile Management', href: '/profile-management' })
+  }
+  return items
+}
+
 export default function UniversalHeader({ 
   user, 
   logoutAction, 
@@ -74,6 +83,7 @@ export default function UniversalHeader({
 
   const isSuperAdmin = user.profile?.role === 0
   const hasMultipleBusinesses = availableBusinesses.length > 1
+  const userNavigationItems = getNavigationItemsForUser(isSuperAdmin)
 
   // Handle navigation with explicit routing to ensure navigation works
   const handleNavigation = (href: string, event?: React.MouseEvent) => {
@@ -103,12 +113,12 @@ export default function UniversalHeader({
     }
   }
 
-  // Initialize fallback color extraction when no business data
+  // Initialize fallback color extraction when no accessible businesses
   useEffect(() => {
-    if (!user.businessData?.avatar_url) {
+    if (availableBusinesses.length === 0) {
       extractColors('/images/DominateLocalLeadsLogo.png', 'main-logo')
     }
-  }, [user.businessData?.avatar_url]) // Removed extractColors to prevent infinite loop
+  }, [availableBusinesses.length]) // Removed extractColors to prevent infinite loop
 
   // Handle color extraction from fallback main logo
   const handleFallbackColorsExtracted = (colors: ExtractedColors) => {
@@ -131,15 +141,12 @@ export default function UniversalHeader({
             
             {/* Far Left: Company Selector/Logo */}
             <div className="flex items-center space-x-3">
-              {user.businessData ? (
+              {availableBusinesses.length > 0 ? (
                 <BusinessSwitcher 
-                  businesses={availableBusinesses}
-                  currentBusinessId={user.businessData?.business_id}
-                  showDropdown={isSuperAdmin && hasMultipleBusinesses}
-                  businessData={user.businessData}
+                  showDropdown={isSuperAdmin || hasMultipleBusinesses}
                 />
               ) : (
-                /* Fallback to main logo if no business data */
+                /* Fallback to main logo if no accessible businesses */
                 <div className="relative group">
                   <ImageWithFallback
                     src="/images/DominateLocalLeadsLogo.png"
@@ -163,7 +170,7 @@ export default function UniversalHeader({
 
             {/* Center: Navigation Buttons */}
             <nav className="hidden lg:flex items-center space-x-2">
-              {navigationItems.map((item) => (
+              {userNavigationItems.map((item) => (
                 <button
                   key={item.name}
                   onClick={(e) => handleNavigation(item.href, e)}
@@ -238,7 +245,7 @@ export default function UniversalHeader({
 
             {/* Mobile Navigation Links */}
             <nav className="px-6 py-6 space-y-3">
-              {navigationItems.map((item) => (
+              {userNavigationItems.map((item) => (
                 <button
                   key={item.name}
                   onClick={(e) => {
@@ -259,16 +266,13 @@ export default function UniversalHeader({
             </nav>
 
             {/* Mobile Business Switcher */}
-            {isSuperAdmin && hasMultipleBusinesses && (
+            {availableBusinesses.length > 1 && (
               <div className="px-6 py-4 border-t border-white/20">
                 <div className="text-sm font-semibold text-white/90 mb-4">
                   Switch Business
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-3 shadow-lg">
                   <BusinessSwitcher 
-                    businesses={availableBusinesses}
-                    currentBusinessId={user.businessData?.business_id}
-                    businessData={user.businessData}
                     showDropdown={true}
                     isMobile={true}
                   />
