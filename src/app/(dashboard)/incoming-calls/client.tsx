@@ -10,7 +10,7 @@ import RecentCallsPopup from '@/components/RecentCallsPopup'
 
 interface IncomingCallsClientProps {
   businessId: string
-  userRole: number
+  userRole?: number | null
 }
 
 // Loading component (replaced with universal loading system)

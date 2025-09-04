@@ -194,7 +194,7 @@ export async function requireAuthentication(
     }
     
     // Check role requirement
-    if (requiredRole !== undefined && user.profile.role > requiredRole) {
+    if (requiredRole !== undefined && (user.profile.role ?? 1) > requiredRole) {
       logger.warn('Insufficient permissions for API access', {
         url: request.url,
         userId: user.id,

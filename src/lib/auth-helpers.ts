@@ -197,7 +197,7 @@ async function getUserAccessibleBusinessesInternal(userId: string, userRole: num
   }
   
   // Transform the data to match BusinessSwitcherData format
-  const transformedBusinesses = userBusinesses.map(ub => ({
+  const transformedBusinesses = userBusinesses.map((ub: any) => ({
     business_id: ub.business_clients.business_id.toString(),
     company_name: ub.business_clients.company_name,
     avatar_url: ub.business_clients.avatar_url,
@@ -306,7 +306,7 @@ export async function getEffectiveBusinessId(user?: AuthUser): Promise<string | 
   }
   
   // Return the first accessible business ID
-  return authUser.accessibleBusinesses[0].business_id
+  return authUser.accessibleBusinesses?.[0]?.business_id || null
 }
 
 /**
@@ -328,7 +328,7 @@ export async function getEffectiveBusinessIdFromRequest(request?: Request | { se
   }
   
   // If a specific business is requested and user has access to it, use that
-  if (requestedBusinessId && user.accessibleBusinesses.some(b => b.business_id === requestedBusinessId)) {
+  if (requestedBusinessId && user.accessibleBusinesses?.some(b => b.business_id === requestedBusinessId)) {
     return requestedBusinessId
   }
   
@@ -377,7 +377,18 @@ export async function validateBusinessSwitchAccess(userId: string, businessId: s
   const hasAccess = await validateBusinessAccessForAPI({ 
     id: userId, 
     email: '', 
-    profile 
+    profile: {
+      id: userId,
+      email: '',
+      full_name: '',
+      avatar_url: null,
+      role: profile.role,
+      business_id: null,
+      telegram_id: null,
+      ghl_id: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    } as any
   }, businessId)
   
   return { 

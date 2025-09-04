@@ -12,7 +12,7 @@ import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface NewLeadsClientProps {
   businessId: string
-  userRole?: number
+  userRole?: number | null
 }
 
 export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {

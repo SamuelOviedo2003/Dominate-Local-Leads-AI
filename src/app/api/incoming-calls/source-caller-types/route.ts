@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
     // Validate business access using the new profile_businesses system
     const hasAccess = await validateBusinessAccessForAPI(user, businessIdParam!)
     if (!hasAccess) {
-      console.warn(`Access denied: User ${user.profile.id} tried to access business ${requestedBusinessId}`)
+      console.warn(`Access denied: User ${user.profile?.id || user.id} tried to access business ${requestedBusinessId}`)
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },
         { status: 403 }

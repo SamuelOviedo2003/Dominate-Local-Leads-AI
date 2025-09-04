@@ -79,7 +79,7 @@ export async function login(formData: FormData) {
       }
       
       if (userBusinesses) {
-        accessibleBusinesses = userBusinesses.map(ub => ({
+        accessibleBusinesses = userBusinesses.map((ub: any) => ({
           business_id: ub.business_clients.business_id.toString(),
           company_name: ub.business_clients.company_name,
           avatar_url: ub.business_clients.avatar_url,

@@ -10,7 +10,7 @@ import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface SalesmanClientProps {
   businessId: string
-  userRole?: number
+  userRole?: number | null
 }
 
 export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {

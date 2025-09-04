@@ -21,12 +21,13 @@ export default async function NewLeadsPage() {
   }
 
   // Use the first accessible business (for regular users this will be their assigned business)
-  const businessId = user.accessibleBusinesses[0].business_id
+  // TypeScript assertion is safe here because we've already checked length > 0
+  const businessId = user.accessibleBusinesses[0]!.business_id
 
   return (
     <NewLeadsClient 
       businessId={businessId} 
-      userRole={user.profile.role}
+      userRole={user.profile?.role}
     />
   )
 }

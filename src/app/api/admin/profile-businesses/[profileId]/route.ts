@@ -111,7 +111,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Transform the data to match expected format
-    const businesses = assignedBusinesses?.map(ab => ({
+    const businesses = assignedBusinesses?.map((ab: any) => ({
       business_id: ab.business_clients.business_id,
       company_name: ab.business_clients.company_name,
       avatar_url: ab.business_clients.avatar_url,

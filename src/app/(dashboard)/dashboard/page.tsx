@@ -7,17 +7,10 @@ export default async function DashboardPage() {
   // Get authenticated user on server side
   const user = await getAuthenticatedUser()
   
-  console.log('Dashboard page - User data:', {
-    userId: user.id,
-    email: user.email,
-    role: user.profile?.role,
-    accessibleBusinessesCount: user.accessibleBusinesses?.length || 0,
-    accessibleBusinesses: user.accessibleBusinesses
-  })
   
   // Check if user has access to any businesses using the new profile_businesses system
   if (!user.accessibleBusinesses || user.accessibleBusinesses.length === 0) {
-    console.warn(`User ${user.email} has no accessible businesses - showing error message`)
+    // User has no accessible businesses - showing error message
     return (
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
@@ -30,8 +23,6 @@ export default async function DashboardPage() {
       </div>
     )
   }
-
-  console.log(`User ${user.email} has access to ${user.accessibleBusinesses.length} businesses - loading dashboard`)
 
   return (
     <DashboardClient 

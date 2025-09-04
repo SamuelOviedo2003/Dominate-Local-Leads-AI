@@ -46,9 +46,11 @@ export function BusinessContextProvider({
       }
       // Finally, fall back to the first available business
       else if (availableBusinesses.length > 0) {
-        const firstBusiness = availableBusinesses[0].business_id
-        setCurrentBusinessIdState(firstBusiness)
-        sessionStorage.setItem('currentBusinessId', firstBusiness)
+        const firstBusiness = availableBusinesses[0]?.business_id
+        if (firstBusiness) {
+          setCurrentBusinessIdState(firstBusiness)
+          sessionStorage.setItem('currentBusinessId', firstBusiness)
+        }
       }
     }
   }, [initialCurrentBusinessId, availableBusinesses])

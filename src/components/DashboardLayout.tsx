@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   // For the new profile_businesses system, use the first available business as initial
   // or null if no businesses are available (which should be handled by individual pages)
-  const initialBusinessId = availableBusinesses.length > 0 ? availableBusinesses[0].business_id : undefined
+  const initialBusinessId = availableBusinesses.length > 0 ? availableBusinesses[0]?.business_id : undefined
 
   return (
     <DynamicThemeProvider>
