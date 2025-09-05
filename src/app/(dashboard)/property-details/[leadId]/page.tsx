@@ -5,13 +5,13 @@ import { useParams, useRouter } from 'next/navigation'
 import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { PropertyInformation } from '@/components/features/leads/PropertyInformation'
-import { useCompany } from '@/contexts/CompanyContext'
+import { useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useLeadDetailsData } from '@/hooks/useLeadDetailsData'
 
 const PropertyDetailsPage = () => {
   const params = useParams()
   const router = useRouter()
-  const { selectedCompany } = useCompany()
+  const selectedCompany = useCurrentBusiness()
   
   const leadId = params.leadId as string
   const businessId = selectedCompany?.business_id

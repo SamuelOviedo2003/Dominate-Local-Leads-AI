@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     
     // Basic authentication check to maintain API security
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }

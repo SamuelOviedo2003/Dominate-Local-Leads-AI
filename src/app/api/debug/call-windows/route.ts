@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -91,8 +91,8 @@ export async function GET(request: NextRequest) {
     // Test 6: Check RLS policy by trying different users
     debugResults.currentUser = {
       userId: user.id,
-      businessId: user.profile.business_id,
-      role: user.profile.role
+      accessibleBusinesses: user.accessibleBusinesses?.map(b => b.business_id) || [],
+      role: user.profile?.role || null
     }
 
     return NextResponse.json({

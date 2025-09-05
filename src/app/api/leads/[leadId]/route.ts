@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
 import { LeadDetails, Lead, PropertyInfo, Communication, CallWindow } from '@/types/leads'
 import { logger } from '@/lib/logging'
 import { validateRequest, leadIdSchema, businessIdSchema, updateCallerTypeSchema } from '@/lib/validation'
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
   try {
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -158,11 +158,11 @@ export async function GET(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // Ensure user can only access their own business data (unless Super Admin)
-    const userBusinessId = requireValidBusinessId(user.profile?.business_id, 'User business validation')
-    if (user.profile?.role !== 0 && requestedBusinessId !== userBusinessId) {
+    // Validate business access using the new multi-business system
+    const hasBusinessAccess = await validateBusinessAccessForAPI(user, businessIdParam)
+    if (!hasBusinessAccess) {
       return NextResponse.json(
-        { error: 'Access denied - You can only access your own business data' },
+        { error: 'Access denied - You do not have access to this business data' },
         { status: 403 }
       )
     }
@@ -295,7 +295,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
   try {
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -331,11 +331,11 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // Ensure user can only access their own business data (unless Super Admin)
-    const userBusinessId = parseInt(user.profile.business_id, 10)
-    if (user.profile.role !== 0 && requestedBusinessId !== userBusinessId) {
+    // Validate business access using the new multi-business system
+    const hasBusinessAccess = await validateBusinessAccessForAPI(user, businessIdParam)
+    if (!hasBusinessAccess) {
       return NextResponse.json(
-        { error: 'Access denied - You can only access your own business data' },
+        { error: 'Access denied - You do not have access to this business data' },
         { status: 403 }
       )
     }

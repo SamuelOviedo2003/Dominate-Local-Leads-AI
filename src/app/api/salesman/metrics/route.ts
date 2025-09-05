@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication
     const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile?.business_id) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }

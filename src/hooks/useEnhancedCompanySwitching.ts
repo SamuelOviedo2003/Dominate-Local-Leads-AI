@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { BusinessSwitcherData } from '@/types/auth'
-import { useCompany } from '@/contexts/CompanyContext'
+import { useBusinessContext } from '@/contexts/BusinessContext'
 import { useDynamicTheme } from '@/contexts/DynamicThemeContext'
 import { preloadColors } from '@/lib/color-extraction'
 
@@ -13,7 +13,7 @@ interface UseCompanySwitchingReturn {
 export function useEnhancedCompanySwitching(): UseCompanySwitchingReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { setSelectedCompany, availableCompanies } = useCompany()
+  const { setCurrentBusinessId, availableBusinesses } = useBusinessContext()
   const { extractColors } = useDynamicTheme()
 
   const switchCompany = async (companyId: string): Promise<{ success: boolean; error?: string }> => {
@@ -22,7 +22,7 @@ export function useEnhancedCompanySwitching(): UseCompanySwitchingReturn {
 
     try {
       // Find the target company
-      const targetCompany = availableCompanies.find(c => c.business_id === companyId)
+      const targetCompany = availableBusinesses.find(c => c.business_id === companyId)
       if (!targetCompany) {
         throw new Error('Company not found')
       }
@@ -59,7 +59,7 @@ export function useEnhancedCompanySwitching(): UseCompanySwitchingReturn {
 
       // Step 3: Update context with new company
       if (result.data?.company) {
-        setSelectedCompany(result.data.company)
+        setCurrentBusinessId(result.data.company.business_id)
         
         // Step 4: Store colors in localStorage before reload for immediate availability
         if (targetCompany.avatar_url) {
