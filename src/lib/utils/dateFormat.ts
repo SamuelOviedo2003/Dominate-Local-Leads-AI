@@ -104,6 +104,53 @@ export function shouldIncludeYear(dateString: string): boolean {
 }
 
 /**
+ * Convert time from mm:ss format to "X min Y sec" format
+ * @param timeString - Time in mm:ss format (e.g., "18:57")
+ * @returns Formatted time string (e.g., "18 min 57 sec")
+ */
+export function convertMMSSToMinSec(timeString: string): string {
+  logger.debug('convertMMSSToMinSec called', { timeString })
+  
+  if (!timeString || typeof timeString !== 'string') {
+    logger.debug('Invalid timeString provided', { timeString })
+    return timeString || 'No response'
+  }
+  
+  // Check if already in "X min Y sec" format
+  if (timeString.includes('min') && timeString.includes('sec')) {
+    logger.debug('Time already in min sec format', { timeString })
+    return timeString
+  }
+  
+  try {
+    // Handle mm:ss format
+    const timeParts = timeString.split(':')
+    
+    if (timeParts.length !== 2) {
+      logger.debug('Time not in mm:ss format, returning as-is', { timeString })
+      return timeString
+    }
+    
+    const minutes = parseInt(timeParts[0] || '0', 10)
+    const seconds = parseInt(timeParts[1] || '0', 10)
+    
+    // Validate parsed values
+    if (isNaN(minutes) || isNaN(seconds)) {
+      logger.debug('Failed to parse minutes/seconds', { timeString, minutes, seconds })
+      return timeString
+    }
+    
+    const formattedTime = `${minutes} min ${seconds} sec`
+    logger.debug('Successfully converted time format', { input: timeString, output: formattedTime })
+    return formattedTime
+    
+  } catch (error) {
+    logger.error('Error converting time format', { timeString, error })
+    return timeString
+  }
+}
+
+/**
  * Format multiple timestamps with timezone support
  * Useful for bulk formatting operations
  */

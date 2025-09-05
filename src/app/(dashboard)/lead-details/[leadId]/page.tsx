@@ -110,6 +110,7 @@ const LeadDetailsPage = () => {
         <div className="w-full">
           <CommunicationsHistory 
             communications={leadDetails?.communications || null}
+            callWindows={leadDetails?.callWindows || null}
             isLoading={isCommunicationsLoading}
             error={communicationsError}
           />

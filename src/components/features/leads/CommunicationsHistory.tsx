@@ -1,17 +1,28 @@
 'use client'
 
-import { Communication } from '@/types/leads'
+import { Communication, CallWindow } from '@/types/leads'
 import { AudioPlayer } from './AudioPlayer'
 import { LoadingSystem } from '@/components/LoadingSystem'
+import { CallWindowLogo } from '@/components/ui/CallWindowLogo'
 import { useMemo, useCallback, memo } from 'react'
+import { 
+  matchCommunicationsWithCallWindows, 
+  getCallWindowDisplayInfo 
+} from '@/lib/utils/communicationMatching'
 
 interface CommunicationsHistoryProps {
   communications?: Communication[] | null
+  callWindows?: CallWindow[] | null
   isLoading?: boolean
   error?: string | null
 }
 
-const CommunicationsHistoryComponent = ({ communications = [], isLoading = false, error = null }: CommunicationsHistoryProps) => {
+const CommunicationsHistoryComponent = ({ 
+  communications = [], 
+  callWindows = [], 
+  isLoading = false, 
+  error = null 
+}: CommunicationsHistoryProps) => {
   // Handle loading state
   if (isLoading) {
     return (
@@ -79,14 +90,23 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
     }
   }, [])
 
+  // Match communications with call windows and sort
   const sortedCommunications = useMemo(() => {
     if (!communications || communications.length === 0) return []
-    return communications.sort((a, b) => {
+    
+    // Match communications with call windows
+    const matchedCommunications = matchCommunicationsWithCallWindows(
+      communications, 
+      callWindows || []
+    )
+    
+    // Sort by date (oldest first)
+    return matchedCommunications.sort((a, b) => {
       const dateA = new Date(a.created_at).getTime()
       const dateB = new Date(b.created_at).getTime()
-      return dateA - dateB // Sort oldest first, newest at bottom
+      return dateA - dateB
     })
-  }, [communications])
+  }, [communications, callWindows])
 
 
   if (!communications || communications.length === 0) {
@@ -137,43 +157,67 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
         </div>
       ) : (
         <div className="space-y-3">
-          {sortedCommunications.map((communication) => (
-            <div 
-              key={communication.communication_id}
-              className="border border-gray-200 rounded-lg p-4 transition-colors hover:bg-gray-50"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center space-x-3">
-                  <span 
-                    className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getMessageTypeColor(communication.message_type)}`}
-                  >
-                    {formatMessageType(communication.message_type)}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {formatDate(communication.created_at)}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="mb-3">
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {communication.summary}
-                </p>
-              </div>
-
-              {communication.recording_url && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
-                    </svg>
-                    <span className="text-xs font-medium text-gray-600">Recording</span>
+          {sortedCommunications.map((communication) => {
+            const callWindowInfo = getCallWindowDisplayInfo(communication)
+            
+            return (
+              <div 
+                key={communication.communication_id}
+                className="border border-gray-200 rounded-lg p-4 transition-colors hover:bg-gray-50"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Left: Call Window Logo */}
+                  <div className="flex-shrink-0 pt-1">
+                    {callWindowInfo ? (
+                      <CallWindowLogo
+                        callNumber={callWindowInfo.callNumber}
+                        medalTier={callWindowInfo.medalTier}
+                        isSpecialTier={callWindowInfo.isSpecialTier}
+                        size="md"
+                      />
+                    ) : (
+                      // Placeholder for non-call communications to maintain alignment
+                      <div className="w-10 h-10" />
+                    )}
                   </div>
-                  <AudioPlayer src={communication.recording_url} />
+                  
+                  {/* Right: Communication Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center space-x-3">
+                        <span 
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getMessageTypeColor(communication.message_type)}`}
+                        >
+                          {formatMessageType(communication.message_type)}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatDate(communication.created_at)}
+                        </span>
+                      </div>
+                    </div>
+              
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {communication.summary}
+                      </p>
+                    </div>
+
+                    {communication.recording_url && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+                          </svg>
+                          <span className="text-xs font-medium text-gray-600">Recording</span>
+                        </div>
+                        <AudioPlayer src={communication.recording_url} />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            )
+          })}
         </div>
       )}
 

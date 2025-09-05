@@ -128,6 +128,7 @@ export interface Communication {
   message_type: 'email' | 'sms' | 'call' | 'voicemail' | string
   summary: string
   recording_url: string | null
+  call_window: number | null // Call Window number (1-6) that the communication is associated with
 }
 
 export interface PropertyInfo {
@@ -145,6 +146,7 @@ export interface CallWindow {
   status?: 'No call' | 'called' // For calls 2-6
   calledAt: string | null // Exact timestamp when call was made
   calledOut: string | null // Called out value for Call 1 when called_at is null
+  working_hours?: boolean // For Call 1 only - indicates if call was made during working hours
 }
 
 export interface LeadDetails {

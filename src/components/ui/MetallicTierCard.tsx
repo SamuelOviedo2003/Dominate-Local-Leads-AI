@@ -4,6 +4,7 @@ import { CallWindow } from '@/types/leads'
 import { memo } from 'react'
 import { PremiumMetallicCard } from './PremiumMetallicCard'
 import { Crown, Award, Medal, Phone, PhoneCall, PhoneOutgoing, Gem, X } from 'lucide-react'
+import { convertMMSSToMinSec } from '@/lib/utils/dateFormat'
 
 interface MetallicTierCardProps {
   window: CallWindow
@@ -101,7 +102,8 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
         }`}>
           {(() => {
             if (isCall1 && window.responseTime !== undefined) {
-              return window.responseTime || 'No response'
+              // For Call #1, convert responseTime from mm:ss to "X min Y sec" format
+              return convertMMSSToMinSec(window.responseTime) || 'No response'
             } else if (isCall1 && !window.calledAt && window.calledOut) {
               return formatTime(window.calledOut)
             } else if (window.calledAt) {
@@ -111,6 +113,25 @@ const MetallicTierCardComponent = ({ window, formatTime }: MetallicTierCardProps
             }
           })()} 
         </div>
+        
+        {/* Enhanced Working Hours Display for Call #1 */}
+        {isCall1 && window.working_hours !== undefined && (
+          <div className={`text-xs mt-1 flex justify-end items-center gap-1 font-medium ${
+            window.working_hours 
+              ? 'text-blue-600' 
+              : 'text-orange-600'
+          }`}>
+            {/* Status indicator dot */}
+            <div className={`w-1.5 h-1.5 rounded-full ${
+              window.working_hours 
+                ? 'bg-blue-600' 
+                : 'bg-orange-600'
+            }`} />
+            <span className="leading-none">
+              {window.working_hours ? 'Working hours' : 'Outside working hours'}
+            </span>
+          </div>
+        )}
         {/* New Label System */}
         {(() => {
           // Determine label text and color based on new requirements
