@@ -24,7 +24,8 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
   
   const {
     metrics,
-    recentLeads,
+    stage1Leads,
+    stage2Leads,
     isLoading,
     isMetricsLoading,
     isRecentLeadsLoading,
@@ -79,12 +80,24 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           />
         </div>
 
-        {/* Recent Leads Table - Individual Loading State */}
+        {/* Stage 1 Leads Section */}
+        <div className="mb-8">
+          <LeadsTable 
+            leads={stage1Leads}
+            isLoading={isRecentLeadsLoading}
+            error={recentLeadsError}
+            usePriorityColors={true}
+            tableTitle="Stage 1 Leads"
+          />
+        </div>
+
+        {/* Stage 2 Leads Section */}
         <LeadsTable 
-          leads={recentLeads}
+          leads={stage2Leads}
           isLoading={isRecentLeadsLoading}
           error={recentLeadsError}
           usePriorityColors={true}
+          tableTitle="Stage 2 Leads"
         />
       </div>
     </div>

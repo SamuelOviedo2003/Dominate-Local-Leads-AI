@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Users, Building, Plus, Minus, Eye, AlertCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/LoadingSpinner'
 
@@ -34,12 +34,34 @@ export default function ProfileManagementClient() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [updatingBusinessId, setUpdatingBusinessId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
   }, [])
+
+  // Clear success/error messages after 5 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess(null)
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+    return undefined
+  }, [success])
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null)
+      }, 8000) // Keep error messages a bit longer
+      return () => clearTimeout(timer)
+    }
+    return undefined
+  }, [error])
 
   const loadData = async () => {
     try {
@@ -63,8 +85,20 @@ export default function ProfileManagementClient() {
       const usersData = await usersResponse.json()
       const businessesData = await businessesResponse.json()
 
-      setUsers(usersData.data || [])
+      const updatedUsers = usersData.data || []
+      setUsers(updatedUsers)
       setBusinesses(businessesData.data || [])
+
+      // Update selectedUser with fresh data if a user is currently selected
+      if (selectedUser) {
+        const updatedSelectedUser = updatedUsers.find((user: User) => user.id === selectedUser.id)
+        if (updatedSelectedUser) {
+          setSelectedUser(updatedSelectedUser)
+        } else {
+          // User no longer exists, clear selection
+          setSelectedUser(null)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
@@ -73,10 +107,30 @@ export default function ProfileManagementClient() {
   }
 
   const assignBusiness = async (profileId: string, businessId: number) => {
+    if (!selectedUser) return
+
     try {
       setIsUpdating(true)
+      setUpdatingBusinessId(businessId)
       setError(null)
       setSuccess(null)
+
+      // Optimistic update: immediately add the business to selectedUser
+      const businessToAdd = businesses.find(b => b.business_id === businessId)
+      if (businessToAdd) {
+        const optimisticUser = {
+          ...selectedUser,
+          assigned_businesses: [
+            ...selectedUser.assigned_businesses,
+            {
+              business_id: businessToAdd.business_id,
+              company_name: businessToAdd.company_name,
+              avatar_url: businessToAdd.avatar_url
+            }
+          ]
+        }
+        setSelectedUser(optimisticUser)
+      }
 
       const response = await fetch('/api/admin/profile-businesses', {
         method: 'POST',
@@ -90,24 +144,44 @@ export default function ProfileManagementClient() {
       })
 
       if (!response.ok) {
+        // Revert optimistic update on error
+        if (selectedUser) {
+          setSelectedUser(selectedUser)
+        }
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to assign business')
       }
 
       setSuccess('Business successfully assigned to user')
-      await loadData() // Refresh data
+      await loadData() // Refresh data to ensure consistency
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to assign business')
     } finally {
       setIsUpdating(false)
+      setUpdatingBusinessId(null)
     }
   }
 
   const removeBusiness = async (profileId: string, businessId: number) => {
+    if (!selectedUser) return
+
     try {
       setIsUpdating(true)
+      setUpdatingBusinessId(businessId)
       setError(null)
       setSuccess(null)
+
+      // Store original state for potential revert
+      const originalUser = selectedUser
+
+      // Optimistic update: immediately remove the business from selectedUser
+      const optimisticUser = {
+        ...selectedUser,
+        assigned_businesses: selectedUser.assigned_businesses.filter(
+          b => b.business_id !== businessId
+        )
+      }
+      setSelectedUser(optimisticUser)
 
       const response = await fetch(
         `/api/admin/profile-businesses?profileId=${profileId}&businessId=${businessId}`,
@@ -117,16 +191,19 @@ export default function ProfileManagementClient() {
       )
 
       if (!response.ok) {
+        // Revert optimistic update on error
+        setSelectedUser(originalUser)
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to remove business access')
       }
 
       setSuccess('Business access successfully removed from user')
-      await loadData() // Refresh data
+      await loadData() // Refresh data to ensure consistency
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove business access')
     } finally {
       setIsUpdating(false)
+      setUpdatingBusinessId(null)
     }
   }
 
@@ -302,14 +379,14 @@ export default function ProfileManagementClient() {
                               assignBusiness(selectedUser.id, business.business_id)
                             }
                           }}
-                          disabled={isUpdating}
+                          disabled={isUpdating && updatingBusinessId === business.business_id}
                           className={`inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded transition-colors ${
                             isAssigned
                               ? 'bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50'
                               : 'bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50'
                           }`}
                         >
-                          {isUpdating ? (
+                          {isUpdating && updatingBusinessId === business.business_id ? (
                             <LoadingSpinner size="sm" />
                           ) : isAssigned ? (
                             <>

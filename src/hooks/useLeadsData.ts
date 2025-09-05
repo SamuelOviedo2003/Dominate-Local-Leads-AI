@@ -10,7 +10,8 @@ interface UseLeadsDataProps {
 
 interface UseLeadsDataReturn {
   metrics: LeadMetrics | null
-  recentLeads: LeadWithClient[] | null
+  stage1Leads: LeadWithClient[] | null
+  stage2Leads: LeadWithClient[] | null
   // Overall loading state for page-level coordination
   isLoading: boolean
   // Individual component loading states
@@ -25,7 +26,8 @@ interface UseLeadsDataReturn {
 
 export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): UseLeadsDataReturn {
   const [metrics, setMetrics] = useState<LeadMetrics | null>(null)
-  const [recentLeads, setRecentLeads] = useState<LeadWithClient[] | null>(null)
+  const [stage1Leads, setStage1Leads] = useState<LeadWithClient[] | null>(null)
+  const [stage2Leads, setStage2Leads] = useState<LeadWithClient[] | null>(null)
   
   // Overall loading state (true when any component is loading)
   const [isLoading, setIsLoading] = useState(false)
@@ -98,10 +100,11 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
         throw new Error('Failed to fetch recent leads')
       }
 
-      const leadsData: ApiResponse<LeadWithClient[]> = await leadsRes.json()
+      const leadsData: ApiResponse<{ stage1Leads: LeadWithClient[], stage2Leads: LeadWithClient[] }> = await leadsRes.json()
       
       if (leadsData.success) {
-        setRecentLeads(leadsData.data)
+        setStage1Leads(leadsData.data.stage1Leads)
+        setStage2Leads(leadsData.data.stage2Leads)
       } else {
         throw new Error(leadsData.error || 'Failed to fetch recent leads')
       }
@@ -154,7 +157,8 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
 
   return {
     metrics,
-    recentLeads,
+    stage1Leads,
+    stage2Leads,
     // Overall states
     isLoading,
     error,

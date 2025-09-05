@@ -11,9 +11,10 @@ interface LeadsTableProps {
   error: string | null
   navigationTarget?: 'lead-details' | 'property-details'
   usePriorityColors?: boolean
+  tableTitle?: string
 }
 
-function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead-details', usePriorityColors = false }: LeadsTableProps) {
+function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead-details', usePriorityColors = false, tableTitle = 'Recent Leads' }: LeadsTableProps) {
   const router = useRouter()
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
 
@@ -112,7 +113,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
     return (
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Leads</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{tableTitle}</h3>
         </div>
         <div className="p-6">
           <div className="text-red-500 text-sm">Error loading leads: {error}</div>
@@ -124,7 +125,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Recent Leads</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{tableTitle}</h3>
       </div>
       
       {isLoading ? (

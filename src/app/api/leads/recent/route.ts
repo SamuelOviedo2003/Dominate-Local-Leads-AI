@@ -49,38 +49,65 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Fetch leads with clients data - filter for stage = 1 OR stage = 2 (Recent Leads)
+    // Fetch leads with clients data - separate queries for stage 1 and stage 2
     // RLS policies will automatically filter results based on user's accessible businesses
-    let query = supabase
+    
+    // Build base query structure
+    const baseSelectQuery = `
+      *,
+      clients!inner(
+        full_address,
+        house_value,
+        house_url,
+        distance_meters,
+        duration_seconds
+      )
+    `
+    
+    // Query for stage 1 leads
+    let stage1Query = supabase
       .from('leads')
-      .select(`
-        *,
-        clients!inner(
-          full_address,
-          house_value,
-          house_url,
-          distance_meters,
-          duration_seconds
-        )
-      `)
+      .select(baseSelectQuery)
       .gte('created_at', startDate)
-      .in('stage', [1, 2])
+      .eq('stage', 1)
       .order('created_at', { ascending: false })
     
-    // If a specific business ID is requested, filter by it (in addition to RLS filtering)
     if (businessIdParam) {
-      query = query.eq('business_id', requestedBusinessId)
+      stage1Query = stage1Query.eq('business_id', requestedBusinessId)
     }
     
-    const { data: leadsData, error: leadsError } = await query
-
-    if (leadsError) {
-      console.error('Database error:', leadsError)
+    // Query for stage 2 leads
+    let stage2Query = supabase
+      .from('leads')
+      .select(baseSelectQuery)
+      .gte('created_at', startDate)
+      .eq('stage', 2)
+      .order('created_at', { ascending: false })
+    
+    if (businessIdParam) {
+      stage2Query = stage2Query.eq('business_id', requestedBusinessId)
+    }
+    
+    // Execute both queries in parallel
+    const [stage1Result, stage2Result] = await Promise.all([
+      stage1Query,
+      stage2Query
+    ])
+    
+    // Check for errors in either query
+    if (stage1Result.error || stage2Result.error) {
+      console.error('Database error:', stage1Result.error || stage2Result.error)
       return NextResponse.json(
         { error: 'Failed to fetch leads data' },
         { status: 500 }
       )
     }
+    
+    // Combine data for processing
+    const stage1Data = stage1Result.data || []
+    const stage2Data = stage2Result.data || []
+    const leadsData = [...stage1Data, ...stage2Data]
+
 
     // Get account IDs for fetching communications counts and call windows
     const accountIds = leadsData.map(lead => lead.account_id)
@@ -158,8 +185,8 @@ export async function GET(request: NextRequest) {
       return date.toISOString()
     }
 
-    // Transform the data to match our expected structure
-    const leads: LeadWithClient[] = leadsData.map(leadData => {
+    // Helper function to transform lead data
+    const transformLeadData = (leadData: any): LeadWithClient => {
       const { clients, ...lead } = leadData
       return {
         ...lead,
@@ -173,10 +200,17 @@ export async function GET(request: NextRequest) {
         // Include call windows for this lead's account
         callWindows: callWindowsMap.get(lead.account_id) || []
       }
-    })
+    }
+
+    // Transform stage 1 and stage 2 leads separately
+    const stage1Leads: LeadWithClient[] = stage1Data.map(transformLeadData)
+    const stage2Leads: LeadWithClient[] = stage2Data.map(transformLeadData)
 
     return NextResponse.json({
-      data: leads,
+      data: {
+        stage1Leads,
+        stage2Leads
+      },
       success: true
     })
 
