@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { BusinessSwitcherData, CompanySwitchResponse, AvailableCompaniesResponse } from '@/types/auth'
 import { useBusinessContext } from '@/contexts/BusinessContext'
 
@@ -13,7 +14,9 @@ interface UseCompanySwitchingReturn {
 export function useCompanySwitching(): UseCompanySwitchingReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { setCurrentBusinessId } = useBusinessContext()
+  const { setCurrentBusinessId, availableBusinesses } = useBusinessContext()
+  const router = useRouter()
+  const pathname = usePathname()
 
   const switchCompany = async (companyId: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true)
@@ -40,8 +43,20 @@ export function useCompanySwitching(): UseCompanySwitchingReturn {
         // Update the business context (session-based, no database update)
         setCurrentBusinessId(result.data.company.business_id)
         
-        // Page refresh is no longer needed since we're using session-based business context
-        // The UI will update automatically through the business context
+        // Find the selected business to get its permalink for URL navigation
+        const selectedBusiness = availableBusinesses.find(b => b.business_id === companyId)
+        
+        if (selectedBusiness?.permalink) {
+          // Extract the current page from pathname and navigate to the same page in the new business
+          const currentPage = pathname.split('/').pop() || 'dashboard'
+          const newPath = `/${selectedBusiness.permalink}/${currentPage}`
+          
+          // Navigate to the new business URL
+          router.push(newPath)
+        } else {
+          // Fallback: reload the page if we can't determine the permalink
+          window.location.reload()
+        }
       }
 
       return { success: true }

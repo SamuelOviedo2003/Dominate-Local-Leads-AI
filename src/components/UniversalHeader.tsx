@@ -11,6 +11,12 @@ import BusinessSwitcher from './BusinessSwitcher'
 import { useDynamicTheme, useThemeStyles } from '@/contexts/DynamicThemeContext'
 import { ExtractedColors } from '@/lib/color-extraction'
 import { logNavigation, logColorExtraction } from '@/lib/logger'
+import { 
+  generatePermalinkNavigation, 
+  extractPermalinkFromPath, 
+  isPermalinkPath, 
+  extractCurrentSection 
+} from '@/lib/permalink-utils'
 
 interface UniversalHeaderProps {
   user: AuthUser
@@ -18,16 +24,17 @@ interface UniversalHeaderProps {
   availableBusinesses?: BusinessSwitcherData[]
 }
 
-const navigationItems: NavigationItem[] = [
+// Legacy navigation items for non-permalink routes (fallback)
+const legacyNavigationItems: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'New Leads', href: '/new-leads' },
   { name: 'Bookings', href: '/salesman' },
   { name: 'Incoming Calls', href: '/incoming-calls' },
 ]
 
-// Profile Management is only visible to super admins
-const getNavigationItemsForUser = (isSuperAdmin: boolean): NavigationItem[] => {
-  const items = [...navigationItems]
+// Profile Management is only visible to super admins (legacy)
+const getLegacyNavigationItemsForUser = (isSuperAdmin: boolean): NavigationItem[] => {
+  const items = [...legacyNavigationItems]
   if (isSuperAdmin) {
     items.push({ name: 'Profile Management', href: '/profile-management' })
   }
@@ -44,6 +51,17 @@ export default function UniversalHeader({
   const router = useRouter()
   const { state: themeState, extractColors } = useDynamicTheme()
   const themeStyles = useThemeStyles()
+
+  // Detect if we're in a permalink-based route and extract current context
+  const isUsingPermalink = isPermalinkPath(pathname)
+  const currentPermalink = extractPermalinkFromPath(pathname)
+  const currentSection = extractCurrentSection(pathname)
+  
+  // Generate navigation items based on current context
+  const isSuperAdmin = user.profile?.role === 0
+  const navigationItems = isUsingPermalink && currentPermalink
+    ? generatePermalinkNavigation(currentPermalink, isSuperAdmin)
+    : getLegacyNavigationItemsForUser(isSuperAdmin)
 
   // Close mobile menu when pathname changes
   useEffect(() => {
@@ -72,6 +90,15 @@ export default function UniversalHeader({
   }, [isMobileMenuOpen])
 
   const isActiveLink = (href: string) => {
+    // For permalink-aware links, check if we're on the correct section
+    if (isUsingPermalink && currentPermalink) {
+      // Extract section from href (e.g., '/houston-custom-renovations/dashboard' -> 'dashboard')
+      const hrefParts = href.split('/')
+      const hrefSection = hrefParts[hrefParts.length - 1] || 'dashboard'
+      return currentSection === hrefSection
+    }
+    
+    // Legacy behavior for non-permalink routes
     if (href === '/dashboard') {
       return pathname === '/dashboard' || pathname === '/'
     }
@@ -81,9 +108,7 @@ export default function UniversalHeader({
     return pathname.startsWith(href)
   }
 
-  const isSuperAdmin = user.profile?.role === 0
   const hasMultipleBusinesses = availableBusinesses.length > 1
-  const userNavigationItems = getNavigationItemsForUser(isSuperAdmin)
 
   // Handle navigation with explicit routing to ensure navigation works
   const handleNavigation = (href: string, event?: React.MouseEvent) => {
@@ -170,7 +195,7 @@ export default function UniversalHeader({
 
             {/* Center: Navigation Buttons */}
             <nav className="hidden lg:flex items-center space-x-2">
-              {userNavigationItems.map((item) => (
+              {navigationItems.map((item) => (
                 <button
                   key={item.name}
                   onClick={(e) => handleNavigation(item.href, e)}
@@ -245,7 +270,7 @@ export default function UniversalHeader({
 
             {/* Mobile Navigation Links */}
             <nav className="px-6 py-6 space-y-3">
-              {userNavigationItems.map((item) => (
+              {navigationItems.map((item) => (
                 <button
                   key={item.name}
                   onClick={(e) => {

@@ -68,6 +68,7 @@ export interface BusinessSwitcherData {
   avatar_url: string | null
   city: string | null
   state: string | null
+  permalink?: string // Add permalink for URL routing
 }
 
 export interface CompanySwitchResponse {

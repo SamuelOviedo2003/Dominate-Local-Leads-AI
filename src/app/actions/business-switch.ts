@@ -52,7 +52,7 @@ export async function switchBusiness(businessId: string): Promise<{
     // Validate that the target business exists and has dashboard enabled
     const { data: business, error: businessError } = await supabase
       .from('business_clients')
-      .select('business_id, company_name, avatar_url, city, state')
+      .select('business_id, company_name, avatar_url, city, state, permalink')
       .eq('business_id', businessId)
       .eq('dashboard', true)
       .single()
@@ -133,7 +133,7 @@ export async function getAvailableBusinesses(): Promise<{
     // Get all businesses with dashboard enabled
     const { data: businesses, error: businessesError } = await supabase
       .from('business_clients')
-      .select('business_id, company_name, avatar_url, city, state')
+      .select('business_id, company_name, avatar_url, city, state, permalink')
       .eq('dashboard', true)
       .order('company_name')
 

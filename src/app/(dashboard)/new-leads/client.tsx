@@ -11,7 +11,7 @@ import {
 import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface NewLeadsClientProps {
-  businessId: string
+  businessId?: string
   userRole?: number | null
 }
 

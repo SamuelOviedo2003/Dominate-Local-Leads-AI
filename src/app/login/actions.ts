@@ -44,7 +44,7 @@ export async function login(formData: FormData) {
     }
 
     // Get user's accessible businesses using the new profile_businesses system
-    let accessibleBusinesses = []
+    let accessibleBusinesses: any[] = []
     
     // Handle null role by treating as regular user (role 1)
     const effectiveRole = profile.role ?? 1
@@ -53,7 +53,7 @@ export async function login(formData: FormData) {
       // Super admin - get all businesses with dashboard enabled using service role
       const { data: businesses } = await supabaseService
         .from('business_clients')
-        .select('business_id, company_name, avatar_url, city, state')
+        .select('business_id, company_name, avatar_url, city, state, permalink')
         .eq('dashboard', true)
         .order('company_name')
       
@@ -69,7 +69,8 @@ export async function login(formData: FormData) {
             company_name,
             avatar_url,
             city,
-            state
+            state,
+            permalink
           )
         `)
         .eq('profile_id', user.id)
@@ -84,20 +85,41 @@ export async function login(formData: FormData) {
           company_name: ub.business_clients.company_name,
           avatar_url: ub.business_clients.avatar_url,
           city: ub.business_clients.city,
-          state: ub.business_clients.state
+          state: ub.business_clients.state,
+          permalink: ub.business_clients.permalink
         }))
       }
     }
 
-    // Smart redirection logic
+    // Smart redirection logic with permalink-based URLs
     revalidatePath('/', 'layout')
     
     if (effectiveRole === 0) {
-      // Super admin - redirect to profile management or admin dashboard
+      // Super admin - redirect to first business or profile management
       if (accessibleBusinesses.length > 0) {
-        redirect('/dashboard')
+        const firstBusiness = accessibleBusinesses[0] as any
+        if (firstBusiness?.permalink) {
+          redirect(`/${firstBusiness.permalink}/dashboard`)
+        } else {
+          // If business has no permalink, there's a data integrity issue
+          redirect('/login?error=Business configuration error. Please contact support.')
+        }
       } else {
-        redirect('/profile-management')
+        // Super admin with no businesses should get first business permalink for profile management
+        // Get the first available business for profile management context
+        const supabaseService = createServiceRoleClient()
+        const { data: businesses } = await supabaseService
+          .from('business_clients')
+          .select('permalink')
+          .eq('dashboard', true)
+          .order('company_name')
+          .limit(1)
+        
+        if (businesses && businesses.length > 0 && businesses[0].permalink) {
+          redirect(`/${businesses[0].permalink}/profile-management`)
+        } else {
+          redirect('/login?error=No businesses available for profile management. Please contact support.')
+        }
       }
     } else {
       // Regular user
@@ -105,16 +127,22 @@ export async function login(formData: FormData) {
         // User has no business assignments - redirect to error page
         redirect('/login?error=No business access assigned. Please contact support.')
       } else {
-        // User has business access - redirect to dashboard
-        redirect('/dashboard')
+        // User has business access - redirect to their first business's dashboard
+        const firstBusiness = accessibleBusinesses[0] as any
+        if (firstBusiness?.permalink) {
+          redirect(`/${firstBusiness.permalink}/dashboard`)
+        } else {
+          // If business has no permalink, there's a data integrity issue
+          redirect('/login?error=Business configuration error. Please contact support.')
+        }
       }
     }
     
   } catch (error) {
     console.error('Error during post-login processing:', error)
-    // If there's an error in the post-login logic, still redirect to dashboard
-    // The dashboard will handle any access issues
+    // If there's an error in the post-login logic, redirect to login with error
+    // Avoid fallback to base /dashboard route to maintain permalink consistency
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    redirect('/login?error=Login processing failed. Please try again or contact support.')
   }
 }
