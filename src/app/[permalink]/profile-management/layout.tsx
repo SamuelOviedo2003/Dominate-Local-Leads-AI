@@ -56,7 +56,6 @@ export default async function PermalinkProfileManagementLayout({
     <DynamicThemeProvider>
       <BusinessContextProvider 
         initialBusinesses={availableBusinesses}
-        currentBusinessId={currentBusinessId}
       >
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <UniversalHeader 

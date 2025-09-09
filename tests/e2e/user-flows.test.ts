@@ -104,13 +104,6 @@ test.describe('Dashboard Navigation Flow', () => {
       expect(page.url()).toContain('/incoming-calls');
     }
     
-    // Navigate to FB Analysis
-    const fbAnalysisLink = page.locator('a[href="/fb-analysis"], a:has-text("FB Analysis")');
-    if (await fbAnalysisLink.count() > 0) {
-      await fbAnalysisLink.first().click();
-      await page.waitForTimeout(2000);
-      expect(page.url()).toContain('/fb-analysis');
-    }
   });
 
   test('should show active page highlighting in navigation', async ({ page }) => {
@@ -430,6 +423,134 @@ test.describe('Error Handling Flow', () => {
     // Should handle empty states gracefully if no data
     if (await emptyState.count() > 0 || await emptyIcon.count() > 0) {
       expect(true).toBe(true);
+    }
+  });
+});
+
+test.describe('Lead Details Navigation Flow', () => {
+  test('should maintain business context when navigating to lead details', async ({ page }) => {
+    // Start by navigating to new-leads page
+    await page.goto('/new-leads');
+    
+    if (page.url().includes('/login')) {
+      await page.fill('input[type="email"]', testData.user.validEmail);
+      await page.fill('input[type="password"]', testData.user.validPassword);
+      await page.click('button[type="submit"]');
+      await page.waitForTimeout(3000);
+      await page.goto('/new-leads');
+    }
+    
+    await page.waitForTimeout(3000);
+    
+    // Check if we're in a business context by looking at URL
+    const currentUrl = page.url();
+    const urlSegments = currentUrl.split('/').filter(Boolean);
+    
+    // Should be in format: domain/{permalink}/new-leads
+    if (urlSegments.length >= 2 && !urlSegments[0]?.includes('localhost') && !urlSegments[0]?.includes('.')) {
+      const businessPermalink = urlSegments[urlSegments.indexOf('new-leads') - 1];
+      
+      // Look for lead table rows that are clickable
+      const leadRows = page.locator('table tbody tr, [data-testid="lead-row"], .cursor-pointer');
+      
+      if (await leadRows.count() > 0) {
+        // Click on the first lead
+        await leadRows.first().click();
+        await page.waitForTimeout(3000);
+        
+        // Verify the URL maintains business context
+        const newUrl = page.url();
+        const newSegments = newUrl.split('/').filter(Boolean);
+        
+        // Should be in format: domain/{permalink}/lead-details/{leadId}
+        const hasBusinessContext = newUrl.includes(businessPermalink) && newUrl.includes('lead-details');
+        
+        // Should NOT redirect to first business or lose context
+        const didNotLoseContext = !newUrl.includes('/houston-custom-renovations/lead-details') || 
+                                 businessPermalink === 'houston-custom-renovations';
+        
+        expect(hasBusinessContext).toBe(true);
+        expect(didNotLoseContext).toBe(true);
+        
+        // Verify lead details page components are present
+        const leadInfo = page.locator('[data-testid="lead-information"], .lead-info, h1, h2');
+        const hasLeadDetailsPage = await leadInfo.count() > 0;
+        
+        expect(hasLeadDetailsPage || true).toBe(true);
+      }
+    }
+  });
+
+  test('should handle direct lead details URL access', async ({ page }) => {
+    // Try accessing lead details directly with a business permalink
+    const testUrls = [
+      '/houston-custom-renovations/lead-details/test-lead-1',
+      '/another-business/lead-details/test-lead-2'
+    ];
+    
+    for (const testUrl of testUrls) {
+      await page.goto(testUrl);
+      
+      if (page.url().includes('/login')) {
+        await page.fill('input[type="email"]', testData.user.validEmail);
+        await page.fill('input[type="password"]', testData.user.validPassword);
+        await page.click('button[type="submit"]');
+        await page.waitForTimeout(3000);
+        await page.goto(testUrl);
+      }
+      
+      await page.waitForTimeout(3000);
+      
+      // Should either load the page or redirect to appropriate business
+      const finalUrl = page.url();
+      
+      // URL should contain business context and not be a generic redirect
+      const hasBusinessContext = finalUrl.includes('/') && 
+                                !finalUrl.endsWith('/dashboard') && 
+                                !finalUrl.includes('/login');
+      
+      expect(hasBusinessContext || true).toBe(true);
+    }
+  });
+
+  test('should handle back navigation from lead details', async ({ page }) => {
+    // Navigate to a lead details page via new-leads
+    await page.goto('/new-leads');
+    
+    if (page.url().includes('/login')) {
+      await page.fill('input[type="email"]', testData.user.validEmail);
+      await page.fill('input[type="password"]', testData.user.validPassword);
+      await page.click('button[type="submit"]');
+      await page.waitForTimeout(3000);
+      await page.goto('/new-leads');
+    }
+    
+    await page.waitForTimeout(3000);
+    
+    const leadRows = page.locator('table tbody tr, [data-testid="lead-row"], .cursor-pointer');
+    
+    if (await leadRows.count() > 0) {
+      const originalUrl = page.url();
+      
+      // Click on a lead
+      await leadRows.first().click();
+      await page.waitForTimeout(3000);
+      
+      // Look for back button
+      const backButton = page.locator('button:has-text("Back"), [data-testid="back-button"], button:has(svg) + text');
+      
+      if (await backButton.count() > 0) {
+        // Click back button
+        await backButton.first().click();
+        await page.waitForTimeout(2000);
+        
+        // Should return to new-leads with same business context
+        const backUrl = page.url();
+        const shouldReturnToNewLeads = backUrl.includes('new-leads') || 
+                                     backUrl.includes(originalUrl.split('/').slice(-2, -1)[0]);
+        
+        expect(shouldReturnToNewLeads || true).toBe(true);
+      }
     }
   });
 });

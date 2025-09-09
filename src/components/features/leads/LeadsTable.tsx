@@ -1,9 +1,9 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState, memo, useCallback } from 'react'
 import { LeadWithClient } from '@/types/leads'
+import { usePermalinkNavigation, usePermalinkUrl } from '@/lib/permalink-navigation'
 
 interface LeadsTableProps {
   leads: LeadWithClient[] | null
@@ -11,10 +11,12 @@ interface LeadsTableProps {
   error: string | null
   navigationTarget?: 'lead-details' | 'property-details'
   usePriorityColors?: boolean
+  title?: string
 }
 
-function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead-details', usePriorityColors = false }: LeadsTableProps) {
-  const router = useRouter()
+function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead-details', usePriorityColors = false, title = 'Recent Leads' }: LeadsTableProps) {
+  const { navigate } = usePermalinkNavigation()
+  const buildUrl = usePermalinkUrl()
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
 
   const getScoreColor = useCallback((score: number) => {
@@ -101,7 +103,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
     e.preventDefault()
     setNavigatingId(leadId)
     try {
-      router.push(`/${navigationTarget}/${leadId}`)
+      navigate(`/${navigationTarget}/${leadId}`)
     } catch (error) {
       setNavigatingId(null)
     }
@@ -112,7 +114,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
     return (
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Leads</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         </div>
         <div className="p-6">
           <div className="text-red-500 text-sm">Error loading leads: {error}</div>
@@ -124,7 +126,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Recent Leads</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
       </div>
       
       {isLoading ? (
@@ -158,7 +160,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
             <tbody className="bg-white divide-y divide-gray-200">
               {leads.map((lead) => {
                 const rowBackground = getRowBackground(lead.call_now_status)
-                const leadUrl = `/${navigationTarget}/${lead.lead_id}`
+                const leadUrl = buildUrl(`/${navigationTarget}/${lead.lead_id}`)
                 
                 return (
                   <Link 

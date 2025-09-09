@@ -28,7 +28,7 @@ interface UniversalHeaderProps {
 const legacyNavigationItems: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'New Leads', href: '/new-leads' },
-  { name: 'Bookings', href: '/salesman' },
+  { name: 'Bookings', href: '/bookings' },
   { name: 'Incoming Calls', href: '/incoming-calls' },
 ]
 

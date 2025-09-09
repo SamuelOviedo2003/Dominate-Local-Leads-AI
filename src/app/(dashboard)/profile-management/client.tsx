@@ -63,8 +63,17 @@ export default function ProfileManagementClient() {
       const usersData = await usersResponse.json()
       const businessesData = await businessesResponse.json()
 
-      setUsers(usersData.data || [])
+      const newUsers = usersData.data || []
+      setUsers(newUsers)
       setBusinesses(businessesData.data || [])
+
+      // Update selectedUser with fresh data if a user is currently selected
+      if (selectedUser) {
+        const updatedUser = newUsers.find((user: User) => user.id === selectedUser.id)
+        if (updatedUser) {
+          setSelectedUser(updatedUser)
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {

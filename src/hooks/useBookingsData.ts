@@ -1,43 +1,43 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { SalesmanMetrics, LeadWithClient, TimePeriod, ApiResponse } from '@/types/leads'
+import { BookingsMetrics, LeadWithClient, TimePeriod, ApiResponse } from '@/types/leads'
 
-interface UseSalesmanDataProps {
+interface UseBookingsDataProps {
   timePeriod: TimePeriod
   businessId: string
 }
 
-interface UseSalesmanDataReturn {
-  metrics: SalesmanMetrics | null
-  salesmanLeads: LeadWithClient[] | null
+interface UseBookingsDataReturn {
+  metrics: BookingsMetrics | null
+  bookingsLeads: LeadWithClient[] | null
   // Overall loading state for page-level coordination
   isLoading: boolean
   // Individual component loading states
   isMetricsLoading: boolean
-  isSalesmanLeadsLoading: boolean
+  isBookingsLeadsLoading: boolean
   // Individual component errors
   error: string | null
   metricsError: string | null
-  salesmanLeadsError: string | null
+  bookingsLeadsError: string | null
   refetch: () => void
 }
 
-export function useSalesmanData({ timePeriod, businessId }: UseSalesmanDataProps): UseSalesmanDataReturn {
-  const [metrics, setMetrics] = useState<SalesmanMetrics | null>(null)
-  const [salesmanLeads, setSalesmanLeads] = useState<LeadWithClient[] | null>(null)
+export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps): UseBookingsDataReturn {
+  const [metrics, setMetrics] = useState<BookingsMetrics | null>(null)
+  const [bookingsLeads, setBookingsLeads] = useState<LeadWithClient[] | null>(null)
   
   // Overall loading state (true when any component is loading)
   const [isLoading, setIsLoading] = useState(false)
   
   // Individual component loading states
   const [isMetricsLoading, setIsMetricsLoading] = useState(false)
-  const [isSalesmanLeadsLoading, setIsSalesmanLeadsLoading] = useState(false)
+  const [isBookingsLeadsLoading, setIsBookingsLeadsLoading] = useState(false)
   
   // Individual component errors
   const [error, setError] = useState<string | null>(null)
   const [metricsError, setMetricsError] = useState<string | null>(null)
-  const [salesmanLeadsError, setSalesmanLeadsError] = useState<string | null>(null)
+  const [bookingsLeadsError, setBookingsLeadsError] = useState<string | null>(null)
 
   const getStartDate = (period: TimePeriod): string => {
     const date = new Date()
@@ -59,12 +59,12 @@ export function useSalesmanData({ timePeriod, businessId }: UseSalesmanDataProps
         timePeriod
       })
 
-      const metricsRes = await fetch(`/api/salesman/metrics?${metricsParams}`)
+      const metricsRes = await fetch(`/api/bookings/metrics?${metricsParams}`)
       if (!metricsRes.ok) {
         throw new Error('Failed to fetch metrics')
       }
 
-      const metricsData: ApiResponse<SalesmanMetrics> = await metricsRes.json()
+      const metricsData: ApiResponse<BookingsMetrics> = await metricsRes.json()
       
       if (metricsData.success) {
         setMetrics(metricsData.data)
@@ -80,11 +80,11 @@ export function useSalesmanData({ timePeriod, businessId }: UseSalesmanDataProps
     }
   }
 
-  const fetchSalesmanLeads = async () => {
+  const fetchBookingsLeads = async () => {
     if (!businessId) return
 
-    setIsSalesmanLeadsLoading(true)
-    setSalesmanLeadsError(null)
+    setIsBookingsLeadsLoading(true)
+    setBookingsLeadsError(null)
 
     try {
       const startDate = getStartDate(timePeriod)
@@ -93,24 +93,24 @@ export function useSalesmanData({ timePeriod, businessId }: UseSalesmanDataProps
         businessId: businessId.toString()
       })
 
-      const leadsRes = await fetch(`/api/salesman/leads?${baseParams}`)
+      const leadsRes = await fetch(`/api/bookings/leads?${baseParams}`)
       if (!leadsRes.ok) {
-        throw new Error('Failed to fetch salesman leads')
+        throw new Error('Failed to fetch bookings leads')
       }
 
       const leadsData: ApiResponse<LeadWithClient[]> = await leadsRes.json()
       
       if (leadsData.success) {
-        setSalesmanLeads(leadsData.data)
+        setBookingsLeads(leadsData.data)
       } else {
-        throw new Error(leadsData.error || 'Failed to fetch salesman leads')
+        throw new Error(leadsData.error || 'Failed to fetch bookings leads')
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch salesman leads'
-      setSalesmanLeadsError(errorMessage)
-      console.error('Error fetching salesman leads:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch bookings leads'
+      setBookingsLeadsError(errorMessage)
+      console.error('Error fetching bookings leads:', err)
     } finally {
-      setIsSalesmanLeadsLoading(false)
+      setIsBookingsLeadsLoading(false)
     }
   }
 
@@ -123,7 +123,7 @@ export function useSalesmanData({ timePeriod, businessId }: UseSalesmanDataProps
     // Start all fetches independently
     const promises = [
       fetchMetrics(),
-      fetchSalesmanLeads()
+      fetchBookingsLeads()
     ]
 
     // Wait for all to complete (they handle their own errors)
@@ -132,13 +132,13 @@ export function useSalesmanData({ timePeriod, businessId }: UseSalesmanDataProps
 
   // Update overall loading state based on individual loading states
   useEffect(() => {
-    const anyLoading = isMetricsLoading || isSalesmanLeadsLoading
+    const anyLoading = isMetricsLoading || isBookingsLeadsLoading
     setIsLoading(anyLoading)
-  }, [isMetricsLoading, isSalesmanLeadsLoading])
+  }, [isMetricsLoading, isBookingsLeadsLoading])
 
   // Update overall error state - show error if all components failed
   useEffect(() => {
-    const allErrors = [metricsError, salesmanLeadsError].filter(Boolean)
+    const allErrors = [metricsError, bookingsLeadsError].filter(Boolean)
     if (allErrors.length === 2) {
       setError('Failed to load all data')
     } else if (allErrors.length > 0) {
@@ -146,7 +146,7 @@ export function useSalesmanData({ timePeriod, businessId }: UseSalesmanDataProps
     } else {
       setError(null)
     }
-  }, [metricsError, salesmanLeadsError])
+  }, [metricsError, bookingsLeadsError])
 
   useEffect(() => {
     fetchData()
@@ -154,16 +154,16 @@ export function useSalesmanData({ timePeriod, businessId }: UseSalesmanDataProps
 
   return {
     metrics,
-    salesmanLeads,
+    bookingsLeads,
     // Overall states
     isLoading,
     error,
     // Individual component states
     isMetricsLoading,
-    isSalesmanLeadsLoading,
+    isBookingsLeadsLoading,
     // Individual component errors
     metricsError,
-    salesmanLeadsError,
+    bookingsLeadsError,
     refetch: fetchData
   }
 }

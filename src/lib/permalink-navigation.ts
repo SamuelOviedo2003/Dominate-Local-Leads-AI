@@ -15,7 +15,7 @@ import { useCallback, useMemo } from 'react'
 export function useCurrentPermalink(): string | null {
   const pathname = usePathname()
   
-  return useMemo(() => {
+  return useMemo((): string | null => {
     if (!pathname) return null
     
     const segments = pathname.split('/').filter(Boolean)
@@ -23,6 +23,8 @@ export function useCurrentPermalink(): string | null {
     
     // First segment should be the permalink (unless it's a special route)
     const firstSegment = segments[0]
+    
+    if (!firstSegment) return null
     
     // Skip special routes that aren't permalinks
     const specialRoutes = ['login', 'signup', 'auth', 'forgot-password', 'super-admin', 'profile-management', 'api', '_next']
@@ -130,9 +132,8 @@ export function usePermalinkNavItems() {
     const baseItems = [
       { name: 'Dashboard', section: 'dashboard', href: buildUrl('/dashboard') },
       { name: 'New Leads', section: 'new-leads', href: buildUrl('/new-leads') },
-      { name: 'Bookings', section: 'salesman', href: buildUrl('/salesman') },
-      { name: 'Incoming Calls', section: 'incoming-calls', href: buildUrl('/incoming-calls') },
-      { name: 'FB Analysis', section: 'fb-analysis', href: buildUrl('/fb-analysis') }
+      { name: 'Bookings', section: 'bookings', href: buildUrl('/bookings') },
+      { name: 'Incoming Calls', section: 'incoming-calls', href: buildUrl('/incoming-calls') }
     ]
     
     return baseItems.map(item => ({
@@ -213,9 +214,9 @@ export function usePermalinkBreadcrumbs() {
     if (currentSection && currentSection !== 'dashboard') {
       const sectionNames = {
         'new-leads': 'New Leads',
-        'salesman': 'Bookings',
+        'bookings': 'Bookings',
         'incoming-calls': 'Incoming Calls',
-        'fb-analysis': 'FB Analysis'
+        'lead-details': 'Lead Details'
       } as const
       
       breadcrumbs.push({
@@ -223,7 +224,7 @@ export function usePermalinkBreadcrumbs() {
         href: buildUrl(`/${currentSection}`),
         isActive: true
       })
-    } else {
+    } else if (breadcrumbs.length > 0 && breadcrumbs[0]) {
       breadcrumbs[0].isActive = true
     }
     
@@ -243,6 +244,41 @@ export function useIsInternalUrl() {
     // Check if URL starts with current permalink
     return url.startsWith(`/${currentPermalink}/`) || url === `/${currentPermalink}`
   }, [currentPermalink])
+}
+
+/**
+ * Determines the appropriate target page/section when switching businesses based on current route
+ * Handles edge case where users are in detail views that might not exist in the new business
+ */
+export function determineTargetPageForBusinessSwitch(pathname: string): string {
+  // Handle detail view redirects to prevent 404 errors when switching businesses
+  if (pathname.includes('/lead-details/')) {
+    // Redirect from Lead Details to New Leads section in the new business
+    return 'new-leads'
+  }
+  
+  if (pathname.includes('/property-details/')) {
+    // Redirect from Property Details to Bookings section in the new business
+    return 'bookings'
+  }
+  
+  // For non-detail pages, try to maintain the same section
+  const pathSegments = pathname.split('/').filter(Boolean)
+  
+  // Skip the permalink (first segment) and get the section
+  const currentSection = pathSegments[1] || 'dashboard'
+  
+  // List of valid sections that can be preserved across business switches
+  const validSections = [
+    'dashboard', 
+    'new-leads', 
+    'incoming-calls', 
+    'bookings', 
+    'profile-management'
+  ]
+  
+  // If current section is valid, preserve it; otherwise default to dashboard
+  return validSections.includes(currentSection) ? currentSection : 'dashboard'
 }
 
 /**
@@ -272,7 +308,8 @@ export function usePermalinkContext() {
     utils: {
       buildPermalinkUrl: (path: string, permalink?: string) => buildUrl(path, permalink),
       navigateToSection: navigation.navigateToSection,
-      switchBusiness: businessSwitcher.switchToBusiness
+      switchBusiness: businessSwitcher.switchToBusiness,
+      determineBusinessSwitchTarget: determineTargetPageForBusinessSwitch
     }
   }
 }

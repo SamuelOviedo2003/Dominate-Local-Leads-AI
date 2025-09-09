@@ -2,18 +2,18 @@
 
 import { useState } from 'react'
 import { TimePeriod } from '@/types/leads'
-import { useSalesmanData } from '@/hooks/useSalesmanData'
+import { useBookingsData } from '@/hooks/useBookingsData'
 import { TimePeriodFilter } from '@/components/features/leads/TimePeriodFilter'
 import { LeadsTable } from '@/components/features/leads/LeadsTable'
 import { TrendingUp, DollarSign, Target, Award, BarChart3, Calendar } from 'lucide-react'
 import { useBusinessContext } from '@/contexts/BusinessContext'
 
-interface SalesmanClientProps {
+interface BookingsClientProps {
   businessId: string
   userRole?: number | null
 }
 
-export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
+export function BookingsClient({ businessId, userRole }: BookingsClientProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30')
   
   // Get the effective business ID (user's own or selected company for superadmin)
@@ -22,15 +22,15 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
   
   const {
     metrics,
-    salesmanLeads,
+    bookingsLeads,
     isLoading,
     isMetricsLoading,
-    isSalesmanLeadsLoading,
+    isBookingsLeadsLoading,
     error,
     metricsError,
-    salesmanLeadsError,
+    bookingsLeadsError,
     refetch
-  } = useSalesmanData({
+  } = useBookingsData({
     timePeriod,
     businessId: effectiveBusinessId
   })
@@ -69,7 +69,7 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
           </div>
         )}
 
-        {/* Salesman Metrics */}
+        {/* Bookings Metrics */}
         <div className="mb-8">
           {isMetricsLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
@@ -178,11 +178,11 @@ export function SalesmanClient({ businessId, userRole }: SalesmanClientProps) {
           )}
         </div>
 
-        {/* Salesman Leads Table */}
+        {/* Bookings Leads Table */}
         <LeadsTable 
-          leads={salesmanLeads}
-          isLoading={isSalesmanLeadsLoading}
-          error={salesmanLeadsError}
+          leads={bookingsLeads}
+          isLoading={isBookingsLeadsLoading}
+          error={bookingsLeadsError}
           navigationTarget="property-details"
         />
       </div>

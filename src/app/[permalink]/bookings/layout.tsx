@@ -7,20 +7,20 @@ import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-interface PermalinkFbAnalysisLayoutProps {
+interface PermalinkBookingsLayoutProps {
   children: ReactNode
   params: { permalink: string }
 }
 
 /**
- * FB Analysis layout for permalink-based routes
+ * Bookings layout for permalink-based routes
  * This provides the same UI structure with BusinessContextProvider
  * but uses the business context established by the permalink layout
  */
-export default async function PermalinkFbAnalysisLayout({ 
+export default async function PermalinkBookingsLayout({ 
   children,
   params 
-}: PermalinkFbAnalysisLayoutProps) {
+}: PermalinkBookingsLayoutProps) {
   const { permalink } = params
   const { user, availableBusinesses } = await getHeaderData()
 
@@ -56,7 +56,6 @@ export default async function PermalinkFbAnalysisLayout({
     <DynamicThemeProvider>
       <BusinessContextProvider 
         initialBusinesses={availableBusinesses}
-        currentBusinessId={currentBusinessId}
       >
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <UniversalHeader 

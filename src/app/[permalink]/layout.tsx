@@ -123,7 +123,7 @@ export default async function PermalinkLayout({
     const currentSegments = pathname.split('/').filter(Boolean)
     if (currentSegments.length >= 2) {
       const section = currentSegments[1]
-      const oldDashboardRoutes = ['dashboard', 'new-leads', 'incoming-calls', 'salesman', 'fb-analysis']
+      const oldDashboardRoutes = ['dashboard', 'new-leads', 'incoming-calls', 'salesman', 'lead-details']
       
       // If accessing /permalink directly, redirect to /permalink/dashboard
       if (currentSegments.length === 1) {
@@ -133,7 +133,7 @@ export default async function PermalinkLayout({
       }
       
       // Ensure old routes work properly (they should already be handled by middleware, but double-check)
-      if (oldDashboardRoutes.includes(section)) {
+      if (section && oldDashboardRoutes.includes(section)) {
         console.log(`[LAYOUT] Valid business section accessed: ${section}`)
       }
     }

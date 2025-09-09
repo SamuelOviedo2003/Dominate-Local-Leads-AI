@@ -7,20 +7,20 @@ import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-interface PermalinkSalesmanLayoutProps {
+interface PermalinkPropertyDetailsLayoutProps {
   children: ReactNode
   params: { permalink: string }
 }
 
 /**
- * Salesman (Bookings) layout for permalink-based routes
+ * Property Details layout for permalink-based routes
  * This provides the same UI structure with BusinessContextProvider
  * but uses the business context established by the permalink layout
  */
-export default async function PermalinkSalesmanLayout({ 
+export default async function PermalinkPropertyDetailsLayout({ 
   children,
   params 
-}: PermalinkSalesmanLayoutProps) {
+}: PermalinkPropertyDetailsLayoutProps) {
   const { permalink } = params
   const { user, availableBusinesses } = await getHeaderData()
 
@@ -56,7 +56,6 @@ export default async function PermalinkSalesmanLayout({
     <DynamicThemeProvider>
       <BusinessContextProvider 
         initialBusinesses={availableBusinesses}
-        currentBusinessId={currentBusinessId}
       >
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <UniversalHeader 

@@ -3,6 +3,7 @@
 import { Communication } from '@/types/leads'
 import { AudioPlayer } from './AudioPlayer'
 import { LoadingSystem } from '@/components/LoadingSystem'
+import { CallWindowIcon } from '@/components/ui/CallWindowIcon'
 import { useMemo, useCallback, memo } from 'react'
 
 interface CommunicationsHistoryProps {
@@ -144,13 +145,20 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-3">
+                  <span className="text-xs text-gray-500">
+                    {formatDate(communication.created_at)}
+                  </span>
+                  {communication.call_window && communication.call_window >= 1 && communication.call_window <= 6 && (
+                    <CallWindowIcon 
+                      callNumber={communication.call_window} 
+                      size="sm"
+                      className="flex-shrink-0"
+                    />
+                  )}
                   <span 
                     className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getMessageTypeColor(communication.message_type)}`}
                   >
                     {formatMessageType(communication.message_type)}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {formatDate(communication.created_at)}
                   </span>
                 </div>
               </div>

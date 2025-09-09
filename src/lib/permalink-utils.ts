@@ -17,7 +17,7 @@ export function withPermalink(path: string, permalink: string): string {
 
 /**
  * Gets a business-specific URL for a given section
- * @param section - The section name (e.g., 'dashboard', 'new-leads', 'salesman')
+ * @param section - The section name (e.g., 'dashboard', 'new-leads', 'bookings')
  * @param permalink - The business permalink
  * @returns Complete business-specific URL
  */
@@ -58,7 +58,8 @@ export function extractPermalinkFromPath(pathname: string): string | null {
  */
 export function isPermalinkPath(pathname: string): boolean {
   const pathParts = pathname.split('/').filter(Boolean)
-  return pathParts.length >= 2 && !pathParts[0].startsWith('(') // Not a route group
+  const firstPart = pathParts[0]
+  return pathParts.length >= 2 && Boolean(firstPart) && !firstPart?.startsWith('(') // Not a route group
 }
 
 /**
@@ -75,7 +76,7 @@ export function isPermalinkRoute(pathname: string): boolean {
   const specialRoutes = ['login', 'signup', 'auth', 'forgot-password', 'super-admin', 'profile-management', 'api', '_next']
   const firstSegment = pathParts[0]
   
-  if (specialRoutes.includes(firstSegment)) {
+  if (firstSegment && specialRoutes.includes(firstSegment)) {
     return false
   }
   
@@ -90,9 +91,8 @@ export function isPermalinkRoute(pathname: string): boolean {
 export const NAVIGATION_SECTIONS = [
   { name: 'Dashboard', section: 'dashboard' },
   { name: 'New Leads', section: 'new-leads' },
-  { name: 'Bookings', section: 'salesman' },
-  { name: 'Incoming Calls', section: 'incoming-calls' },
-  { name: 'FB Analysis', section: 'fb-analysis' }
+  { name: 'Bookings', section: 'bookings' },
+  { name: 'Incoming Calls', section: 'incoming-calls' }
 ] as const
 
 /**
@@ -108,7 +108,8 @@ export const SUPER_ADMIN_SECTIONS = [
  * @returns Array of navigation items
  */
 export function getNavigationSections(isSuperAdmin: boolean) {
-  const items = [...NAVIGATION_SECTIONS]
+  type NavigationSection = (typeof NAVIGATION_SECTIONS)[number] | (typeof SUPER_ADMIN_SECTIONS)[number]
+  const items: NavigationSection[] = [...NAVIGATION_SECTIONS]
   if (isSuperAdmin) {
     items.push(...SUPER_ADMIN_SECTIONS)
   }

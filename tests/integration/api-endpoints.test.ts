@@ -263,8 +263,8 @@ test.describe('Incoming Calls API Endpoints', () => {
 });
 
 test.describe('Salesman API Endpoints', () => {
-  test('/api/salesman/metrics should return booking metrics', async ({ request }) => {
-    const response = await request.get(`${API_BASE_URL}/salesman/metrics?businessId=test&startDate=2024-01-01`);
+  test('/api/bookings/metrics should return booking metrics', async ({ request }) => {
+    const response = await request.get(`${API_BASE_URL}/bookings/metrics?businessId=test&startDate=2024-01-01`);
     
     if (response.status() === 200) {
       const data = await response.json();
@@ -282,8 +282,8 @@ test.describe('Salesman API Endpoints', () => {
     }
   });
 
-  test('/api/salesman/performance should return individual performance data', async ({ request }) => {
-    const response = await request.get(`${API_BASE_URL}/salesman/performance?businessId=test&startDate=2024-01-01`);
+  test('/api/bookings/performance should return individual performance data', async ({ request }) => {
+    const response = await request.get(`${API_BASE_URL}/bookings/performance?businessId=test&startDate=2024-01-01`);
     
     if (response.status() === 200) {
       const data = await response.json();
@@ -297,8 +297,8 @@ test.describe('Salesman API Endpoints', () => {
     }
   });
 
-  test('/api/salesman/trends should return revenue trends', async ({ request }) => {
-    const response = await request.get(`${API_BASE_URL}/salesman/trends?businessId=test&startDate=2024-01-01`);
+  test('/api/bookings/trends should return revenue trends', async ({ request }) => {
+    const response = await request.get(`${API_BASE_URL}/bookings/trends?businessId=test&startDate=2024-01-01`);
     
     if (response.status() === 200) {
       const data = await response.json();

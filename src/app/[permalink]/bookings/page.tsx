@@ -1,20 +1,20 @@
 import { getAuthenticatedUser } from '@/lib/auth-helpers'
-import { SalesmanClient } from '@/app/(dashboard)/salesman/client'
+import { BookingsClient } from '@/app/(dashboard)/bookings/client'
 
 export const dynamic = 'force-dynamic'
 
-interface PermalinkSalesmanPageProps {
+interface PermalinkBookingsPageProps {
   params: { permalink: string }
 }
 
 /**
- * Permalink-based salesman (bookings) page that handles /{permalink}/salesman routes
+ * Permalink-based bookings page that handles /{permalink}/bookings routes
  * This leverages the business context established by the permalink layout
- * and reuses the existing SalesmanClient component
+ * and reuses the existing BookingsClient component
  */
-export default async function PermalinkSalesmanPage({ 
+export default async function PermalinkBookingsPage({ 
   params 
-}: PermalinkSalesmanPageProps) {
+}: PermalinkBookingsPageProps) {
   // Get authenticated user on server side
   const user = await getAuthenticatedUser()
   
@@ -37,13 +37,13 @@ export default async function PermalinkSalesmanPage({
   // 3. User has access to this business
   // 4. Business context is provided via data attributes
   
-  // The SalesmanClient will use the BusinessContext which should be set up
+  // The BookingsClient will use the BusinessContext which should be set up
   // to use the business from the permalink route
   // For now, we'll pass the first accessible business ID as fallback
   const businessId = user.accessibleBusinesses[0]!.business_id
 
   return (
-    <SalesmanClient 
+    <BookingsClient 
       businessId={businessId} 
       userRole={user.profile?.role}
     />

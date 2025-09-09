@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
-import { SalesmanMetrics } from '@/types/leads'
+import { BookingsMetrics } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Fetch leads data for salesman metrics
+    // Fetch leads data for bookings metrics
     const { data: leads, error } = await supabase
       .from('leads')
       .select('lead_id, show, closed_amount, start_time, created_at')
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Calculate salesman metrics
+    // Calculate bookings metrics
     const shows = leads.filter(lead => lead.show === true).length
     const closes = leads.filter(lead => lead.closed_amount !== null && lead.closed_amount > 0).length
     const booked = leads.filter(lead => lead.start_time !== null).length
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     const showsPercentage = booked > 0 ? (shows / booked) * 100 : 0
     const closesPercentage = shows > 0 ? (closes / shows) * 100 : 0
 
-    const metrics: SalesmanMetrics = {
+    const metrics: BookingsMetrics = {
       shows,
       closes,
       booked,

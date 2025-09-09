@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { BusinessSwitcherData, CompanySwitchResponse, AvailableCompaniesResponse } from '@/types/auth'
 import { useBusinessContext } from '@/contexts/BusinessContext'
+import { determineTargetPageForBusinessSwitch } from '@/lib/permalink-navigation'
 
 interface UseCompanySwitchingReturn {
   switchCompany: (companyId: string) => Promise<{ success: boolean; error?: string }>
@@ -14,8 +15,7 @@ interface UseCompanySwitchingReturn {
 export function useCompanySwitching(): UseCompanySwitchingReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { setCurrentBusinessId, availableBusinesses } = useBusinessContext()
-  const router = useRouter()
+  const { availableBusinesses } = useBusinessContext()
   const pathname = usePathname()
 
   const switchCompany = async (companyId: string): Promise<{ success: boolean; error?: string }> => {
@@ -40,19 +40,17 @@ export function useCompanySwitching(): UseCompanySwitchingReturn {
       }
 
       if (result.data?.company) {
-        // Update the business context (session-based, no database update)
-        setCurrentBusinessId(result.data.company.business_id)
-        
         // Find the selected business to get its permalink for URL navigation
         const selectedBusiness = availableBusinesses.find(b => b.business_id === companyId)
         
         if (selectedBusiness?.permalink) {
-          // Extract the current page from pathname and navigate to the same page in the new business
-          const currentPage = pathname.split('/').pop() || 'dashboard'
-          const newPath = `/${selectedBusiness.permalink}/${currentPage}`
+          // Determine the appropriate page/section for the new business
+          const targetPage = determineTargetPageForBusinessSwitch(pathname)
+          const newPath = `/${selectedBusiness.permalink}/${targetPage}`
           
-          // Navigate to the new business URL
-          router.push(newPath)
+          // Use full page navigation to ensure server components re-render and cache invalidation works
+          // This ensures URL and content are always in sync
+          window.location.href = newPath
         } else {
           // Fallback: reload the page if we can't determine the permalink
           window.location.reload()

@@ -115,7 +115,7 @@ export async function login(formData: FormData) {
           .order('company_name')
           .limit(1)
         
-        if (businesses && businesses.length > 0 && businesses[0].permalink) {
+        if (businesses && businesses.length > 0 && businesses[0]?.permalink) {
           redirect(`/${businesses[0].permalink}/profile-management`)
         } else {
           redirect('/login?error=No businesses available for profile management. Please contact support.')

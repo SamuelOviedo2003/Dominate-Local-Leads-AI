@@ -1,6 +1,9 @@
 import SettingsClient from './client'
 import { getAuthenticatedUser } from '@/lib/auth-helpers'
 
+// Force dynamic rendering due to authentication requirements
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Settings - Dominate Local Leads',
   description: 'Manage your account settings and profile information'

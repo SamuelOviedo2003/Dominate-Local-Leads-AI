@@ -79,12 +79,24 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           />
         </div>
 
-        {/* Recent Leads Table - Individual Loading State */}
+        {/* New Leads Table (Stage 1) */}
+        <div className="mb-8">
+          <LeadsTable 
+            leads={recentLeads ? recentLeads.filter(lead => lead.stage === 1) : null}
+            isLoading={isRecentLeadsLoading}
+            error={recentLeadsError}
+            usePriorityColors={true}
+            title="New Leads"
+          />
+        </div>
+
+        {/* Follow Up Table (Stage 2) */}
         <LeadsTable 
-          leads={recentLeads}
+          leads={recentLeads ? recentLeads.filter(lead => lead.stage === 2) : null}
           isLoading={isRecentLeadsLoading}
           error={recentLeadsError}
           usePriorityColors={true}
+          title="Follow Up"
         />
       </div>
     </div>

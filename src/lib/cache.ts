@@ -220,7 +220,7 @@ export const CACHE_TAGS = {
   CALLS: 'calls',
   BUSINESS: 'business',
   USER: 'user',
-  SALESMAN: 'salesman',
+  BOOKINGS: 'bookings',
   DASHBOARD: 'dashboard'
 } as const
 

@@ -341,7 +341,7 @@ export async function getFirstAvailableBusinessForSuperAdmin(): Promise<Business
   // Use the cached available businesses to ensure consistency
   const businesses = await getAvailableBusinesses()
   
-  const firstBusiness = businesses.length > 0 ? businesses[0] : null
+  const firstBusiness: BusinessSwitcherData | null = businesses.length > 0 ? businesses[0] || null : null
   
   console.log('[AUTH-DEBUG] First available business for super admin:', firstBusiness?.company_name || 'none')
   return firstBusiness

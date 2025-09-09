@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
-import { SalesmanPerformance } from '@/types/leads'
+import { BookingsPerformance } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Fetch leads data with salesman information
-    // Note: Assuming salesman info is in a field like 'assigned_salesman' or similar
+    // Fetch leads data with salesperson information
+    // Note: Assuming salesperson info is in a field like 'assigned_salesperson' or similar
     // For now, we'll use a mock structure until the exact field name is confirmed
     const { data: leads, error: leadsError } = await supabase
       .from('leads')
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch leads_calls data to get salesman assignments
+    // Fetch leads_calls data to get salesperson assignments
     const leadIds = leads.map(lead => lead.lead_id)
     const { data: leadCalls, error: callsError } = await supabase
       .from('leads_calls')
@@ -88,18 +88,18 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Group performance by salesman
-    const salesmanMap = new Map<string, {
+    // Group performance by salesperson
+    const salespersonMap = new Map<string, {
       shows: number
       closes: number
       totalRevenue: number
       leadsWorked: Set<string>
     }>()
 
-    // Initialize salesman data from calls
+    // Initialize salesperson data from calls
     leadCalls.forEach(call => {
-      if (call.assigned && !salesmanMap.has(call.assigned)) {
-        salesmanMap.set(call.assigned, {
+      if (call.assigned && !salespersonMap.has(call.assigned)) {
+        salespersonMap.set(call.assigned, {
           shows: 0,
           closes: 0,
           totalRevenue: 0,
@@ -108,37 +108,37 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Process leads and associate with salesmen
+    // Process leads and associate with salespeople
     leads.forEach(lead => {
-      // Find the salesman assigned to this lead
+      // Find the salesperson assigned to this lead
       const assignedCall = leadCalls.find(call => call.lead_id === lead.lead_id)
       if (assignedCall && assignedCall.assigned) {
-        const salesman = assignedCall.assigned
-        const salesmanData = salesmanMap.get(salesman)
+        const salesperson = assignedCall.assigned
+        const salespersonData = salespersonMap.get(salesperson)
         
-        if (salesmanData) {
-          salesmanData.leadsWorked.add(lead.lead_id)
+        if (salespersonData) {
+          salespersonData.leadsWorked.add(lead.lead_id)
           
           if (lead.show) {
-            salesmanData.shows++
+            salespersonData.shows++
           }
           
           if (lead.closed_amount !== null && lead.closed_amount > 0) {
-            salesmanData.closes++
-            salesmanData.totalRevenue += lead.closed_amount
+            salespersonData.closes++
+            salespersonData.totalRevenue += lead.closed_amount
           }
         }
       }
     })
 
     // Convert to performance array
-    const performance: SalesmanPerformance[] = Array.from(salesmanMap.entries())
-      .map(([salesman, data]) => {
+    const performance: BookingsPerformance[] = Array.from(salespersonMap.entries())
+      .map(([salesperson, data]) => {
         const closeRate = data.shows > 0 ? (data.closes / data.shows) * 100 : 0
         const averageOrderValue = data.closes > 0 ? data.totalRevenue / data.closes : 0
         
         return {
-          salesman,
+          salesperson,
           shows: data.shows,
           closes: data.closes,
           totalRevenue: Math.round(data.totalRevenue * 100) / 100,

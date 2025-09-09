@@ -1,17 +1,18 @@
 'use client'
 
 import { memo } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { PropertyInformation } from '@/components/features/leads/PropertyInformation'
 import { useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useLeadDetailsData } from '@/hooks/useLeadDetailsData'
+import { usePermalinkNavigation } from '@/lib/permalink-navigation'
 
 const PropertyDetailsPage = () => {
   const params = useParams()
-  const router = useRouter()
   const selectedCompany = useCurrentBusiness()
+  const { navigateToSection } = usePermalinkNavigation()
   
   const leadId = params.leadId as string
   const businessId = selectedCompany?.business_id
@@ -30,7 +31,7 @@ const PropertyDetailsPage = () => {
   })
 
   const handleGoBack = () => {
-    router.push('/salesman')
+    navigateToSection('salesman')
   }
 
   // Handle cases where we don't have required data yet
@@ -45,7 +46,7 @@ const PropertyDetailsPage = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Salesman
+            Back to Bookings
           </button>
 
           <div className="bg-white rounded-lg shadow p-6">
@@ -60,7 +61,7 @@ const PropertyDetailsPage = () => {
 
   // Handle global error (like "Lead not found")
   if (error && error.includes('Lead not found')) {
-    router.push('/salesman')
+    navigateToSection('salesman')
     return null
   }
 
@@ -76,7 +77,7 @@ const PropertyDetailsPage = () => {
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Salesman
+            Back to Bookings
           </button>
         </div>
 

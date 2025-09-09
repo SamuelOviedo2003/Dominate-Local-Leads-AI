@@ -1,9 +1,9 @@
 import { getAuthenticatedUser } from '@/lib/auth-helpers'
-import { SalesmanClient } from './client'
+import { BookingsClient } from './client'
 
 export const dynamic = 'force-dynamic'
 
-export default async function SalesmanPage() {
+export default async function BookingsPage() {
   // Get authenticated user on server side
   const user = await getAuthenticatedUser()
   
@@ -25,7 +25,7 @@ export default async function SalesmanPage() {
   const businessId = user.accessibleBusinesses[0]!.business_id
 
   return (
-    <SalesmanClient 
+    <BookingsClient 
       businessId={businessId} 
       userRole={user.profile?.role}
     />

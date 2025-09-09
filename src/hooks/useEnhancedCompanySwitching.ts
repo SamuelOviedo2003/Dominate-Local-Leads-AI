@@ -1,8 +1,10 @@
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { BusinessSwitcherData } from '@/types/auth'
 import { useBusinessContext } from '@/contexts/BusinessContext'
 import { useDynamicTheme } from '@/contexts/DynamicThemeContext'
 import { preloadColors } from '@/lib/color-extraction'
+import { determineTargetPageForBusinessSwitch } from '@/lib/permalink-navigation'
 
 interface UseCompanySwitchingReturn {
   switchCompany: (companyId: string) => Promise<{ success: boolean; error?: string }>
@@ -13,8 +15,9 @@ interface UseCompanySwitchingReturn {
 export function useEnhancedCompanySwitching(): UseCompanySwitchingReturn {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { setCurrentBusinessId, availableBusinesses } = useBusinessContext()
+  const { availableBusinesses } = useBusinessContext()
   const { extractColors } = useDynamicTheme()
+  const pathname = usePathname()
 
   const switchCompany = async (companyId: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true)
@@ -57,21 +60,25 @@ export function useEnhancedCompanySwitching(): UseCompanySwitchingReturn {
         return { success: false, error: errorMessage }
       }
 
-      // Step 3: Update context with new company
-      if (result.data?.company) {
-        setCurrentBusinessId(result.data.company.business_id)
-        
-        // Step 4: Store colors in localStorage before reload for immediate availability
-        if (targetCompany.avatar_url) {
-          try {
-            const extractedColors = await extractColors(targetCompany.avatar_url, companyId)
-            // Colors are automatically cached by the extraction system
-          } catch (extractionError) {
-          }
+      // Step 3: Store colors in localStorage before navigation for immediate availability  
+      if (result.data?.company && targetCompany.avatar_url) {
+        try {
+          const extractedColors = await extractColors(targetCompany.avatar_url, companyId)
+          // Colors are automatically cached by the extraction system
+        } catch (extractionError) {
         }
+      }
+      
+      // Step 4: Navigate to new business URL for proper server-side rendering
+      if (result.data?.company && targetCompany.permalink) {
+        // Determine the appropriate page/section for the new business
+        const targetPage = determineTargetPageForBusinessSwitch(pathname)
+        const newPath = `/${targetCompany.permalink}/${targetPage}`
         
-        // Step 5: Reload page with new business context
-        // Colors should be available immediately from cache
+        // Use full page navigation to ensure URL and content are in sync
+        window.location.href = newPath
+      } else {
+        // Fallback: reload page
         window.location.reload()
       }
 

@@ -6,7 +6,7 @@ import { LeadWithClient } from '@/types/leads'
 export const dynamic = 'force-dynamic'
 
 /**
- * GET /api/salesman/leads
+ * GET /api/bookings/leads
  * Fetches leads for bookings analysis with client information
  * 
  * Query Parameters:
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     if (leadsError) {
       console.error('Database error:', leadsError)
       return NextResponse.json(
-        { error: 'Failed to fetch salesman leads data' },
+        { error: 'Failed to fetch bookings leads data' },
         { status: 500 }
       )
     }

@@ -34,7 +34,7 @@ const DEFAULT_RATE_LIMITS: { [endpoint: string]: RateLimitConfig } = {
   
   // General API endpoints
   '/api/leads/': { windowMs: 60 * 1000, maxRequests: 100, identifier: 'user' }, // 100 requests per minute per user
-  '/api/salesman/': { windowMs: 60 * 1000, maxRequests: 60, identifier: 'user' },
+  '/api/bookings/': { windowMs: 60 * 1000, maxRequests: 60, identifier: 'user' },
   '/api/incoming-calls/': { windowMs: 60 * 1000, maxRequests: 60, identifier: 'user' },
   '/api/dashboard/': { windowMs: 60 * 1000, maxRequests: 30, identifier: 'user' },
   

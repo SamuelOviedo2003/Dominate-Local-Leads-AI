@@ -128,6 +128,7 @@ export interface Communication {
   message_type: 'email' | 'sms' | 'call' | 'voicemail' | string
   summary: string
   recording_url: string | null
+  call_window?: number | null // Call window number (1-6) when communication is associated with a call window
 }
 
 export interface PropertyInfo {
@@ -157,8 +158,8 @@ export interface LeadDetails {
 
 export type MessageType = 'email' | 'sms' | 'call' | 'voicemail'
 
-// Salesman Types
-export interface SalesmanMetrics {
+// Bookings Types (formerly Salesman)
+export interface BookingsMetrics {
   shows: number
   closes: number
   booked: number
@@ -169,8 +170,8 @@ export interface SalesmanMetrics {
   closesPercentage: number
 }
 
-export interface SalesmanPerformance {
-  salesman: string
+export interface BookingsPerformance {
+  salesperson: string
   shows: number
   closes: number
   totalRevenue: number
@@ -186,12 +187,17 @@ export interface RevenueTrendData {
   closes: number
 }
 
-export interface SalesmanAnalytics {
-  metrics: SalesmanMetrics
-  performance: SalesmanPerformance[]
+export interface BookingsAnalytics {
+  metrics: BookingsMetrics
+  performance: BookingsPerformance[]
   trends: RevenueTrendData[]
   timePeriod: TimePeriod
 }
+
+// Legacy types for backward compatibility
+export type SalesmanMetrics = BookingsMetrics
+export type SalesmanPerformance = BookingsPerformance
+export type SalesmanAnalytics = BookingsAnalytics
 
 // Dashboard Types
 export interface DashboardMetrics {

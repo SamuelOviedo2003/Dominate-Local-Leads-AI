@@ -7,20 +7,20 @@ import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-interface PermalinkNewLeadsLayoutProps {
+interface PermalinkLeadDetailsLayoutProps {
   children: ReactNode
   params: { permalink: string }
 }
 
 /**
- * New Leads layout for permalink-based routes
+ * Lead Details layout for permalink-based routes
  * This provides the same UI structure with BusinessContextProvider
  * but uses the business context established by the permalink layout
  */
-export default async function PermalinkNewLeadsLayout({ 
+export default async function PermalinkLeadDetailsLayout({ 
   children,
   params 
-}: PermalinkNewLeadsLayoutProps) {
+}: PermalinkLeadDetailsLayoutProps) {
   const { permalink } = params
   const { user, availableBusinesses } = await getHeaderData()
 
