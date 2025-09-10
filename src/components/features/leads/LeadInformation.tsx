@@ -3,6 +3,7 @@
 import { Lead, PropertyInfo } from '@/types/leads'
 import { useMemo, useCallback, memo } from 'react'
 import { LoadingSystem } from '@/components/LoadingSystem'
+import { createDialpadUrl, isValidDialpadPhone } from '@/lib/utils/phoneUtils'
 
 interface LeadInformationProps {
   lead?: Lead | null
@@ -217,16 +218,29 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
 
             {/* Phone Card */}
             <div className="group bg-gradient-to-r from-white to-brand-slate-50/50 rounded-lg p-3 border border-brand-slate-200/50 hover:border-brand-orange-300 transition-all duration-200 hover:shadow-md">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-7 h-7 bg-brand-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg className="w-3.5 h-3.5 text-brand-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                  </svg>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                  <div className="w-7 h-7 bg-brand-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-brand-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-semibold text-brand-slate-500 uppercase tracking-wide">Phone</div>
+                    <div className="text-brand-slate-900 font-medium text-xs">{lead.phone}</div>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-brand-slate-500 uppercase tracking-wide">Phone</div>
-                  <div className="text-brand-slate-900 font-medium text-xs">{lead.phone}</div>
-                </div>
+                {isValidDialpadPhone(lead.phone) && (
+                  <a 
+                    href={createDialpadUrl(lead.phone) || '#'}
+                    className="w-8 h-8 bg-green-100 hover:bg-green-200 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200"
+                    title="Call with Dialpad"
+                  >
+                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                  </a>
+                )}
               </div>
             </div>
 
