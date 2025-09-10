@@ -1,6 +1,6 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
@@ -61,10 +61,26 @@ const LeadDetailsPage = () => {
     )
   }
 
-  // Handle global error (like "Lead not found")
+  // Handle global error (like "Lead not found") - use useEffect for navigation
+  useEffect(() => {
+    if (error && error.includes('Lead not found')) {
+      navigateToSection('new-leads')
+    }
+  }, [error, navigateToSection])
+
+  // Show loading state if redirecting due to "Lead not found" error
   if (error && error.includes('Lead not found')) {
-    navigateToSection('new-leads')
-    return null
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="text-center py-12">
+              <div className="text-gray-500 text-lg font-medium">Redirecting...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -113,6 +129,8 @@ const LeadDetailsPage = () => {
             communications={leadDetails?.communications || null}
             isLoading={isCommunicationsLoading}
             error={communicationsError}
+            leadId={leadId}
+            businessId={businessId}
           />
         </div>
       </div>

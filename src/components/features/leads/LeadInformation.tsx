@@ -37,43 +37,10 @@ const InfoCard = ({ icon, title, value }: InfoCardProps) => (
 )
 
 const LeadInformationComponent = ({ lead, property, isLoading = false, error = null }: LeadInformationProps) => {
-  // Handle loading state
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
-        <div className="flex items-center justify-center flex-1">
-          <LoadingSystem size="md" message="Loading lead information..." />
-        </div>
-      </div>
-    )
-  }
-
-  // Handle error state
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
-        <div className="text-center flex-1 flex items-center justify-center">
-          <div>
-            <div className="text-red-500 text-lg font-medium mb-2">Error Loading Lead Information</div>
-            <p className="text-gray-600">{error}</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Handle no data state
-  if (!lead) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
-        <div className="text-center flex-1 flex items-center justify-center">
-          <div className="text-gray-500 text-lg font-medium">No lead information available</div>
-        </div>
-      </div>
-    )
-  }
-
+  // All hooks must be called before any conditional returns
   const leadAnalysis = useMemo(() => {
+    if (!lead) return { description: '', recommendedActions: [] }
+    
     const service = lead.service || 'Service'
     const source = lead.source || 'Unknown source'
     const propertyValue = property?.house_value ? `$${property.house_value.toLocaleString()}` : '$262k'
@@ -117,6 +84,8 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
   }, [])
 
   const scoreConfig = useMemo(() => {
+    if (!lead) return { bgColor: 'bg-gray-500', textColor: 'text-white', label: 'Unknown', icon: '' }
+    
     const score = lead.score
     if (score <= 33) {
       return {
@@ -139,17 +108,55 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
       label: 'Strong Lead',
       icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
     }
-  }, [lead.score])
+  }, [lead])
 
   const displaySummary = useMemo(() => {
+    if (!lead) return 'No summary available'
     return lead.summary || lead.score_summary || 'No summary available'
-  }, [lead.summary, lead.score_summary])
+  }, [lead])
 
   const handleQuickAction = useCallback((action: string) => {
+    if (!lead) return
     // In a real implementation, this would trigger the appropriate action
     // Quick action logic would be implemented here
     // Example: window.location.href = `tel:${lead.phone}`
   }, [lead])
+
+  // Now handle conditional returns after all hooks are called
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
+        <div className="flex items-center justify-center flex-1">
+          <LoadingSystem size="md" message="Loading lead information..." />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
+        <div className="text-center flex-1 flex items-center justify-center">
+          <div>
+            <div className="text-red-500 text-lg font-medium mb-2">Error Loading Lead Information</div>
+            <p className="text-gray-600">{error}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!lead) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6 h-full flex flex-col">
+        <div className="text-center flex-1 flex items-center justify-center">
+          <div className="text-gray-500 text-lg font-medium">No lead information available</div>
+        </div>
+      </div>
+    )
+  }
+
+  // Now we can safely use the hook results since we know lead exists
 
 
   return (

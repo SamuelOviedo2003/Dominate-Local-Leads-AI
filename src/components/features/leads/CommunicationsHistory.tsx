@@ -4,39 +4,72 @@ import { Communication } from '@/types/leads'
 import { AudioPlayer } from './AudioPlayer'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { CallWindowIcon } from '@/components/ui/CallWindowIcon'
-import { useMemo, useCallback, memo } from 'react'
+import { useMemo, useCallback, memo, useState } from 'react'
+import { useChatWebhook } from '@/hooks/useChatWebhook'
 
 interface CommunicationsHistoryProps {
   communications?: Communication[] | null
   isLoading?: boolean
   error?: string | null
+  leadId?: string
+  businessId?: string
 }
 
-const CommunicationsHistoryComponent = ({ communications = [], isLoading = false, error = null }: CommunicationsHistoryProps) => {
-  // Handle loading state
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Communications History</h3>
-        <div className="flex items-center justify-center py-16">
-          <LoadingSystem size="md" message="Loading communications..." />
-        </div>
-      </div>
-    )
-  }
+const CommunicationsHistoryComponent = ({ communications = [], isLoading = false, error = null, leadId, businessId }: CommunicationsHistoryProps) => {
+  // All hooks must be declared at the top, before any conditional logic
+  const [message, setMessage] = useState('')
+  const { sendMessage, getCurrentUserId, isLoading: isSending, error: webhookError } = useChatWebhook()
 
-  // Handle error state
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Communications History</h3>
-        <div className="text-center py-16">
-          <div className="text-red-500 text-lg font-medium mb-2">Error Loading Communications</div>
-          <p className="text-gray-600">{error}</p>
-        </div>
-      </div>
-    )
-  }
+  /**
+   * Handle sending a message via webhook
+   */
+  const handleSendMessage = useCallback(async () => {
+    if (!message.trim()) {
+      return
+    }
+
+    if (!leadId || !businessId) {
+      console.error('[CHAT] Missing leadId or businessId')
+      return
+    }
+
+    try {
+      // Get current user ID
+      const accountId = await getCurrentUserId()
+      if (!accountId) {
+        console.error('[CHAT] Could not get current user ID')
+        return
+      }
+
+      // Send the message via webhook
+      const result = await sendMessage({
+        account_id: accountId,
+        lead_id: leadId,
+        message: message.trim(),
+        business_id: businessId
+      })
+
+      if (result.success) {
+        // Clear the message input on success
+        setMessage('')
+        console.log('[CHAT] Message sent successfully')
+      } else {
+        console.error('[CHAT] Failed to send message:', result.error)
+      }
+    } catch (error) {
+      console.error('[CHAT] Error sending message:', error)
+    }
+  }, [message, leadId, businessId, sendMessage, getCurrentUserId])
+
+  /**
+   * Handle Enter key press in textarea
+   */
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }, [handleSendMessage])
 
   const getMessageTypeColor = useCallback((messageType: string): string => {
     const type = messageType.toLowerCase()
@@ -89,6 +122,78 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
     })
   }, [communications])
 
+  /**
+   * Render chat interface
+   */
+  const renderChatInterface = useCallback(() => (
+    <div className="mt-6 pt-6 border-t border-gray-200">
+      <h4 className="text-sm font-semibold text-gray-700 mb-3">Send New Message</h4>
+      <div className="flex space-x-3">
+        <div className="flex-1">
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Type your message here..."
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            disabled={isSending}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleSendMessage}
+          disabled={isSending || !message.trim()}
+          className="self-end px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSending ? (
+            <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          )}
+        </button>
+      </div>
+      {webhookError && (
+        <div className="mt-2 text-xs text-red-600">
+          Error: {webhookError}
+        </div>
+      )}
+      {!webhookError && (
+        <div className="mt-2 text-xs text-gray-500">
+          Press Enter to send or Shift+Enter for new line
+        </div>
+      )}
+    </div>
+  ), [message, setMessage, handleKeyPress, handleSendMessage, isSending, webhookError])
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Communications History</h3>
+        <div className="flex items-center justify-center py-16">
+          <LoadingSystem size="md" message="Loading communications..." />
+        </div>
+      </div>
+    )
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Communications History</h3>
+        <div className="text-center py-16">
+          <div className="text-red-500 text-lg font-medium mb-2">Error Loading Communications</div>
+          <p className="text-gray-600">{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!communications || communications.length === 0) {
     return (
@@ -97,31 +202,7 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
         <div className="text-center py-6 text-gray-500">
           No communications found for this lead
         </div>
-
-        {/* Chat Interface */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Send New Message</h4>
-          <div className="flex space-x-3">
-            <div className="flex-1">
-              <textarea
-                placeholder="Type your message here..."
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              />
-            </div>
-            <button
-              type="button"
-              className="self-end px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            This is a demonstration interface. Messages are not actually sent.
-          </div>
-        </div>
+        {renderChatInterface()}
       </div>
     )
   }
@@ -185,30 +266,7 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
         </div>
       )}
 
-      {/* Chat Interface */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">Send New Message</h4>
-        <div className="flex space-x-3">
-          <div className="flex-1">
-            <textarea
-              placeholder="Type your message here..."
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            />
-          </div>
-          <button
-            type="button"
-            className="self-end px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
-        </div>
-        <div className="mt-2 text-xs text-gray-500">
-          This is a demonstration interface. Messages are not actually sent.
-        </div>
-      </div>
+      {renderChatInterface()}
     </div>
   )
 }
