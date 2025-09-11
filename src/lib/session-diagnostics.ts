@@ -100,7 +100,7 @@ class SessionDiagnosticSystem {
       const cookies = headersList.get('cookie') || ''
       // Extract session-related cookie names/structure (not values for security)
       const cookieNames = cookies.split(';')
-        .map(c => c.trim().split('=')[0])
+        .map((c: string) => c.trim().split('=')[0])
         .sort()
         .join(',')
       return cookieNames
@@ -444,7 +444,11 @@ export function recordSessionDiagnostic(
     sessionId,
     userId,
     userEmail,
-    businessId
+    businessId,
+    ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown',
+    userAgent: request.headers.get('user-agent') || 'unknown',
+    path: request.nextUrl.pathname,
+    method: request.method
   }, request)
 }
 

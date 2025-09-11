@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Collect session diagnostics from all monitoring systems
-    const diagnostics = {
+    const diagnostics: any = {
       timestamp: new Date().toISOString(),
       requestId: request.headers.get('x-request-id') || 'unknown',
       

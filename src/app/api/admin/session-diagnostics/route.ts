@@ -163,7 +163,11 @@ export async function POST(request: NextRequest) {
           sessionId: testSessionId,
           userId: testUserId1,
           userEmail: 'test1@example.com',
-          businessId: 'test-business-1'
+          businessId: 'test-business-1',
+          ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown',
+          path: '/api/admin/session-diagnostics',
+          method: 'POST'
         }, request)
 
         // Simulate session bleeding by having different user with same session
@@ -172,7 +176,11 @@ export async function POST(request: NextRequest) {
             sessionId: testSessionId,
             userId: testUserId2,
             userEmail: 'test2@example.com', 
-            businessId: 'test-business-2'
+            businessId: 'test-business-2',
+            ip: request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown',
+            userAgent: request.headers.get('user-agent') || 'unknown',
+            path: '/api/admin/session-diagnostics',
+            method: 'POST'
           }, request)
         }, 100)
 

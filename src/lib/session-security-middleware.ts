@@ -86,7 +86,7 @@ class SessionSecurityMiddleware {
   /**
    * Detect session anomalies
    */
-  private async detectAnomalies(context: SecurityContext): Promise<SessionAnomalyDetection[]> {
+  private async detectAnomalies(context: SecurityContext, currentRequest?: NextRequest): Promise<SessionAnomalyDetection[]> {
     const anomalies: SessionAnomalyDetection[] = []
     
     if (!context.userId) return anomalies
@@ -129,7 +129,7 @@ class SessionSecurityMiddleware {
     // Check for rapid business switching (potential session confusion)
     const recentBusinessSwitches = userRequests.filter(r => 
       r.timestamp > Date.now() - 30000 && // Last 30 seconds
-      request.nextUrl.pathname.includes('business-switch')
+      currentRequest?.nextUrl.pathname.includes('business-switch')
     ).length
     
     if (recentBusinessSwitches > 5) {
@@ -321,7 +321,7 @@ class SessionSecurityMiddleware {
       }
       
       // Detect anomalies
-      const anomalies = await this.detectAnomalies(context)
+      const anomalies = await this.detectAnomalies(context, request)
       
       // Handle anomalies if detected
       if (anomalies.length > 0) {

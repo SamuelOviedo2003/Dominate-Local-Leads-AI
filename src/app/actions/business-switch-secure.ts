@@ -342,13 +342,15 @@ export async function validateBusinessAccessSecure(businessId: string): Promise<
         
       canAccess = !accessError && !!access
       if (canAccess && access) {
+        // Type assertion to handle nested business_clients structure
+        const businessClients = access.business_clients as any
         businessData = {
-          business_id: access.business_clients.business_id.toString(),
-          company_name: access.business_clients.company_name,
-          avatar_url: access.business_clients.avatar_url,
-          city: access.business_clients.city,
-          state: access.business_clients.state,
-          permalink: access.business_clients.permalink
+          business_id: businessClients.business_id.toString(),
+          company_name: businessClients.company_name,
+          avatar_url: businessClients.avatar_url,
+          city: businessClients.city,
+          state: businessClients.state,
+          permalink: businessClients.permalink
         }
       }
     }

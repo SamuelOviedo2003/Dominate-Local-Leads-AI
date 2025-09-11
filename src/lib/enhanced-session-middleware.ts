@@ -91,7 +91,7 @@ class EnhancedSessionMiddleware {
       // Look for Supabase session cookies
       const cookiePattern = /(?:supabase-auth-token|sb-[^=]+-auth-token)=([^;]+)/
       const match = cookies.match(cookiePattern)
-      if (match) {
+      if (match && match[1]) {
         // Extract a portion of the token as session identifier
         const token = match[1]
         return `session_${token.substring(0, 16)}...${token.slice(-8)}`
@@ -152,7 +152,7 @@ class EnhancedSessionMiddleware {
 
     // Extract business context from URL
     const pathSegments = request.nextUrl.pathname.split('/').filter(Boolean)
-    if (pathSegments.length > 0 && !pathSegments[0].startsWith('api')) {
+    if (pathSegments.length > 0 && pathSegments[0] && !pathSegments[0].startsWith('api')) {
       validation.businessId = pathSegments[0] // Assuming first segment is business permalink
     }
 

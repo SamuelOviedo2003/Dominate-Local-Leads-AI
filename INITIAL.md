@@ -13,6 +13,7 @@
 - [FB Analysis](#fb-analysis)
 - [Settings](#settings)
 - [Loading System](#loading-system)
+- [Session Security Architecture](#session-security-architecture)
 - [Database Schema](#database-schema)
 - [Technical Requirements](#technical-requirements)
 - [Error Handling](#error-handling)
@@ -36,6 +37,7 @@ A comprehensive lead management system for roofing businesses that tracks leads,
 - Performance analytics and metrics
 - Multi-business support for administrators
 - Real-time data synchronization
+- **Enterprise-grade session security with isolation and anomaly detection**
 
 ---
 
@@ -373,6 +375,29 @@ ORDER BY call_window ASC;
 - **Requirement**: Must support audio playback with progress controls
 - **Requirement**: Must show message type with color-coded badges
 - **Requirement**: Must allow seeking within audio recordings
+
+#### Functional Chat Integration
+- **Requirement**: Must provide functional chat interface for real-time lead communication
+- **Requirement**: Must integrate with n8n automation platform via webhook for message processing
+- **Requirement**: Must send webhook to: `https://n8nio-n8n-pbq4r3.sliplane.app/webhook/bf425f50-2d65-4cfd-a529-faea3b682288`
+- **Requirement**: Must include required parameters in webhook payload:
+  - `account_id`: Authenticated user's Supabase ID
+  - `lead_id`: Current lead ID from page parameters
+  - `message`: User-entered text content
+  - `business_id`: Current business context ID
+- **Requirement**: Must provide loading states during webhook calls with visual feedback
+- **Requirement**: Must handle webhook errors gracefully with user-friendly error messages
+- **Requirement**: Must support keyboard shortcuts (Enter to send, Shift+Enter for new lines)
+- **Requirement**: Must validate and clear input after successful message send
+- **Requirement**: Must use controlled input components with proper state management
+
+#### Chat Interface Technical Implementation
+- **File**: `/src/hooks/useChatWebhook.ts` - Custom hook for webhook functionality
+- **Hook**: `useChatWebhook()` - Manages webhook calls, loading states, and error handling
+- **Component**: Enhanced `CommunicationsHistory.tsx` with integrated chat interface
+- **State Management**: Controlled input state with message validation and clearing
+- **Error Handling**: Comprehensive error display and retry functionality
+- **Authentication**: Automatic user ID retrieval from Supabase client authentication
 
 #### SQL Queries Required
 ```sql
@@ -758,6 +783,169 @@ DELETE FROM profiles WHERE id = $userId;
 
 ---
 
+## Session Security Architecture
+
+### Overview
+
+The system implements enterprise-grade session security to prevent session bleeding vulnerabilities, ensuring complete user isolation and business context integrity across multi-instance deployments.
+
+### Session Bleeding Vulnerability Resolution
+
+#### Critical Security Issue Addressed
+- **Problem**: Session bleeding between concurrent users where User A's business context could leak to User B's session
+- **Root Cause**: Missing external session store and inadequate session isolation in multi-instance deployments
+- **Impact**: Critical data privacy and security vulnerability in production environments
+
+#### Comprehensive Solution Implemented
+- **External Session Store**: Redis-based distributed session storage with atomic operations
+- **Real-time Anomaly Detection**: Live monitoring system detecting 4 types of session security violations
+- **Enhanced Middleware**: Request-level session validation with sub-200ms performance
+- **Atomic Business Switching**: Distributed locking preventing race conditions during business context changes
+
+### Session Security Components
+
+#### Request-Scoped Authentication System (`src/lib/auth-helpers-isolated.ts`)
+- **Requirement**: Must use React's `cache()` function for complete request isolation
+- **Requirement**: Must generate unique request IDs for tracking and debugging
+- **Requirement**: Must prevent global cache contamination through request-scoped caching
+- **Requirement**: Must include comprehensive session monitoring integration
+- **Requirement**: Must provide session context tracking with user ID validation
+- **Key Functions**: `getAuthenticatedUser()`, `getAuthenticatedUserForAPI()`, `validateCompanyAccess()`
+
+#### Redis Session Store (`src/lib/redis-session-store.ts`)
+- **Requirement**: Must use external Redis instance for session storage (no in-memory sessions)
+- **Requirement**: Must implement atomic business switching with distributed locks (30-second TTL)
+- **Requirement**: Must provide session cleanup and garbage collection
+- **Requirement**: Must handle Redis connection failures gracefully without breaking application
+- **Requirement**: Must support session TTL of 24 hours with automatic renewal
+- **Environment Variables Required**: `REDIS_URL`, `SESSION_SECRET`, `SESSION_TTL`, `SESSION_LOCK_TTL`
+
+#### Atomic Business Switching (`src/app/actions/business-switch-secure.ts`)
+- **Requirement**: Must implement atomic business switching with distributed locking
+- **Requirement**: Must validate business access permissions before context changes
+- **Requirement**: Must track timing and performance metrics for operations
+- **Requirement**: Must provide comprehensive error handling and rollback capabilities
+- **Key Functions**: `atomicBusinessSwitch()`, `getAvailableBusinessesSecure()`, `validateBusinessAccessSecure()`
+
+#### Enhanced Session Middleware (`src/lib/enhanced-session-middleware.ts`)
+- **Requirement**: Must validate every request to protected paths with session integrity checks
+- **Requirement**: Must detect and terminate compromised sessions immediately
+- **Requirement**: Must provide session validation performance under 200ms
+- **Requirement**: Must add diagnostic headers for monitoring: `X-Session-Validated`, `X-Process-ID`, `X-Request-ID`
+- **Requirement**: Must handle admin path validation with role-based access control
+- **Protected Paths**: `/dashboard`, `/new-leads`, `/lead-details`, `/incoming-calls`, `/bookings`, `/settings`, `/api/`
+- **Admin Paths**: `/api/admin/`, `/api/system/`
+
+#### Session Diagnostics System (`src/lib/session-diagnostics.ts`)
+- **Requirement**: Must detect and alert on 4 critical anomaly types:
+  - **session_hijack**: Same session ID used by different users (CRITICAL)
+  - **cross_user_contamination**: Session data mixing between users (CRITICAL)
+  - **business_context_leak**: Business context bleeding between users (HIGH)
+  - **cookie_collision**: Cookie structure conflicts (MEDIUM)
+- **Requirement**: Must maintain rolling buffer of 5,000 diagnostic entries
+- **Requirement**: Must provide real-time anomaly detection with severity classification
+- **Requirement**: Must generate session fingerprints for validation using browser characteristics
+- **Requirement**: Must track per-user session mapping and detect violations
+
+#### Admin Monitoring API (`/api/admin/session-diagnostics`)
+- **Requirement**: Must provide comprehensive session reporting and anomaly data
+- **Requirement**: Must restrict access to superadmin users only (role 0)
+- **Available Actions**: `report`, `anomalies`, `user`, `compromised`, `clear`
+- **Query Parameters**: `?action=anomalies&severity=critical`, `?action=user&userId=USER_ID`
+- **Requirement**: Must support real-time session compromise detection
+- **Development Features**: Test anomaly generation and diagnostic data clearing
+
+### Security Validation Requirements
+
+#### Session Integrity Validation
+- **Requirement**: Must validate session fingerprints on every protected request
+- **Requirement**: Must cross-reference session IDs with user mappings to detect hijacking
+- **Requirement**: Must verify business context access rights before allowing switches
+- **Requirement**: Must implement request-scoped authentication caching using React's `cache()` function
+- **Requirement**: Must clear and regenerate sessions on security violations
+
+#### Business Context Security
+- **Requirement**: Must implement atomic business switching with Redis distributed locks
+- **Requirement**: Must validate business access permissions before context changes
+- **Requirement**: Must track business context changes for audit and anomaly detection
+- **Requirement**: Must prevent race conditions during concurrent business switches
+- **Requirement**: Must maintain business context isolation between user sessions
+
+#### Monitoring and Alerting
+- **Requirement**: Must log all session security events with appropriate severity levels
+- **Requirement**: Must provide real-time anomaly detection with immediate alerting
+- **Requirement**: Must maintain session statistics for monitoring dashboards
+- **Requirement**: Must support session compromise detection API for external monitoring
+- **Development Requirement**: Must include development-mode diagnostics with enhanced logging
+
+### Production Deployment Requirements
+
+#### Environment Configuration
+```env
+# CRITICAL - External Session Store
+REDIS_URL=redis://username:password@host:port
+SESSION_SECRET=32_CHAR_MINIMUM_STRONG_SECRET
+NEXT_PUBLIC_ENABLE_GLOBAL_CACHE=false
+
+# Session Security Settings
+SESSION_TTL=86400                    # 24 hours
+SESSION_LOCK_TTL=30                  # 30 seconds
+SESSION_MAX_RETRY_ATTEMPTS=3
+
+# Monitoring and Diagnostics
+ENABLE_SESSION_MONITORING=true
+SESSION_DIAGNOSTICS_RETENTION=5000
+WORKER_ID=${HOSTNAME}
+
+# Performance Tuning
+REDIS_MAX_CONNECTIONS=50
+REDIS_KEEPALIVE_INTERVAL=30000
+REDIS_COMMAND_TIMEOUT=3000
+```
+
+#### Deployment Architecture
+- **Requirement**: Must deploy with external Redis session store (Upstash, Redis Cloud, Railway)
+- **Requirement**: Must start with single instance deployment for validation
+- **Requirement**: Must enable session monitoring and anomaly detection
+- **Requirement**: Must configure health checks that don't create sessions (`/api/health`)
+- **Scaling Requirement**: Only scale to multiple instances after 24+ hours of zero critical anomalies
+
+#### Security Testing Protocol
+- **Pre-Production**: Must pass two-user simultaneous login test with business switching
+- **Anomaly Detection**: Must verify zero critical anomalies in diagnostics dashboard
+- **Performance**: Must maintain session validation under 200ms response time
+- **Monitoring**: Must confirm admin diagnostics API accessible and functional
+
+### Integration with Existing Components
+
+#### Authentication Helpers Integration
+- **Requirement**: Must use request-scoped caching in `auth-helpers-secure.ts`
+- **Requirement**: Must integrate with existing Supabase authentication flow
+- **Requirement**: Must maintain compatibility with business context switching
+- **Requirement**: Must preserve existing user role validation and business access controls
+
+#### Middleware Integration
+- **Requirement**: Must initialize Redis session store on application startup
+- **Requirement**: Must setup security cleanup processes and monitoring
+- **Requirement**: Must integrate with existing Supabase middleware chain
+- **Requirement**: Must preserve existing route protection and authentication flows
+
+### Success Criteria
+
+#### Security Validation
+- **Zero Critical Anomalies**: No `session_hijack` or `cross_user_contamination` events
+- **Session Isolation**: Multiple concurrent users with complete context separation
+- **Business Context Integrity**: Atomic business switching with no data leakage
+- **Performance**: Sub-200ms session validation with Redis backend
+
+#### Monitoring and Operations
+- **Real-time Detection**: Immediate anomaly detection and alerting
+- **Admin Visibility**: Comprehensive session diagnostics and reporting
+- **Production Readiness**: 24/7 monitoring with automated session cleanup
+- **Scalability**: Multi-instance deployment support with external session store
+
+---
+
 ## Database Schema
 
 ### Core Tables
@@ -824,6 +1012,45 @@ DELETE FROM profiles WHERE id = $userId;
   - NEXT_PUBLIC_SUPABASE_ANON_KEY
   - NEXT_PUBLIC_SITE_URL (required for production deployments)
 
+### React Hooks Compliance Requirements
+- **Rules of Hooks**: All components must strictly follow React's Rules of Hooks
+- **Hook Call Order**: All hooks must be called in the same order every time a component renders
+- **No Conditional Hooks**: Hooks must never be called inside loops, conditions, or nested functions
+- **Early Returns**: All hook declarations must occur before any conditional return statements
+- **Component Structure**: Required pattern for all functional components:
+  1. All hook declarations (useState, useCallback, useMemo, useEffect, custom hooks)
+  2. Conditional logic and early returns (loading, error, no data states)
+  3. Main component rendering logic
+- **Error Prevention**: Prevents "Rendered fewer hooks than expected" runtime errors
+- **Navigation Safety**: Ensures reliable component re-rendering during route navigation
+- **Production Stability**: Critical for stable production deployments and user experience
+
+### Hook Declaration Pattern
+```tsx
+// ✅ CORRECT: All hooks declared first
+const Component = ({ prop1, prop2 }) => {
+  // 1. ALL HOOKS FIRST
+  const [state, setState] = useState(initial)
+  const memoValue = useMemo(() => computation, [deps])
+  const callback = useCallback(() => action, [deps])
+  const customHookResult = useCustomHook(params)
+  
+  // 2. THEN CONDITIONAL RETURNS
+  if (loading) return <LoadingComponent />
+  if (error) return <ErrorComponent />
+  if (!data) return <NoDataComponent />
+  
+  // 3. MAIN RENDER LOGIC
+  return <MainComponent />
+}
+
+// ❌ WRONG: Hooks after conditional returns
+const Component = ({ loading, data }) => {
+  if (loading) return <LoadingComponent /> // ❌ Early return
+  const [state, setState] = useState(data) // ❌ Hook after return
+}
+```
+
 ### Production Deployment Requirements
 - **Build Type**: Next.js standalone build optimized for production
 - **Static Assets**: Public folder assets automatically copied to standalone build
@@ -875,6 +1102,71 @@ DELETE FROM profiles WHERE id = $userId;
 - **Image Loading**: Use lazy loading
 - **Audio Files**: Progressive loading for recordings
 - **Query Timeouts**: 15-30 second timeout protection
+
+### Session Security & Isolation Requirements
+
+#### Critical Session Management
+- **Requirement**: Must implement request-scoped authentication caching to prevent session bleeding
+- **Requirement**: Must validate user identity on every cache access to prevent cross-user contamination
+- **Requirement**: Must use unique request identifiers to isolate cache entries between concurrent requests
+- **Requirement**: Must implement session monitoring with real-time anomaly detection
+- **Requirement**: Must prevent global state pollution that could cause session mixing
+
+#### Session Isolation Implementation
+- **File**: `/src/lib/auth-helpers.ts` - Request-scoped authentication cache with user validation
+- **File**: `/src/lib/session-monitoring.ts` - Session monitoring and security alerting system
+- **Cache Architecture**: RequestScopedAuthCache replaces global authCache to prevent cross-user contamination
+- **Validation**: All cache entries must include userId validation and request ID tracking
+- **Monitoring**: Real-time detection of cache contamination, session bleeding, and suspicious switching patterns
+
+#### Business Context Security
+- **Requirement**: Must implement session-aware business context with validation
+- **Requirement**: Must track business context changes for security monitoring
+- **Requirement**: Must validate business access rights on every context switch
+- **Requirement**: Must prevent unauthorized business data access through context manipulation
+
+#### Atomic Business Switching
+- **Requirement**: Must implement atomic business switching operations with race condition prevention
+- **Requirement**: Must use unique request IDs and session tracking for all business switch operations
+- **Requirement**: Must validate business access before and after switching operations
+- **Requirement**: Must implement operation locking to prevent concurrent switches
+- **Requirement**: Must include comprehensive error handling and rollback mechanisms
+
+#### Session Monitoring & Alerting
+- **Requirement**: Must track all authentication events, business switches, and cache accesses
+- **Requirement**: Must detect and alert on session anomalies: bleeding, contamination, suspicious patterns
+- **Requirement**: Must provide session diagnostics and statistics for monitoring dashboards
+- **Requirement**: Must implement configurable alert thresholds and notification systems
+- **Requirement**: Must maintain session audit trail for security compliance
+
+#### Testing & Validation Framework
+- **File**: `/test-session-isolation.js` - Automated session isolation testing with concurrent users
+- **File**: `/test-business-switching.js` - Business context validation and switching tests
+- **Requirement**: Must validate session isolation under concurrent load
+- **Requirement**: Must test business switching with multiple simultaneous users
+- **Requirement**: Must verify no session bleeding occurs during rapid switching
+- **Requirement**: Must validate cache isolation and user ID validation
+
+#### Security Compliance
+- **Session Isolation**: Zero tolerance for session bleeding or cross-user data exposure
+- **Authentication Integrity**: All cache access must be validated against authenticated user
+- **Business Access Control**: Strict validation of business context access rights
+- **Monitoring Coverage**: Comprehensive tracking of all session-related security events
+- **Production Readiness**: Full deployment with monitoring alerts and audit capabilities
+
+#### SQL Queries Required
+```sql
+-- Session validation with business access
+SELECT p.id, p.role, pb.business_id
+FROM profiles p
+LEFT JOIN profile_businesses pb ON p.id = pb.profile_id
+WHERE p.id = $userId
+AND (p.role = 0 OR pb.business_id = $businessId);
+
+-- Session monitoring audit trail
+INSERT INTO session_audit_log (session_id, user_id, action, business_id, ip_address, created_at)
+VALUES ($sessionId, $userId, $action, $businessId, $ipAddress, NOW());
+```
 
 ---
 
