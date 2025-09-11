@@ -72,14 +72,14 @@ class SessionMonitor {
       }
       this.userSessions.get(event.userId)!.add(event.sessionId)
       
-      this.checkForAnomalies(event)
+      this.checkForAnomalies(sessionEvent)
     } else if (event.action === 'logout') {
       this.activeSessions.delete(event.sessionId)
       this.userSessions.get(event.userId)?.delete(event.sessionId)
     } else if (event.action === 'business_switch') {
-      this.checkBusinessSwitchAnomalies(event)
+      this.checkBusinessSwitchAnomalies(sessionEvent)
     } else if (event.action === 'cache_access') {
-      this.checkCacheAnomalies(event)
+      this.checkCacheAnomalies(sessionEvent)
     }
 
     // Console logging for development
