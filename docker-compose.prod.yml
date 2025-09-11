@@ -4,6 +4,43 @@
 version: '3.8'
 
 services:
+  # Redis Session Store - Production Configuration
+  redis:
+    # Production-specific Redis configuration
+    restart: always
+    
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    
+    # Production Redis settings
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory 512mb --maxmemory-policy allkeys-lru --save 300 1
+    
+    # Production logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    
+    # Additional environment variables for production
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    
+    # Production volume for data persistence
+    volumes:
+      - redis-data:/data
+
   nextjs-app:
     # Production-specific configuration
     restart: always

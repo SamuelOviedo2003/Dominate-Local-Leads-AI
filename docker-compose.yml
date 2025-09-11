@@ -4,6 +4,29 @@
 version: '3.8'
 
 services:
+  # Redis Session Store for Session Isolation
+  redis:
+    image: redis:7.2-alpine
+    container_name: dominate-leads-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --appendfsync everysec --maxmemory 256mb --maxmemory-policy allkeys-lru
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - app-network
+    sysctls:
+      - net.core.somaxconn=1024
+
   # Next.js Application
   nextjs-app:
     build:
@@ -25,7 +48,18 @@ services:
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - DOCKER_CONTAINER=true
       - PERFORMANCE_LOG_STDOUT=true
+      # Redis Session Store Configuration
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - REDIS_URL=redis://redis:6379
+      # Session Security Configuration
+      - SESSION_STORE_TYPE=redis
+      - SESSION_SECURITY_ENABLED=true
     restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -61,4 +95,6 @@ networks:
 
 volumes:
   logs:
+    driver: local
+  redis-data:
     driver: local
