@@ -153,7 +153,7 @@ export function useCompanySwitching(): UseCompanySwitchingReturn {
         companyId,
         companyName: result.data.company.company_name,
         requestId,
-        serverSessionId: result.data.sessionId
+        serverSessionId: result.data.sessionId || 'not-provided'
       })
 
       // ⭐ CRITICAL: Atomic navigation with session validation

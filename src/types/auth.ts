@@ -76,6 +76,7 @@ export interface CompanySwitchResponse {
   data?: {
     company: BusinessSwitcherData
     message: string
+    sessionId?: string // Optional session ID for tracking
   }
   error?: string
 }
