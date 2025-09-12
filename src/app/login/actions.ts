@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
+import { getAuthenticatedUser, getAvailableBusinessesWithToken } from '@/lib/auth-utils'
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -29,67 +29,24 @@ export async function login(formData: FormData) {
       redirect('/login?error=Authentication failed')
     }
 
-    // Get user profile to check role - using service role to bypass RLS
-    // This fixes the infinite recursion issue in RLS policies
-    const supabaseService = createServiceRoleClient()
-    const { data: profile, error: profileError } = await supabaseService
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile || profileError) {
-      console.error('Profile fetch error:', profileError)
-      redirect('/login?error=User profile not found')
+    // Get authenticated user with profile and accessible businesses via JWT
+    const authenticatedUser = await getAuthenticatedUser()
+    if (!authenticatedUser || authenticatedUser.id !== user.id) {
+      redirect('/login?error=Authentication failed')
     }
 
-    // Get user's accessible businesses using the new profile_businesses system
-    let accessibleBusinesses: any[] = []
+    // Get user's accessible businesses using JWT-based approach
+    const accessibleBusinessesData = await getAvailableBusinessesWithToken(user.id)
+    const accessibleBusinesses = accessibleBusinessesData.map(b => ({
+      business_id: parseInt(b.id),
+      company_name: b.name,
+      avatar_url: b.avatar_url,
+      city: b.city,
+      state: b.state,
+      permalink: b.permalink
+    }))
     
-    // Handle null role by treating as regular user (role 1)
-    const effectiveRole = profile.role ?? 1
-    
-    if (effectiveRole === 0) {
-      // Super admin - get all businesses with dashboard enabled using service role
-      const { data: businesses } = await supabaseService
-        .from('business_clients')
-        .select('business_id, company_name, avatar_url, city, state, permalink')
-        .eq('dashboard', true)
-        .order('company_name')
-      
-      accessibleBusinesses = businesses || []
-    } else {
-      // Regular user - get businesses from profile_businesses table
-      const { data: userBusinesses, error: businessError } = await supabase
-        .from('profile_businesses')
-        .select(`
-          business_id,
-          business_clients!inner(
-            business_id,
-            company_name,
-            avatar_url,
-            city,
-            state,
-            permalink
-          )
-        `)
-        .eq('profile_id', user.id)
-      
-      if (businessError) {
-        console.error('Business fetch error:', businessError)
-      }
-      
-      if (userBusinesses) {
-        accessibleBusinesses = userBusinesses.map((ub: any) => ({
-          business_id: ub.business_clients.business_id.toString(),
-          company_name: ub.business_clients.company_name,
-          avatar_url: ub.business_clients.avatar_url,
-          city: ub.business_clients.city,
-          state: ub.business_clients.state,
-          permalink: ub.business_clients.permalink
-        }))
-      }
-    }
+    const effectiveRole = authenticatedUser.role
 
     // Smart redirection logic with permalink-based URLs
     revalidatePath('/', 'layout')
@@ -106,9 +63,8 @@ export async function login(formData: FormData) {
         }
       } else {
         // Super admin with no businesses should get first business permalink for profile management
-        // Get the first available business for profile management context
-        const supabaseService = createServiceRoleClient()
-        const { data: businesses } = await supabaseService
+        // Get the first available business for profile management context using JWT
+        const { data: businesses } = await supabase
           .from('business_clients')
           .select('permalink')
           .eq('dashboard', true)

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
 
 export const dynamic = 'force-dynamic'
@@ -39,10 +38,10 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient()
-    const supabaseService = createServiceRoleClient()
+    // Use regular client with JWT authentication - RLS policies should allow super admin access
 
     // Validate that the user exists and is not a super admin (using service role to bypass RLS)
-    const { data: targetProfile, error: profileError } = await supabaseService
+    const { data: targetProfile, error: profileError } = await supabase
       .from('profiles')
       .select('id, role')
       .eq('id', profileId)
@@ -158,10 +157,10 @@ export async function DELETE(request: NextRequest) {
     }
 
     const supabase = await createClient()
-    const supabaseService = createServiceRoleClient()
+    // Use regular client with JWT authentication - RLS policies should allow super admin access
 
     // Validate that the user exists and is not a super admin (using service role to bypass RLS)
-    const { data: targetProfile, error: profileError } = await supabaseService
+    const { data: targetProfile, error: profileError } = await supabase
       .from('profiles')
       .select('id, role')
       .eq('id', profileId)

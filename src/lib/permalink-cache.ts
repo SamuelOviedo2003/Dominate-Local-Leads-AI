@@ -5,7 +5,7 @@
  */
 
 import { createServerClient } from '@supabase/ssr'
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
+import { createClient } from '@/lib/supabase/server'
 import { cache, CACHE_TTL, CACHE_TAGS } from '@/lib/cache'
 import { cookies } from 'next/headers'
 
@@ -146,8 +146,8 @@ export async function fetchBusinessFromDatabase(permalink: string): Promise<Perm
   try {
     console.log(`[PERMALINK-CACHE] Fetching business from database for permalink: ${permalink}`)
     
-    // Use service role client to avoid RLS issues
-    const supabase = createServiceRoleClient()
+    // Use regular client with publishable key - business_clients table should be publicly readable for permalinks
+    const supabase = await createClient()
     
     const { data: business, error } = await supabase
       .from('business_clients')

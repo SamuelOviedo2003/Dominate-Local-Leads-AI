@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
 
 export const dynamic = 'force-dynamic'
@@ -46,17 +45,22 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient()
     
-    // Fetch all users with their profile data using service role to bypass RLS
-    const supabaseService = createServiceRoleClient()
-    const { data: users, error: usersError } = await supabaseService
+    // Note: For admin operations, we still need comprehensive user data.
+    // However, we'll use a different approach that respects RLS while ensuring admin access.
+    // This requires that RLS policies allow super admins to view user profiles.
+    
+    // Fetch all users with their profile data using JWT authentication
+    // This assumes RLS policies allow super admins (role=0) to view all profiles
+    const { data: users, error: usersError } = await supabase
       .from('profiles')
       .select('id, email, full_name, role, business_id, created_at, updated_at')
       .order('full_name')
 
     if (usersError) {
       console.error('Error fetching users:', usersError)
+      // If RLS is preventing access, we need to ensure the policies allow super admin access
       return NextResponse.json(
-        { error: 'Failed to fetch users' },
+        { error: 'Failed to fetch users. Please ensure RLS policies allow super admin access to profiles table.' },
         { status: 500 }
       )
     }
@@ -66,7 +70,8 @@ export async function GET(request: NextRequest) {
       users.map(async (userProfile) => {
         // For super admins (role 0), they have access to all businesses
         if (userProfile.role === 0) {
-          const { data: allBusinesses } = await supabaseService
+          // Use JWT authentication for business client access
+          const { data: allBusinesses } = await supabase
             .from('business_clients')
             .select('business_id, company_name, avatar_url')
             .eq('dashboard', true)

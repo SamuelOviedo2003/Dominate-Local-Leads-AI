@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
+import { getAuthenticatedUser } from '@/lib/auth-utils'
 import { BusinessSwitcherData } from '@/types/auth'
 
 /**
@@ -26,23 +26,17 @@ export async function switchBusiness(businessId: string): Promise<{
       }
     }
 
-    // Get user profile to check role using service role to avoid RLS recursion
-    const supabaseService = createServiceRoleClient()
-    const { data: profile, error: profileError } = await supabaseService
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile) {
+    // Get authenticated user with profile and business access via JWT
+    const authenticatedUser = await getAuthenticatedUser()
+    if (!authenticatedUser || authenticatedUser.id !== user.id) {
       return {
         success: false,
-        error: 'User profile not found'
+        error: 'Authentication failed'
       }
     }
 
     // Only superadmins (role=0) can switch businesses
-    if (profile.role !== 0) {
+    if (authenticatedUser.role !== 0) {
       return {
         success: false,
         error: 'Insufficient permissions - only superadmins can switch businesses'
@@ -107,23 +101,17 @@ export async function getAvailableBusinesses(): Promise<{
       }
     }
 
-    // Get user profile to check role using service role to avoid RLS recursion  
-    const supabaseService = createServiceRoleClient()
-    const { data: profile, error: profileError } = await supabaseService
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile) {
+    // Get authenticated user with profile and business access via JWT
+    const authenticatedUser = await getAuthenticatedUser()
+    if (!authenticatedUser || authenticatedUser.id !== user.id) {
       return {
         success: false,
-        error: 'User profile not found'
+        error: 'Authentication failed'
       }
     }
 
     // Only superadmins (role=0) can see all businesses
-    if (profile.role !== 0) {
+    if (authenticatedUser.role !== 0) {
       return {
         success: false,
         error: 'Insufficient permissions - only superadmins can access all businesses'
@@ -179,25 +167,19 @@ export async function validateBusinessAccess(businessId: string): Promise<{
       }
     }
 
-    // Get user profile using service role to avoid RLS recursion
-    const supabaseService = createServiceRoleClient()
-    const { data: profile, error: profileError } = await supabaseService
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile) {
+    // Get authenticated user with profile and business access via JWT
+    const authenticatedUser = await getAuthenticatedUser()
+    if (!authenticatedUser || authenticatedUser.id !== user.id) {
       return {
         success: false,
-        error: 'User profile not found'
+        error: 'Authentication failed'
       }
     }
 
     let canAccess = false
 
     // Superadmins (role=0) can access any business with dashboard=true
-    if (profile.role === 0) {
+    if (authenticatedUser.role === 0) {
       const { data: business, error: businessError } = await supabase
         .from('business_clients')
         .select('business_id')
@@ -221,7 +203,7 @@ export async function validateBusinessAccess(businessId: string): Promise<{
     return {
       success: true,
       canAccess,
-      userRole: profile.role
+      userRole: authenticatedUser.role
     }
 
   } catch (error) {

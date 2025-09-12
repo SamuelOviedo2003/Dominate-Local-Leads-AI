@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { AuthUser, Profile, BusinessClient, BusinessSwitcherData } from '@/types/auth'
 import { cache } from 'react'
 
@@ -215,9 +214,8 @@ export async function getAuthenticatedUser(): Promise<AuthUser> {
       redirect('/login')
     }
 
-    // Fetch user profile data using service role to avoid RLS recursion
-    const supabaseService = createServiceRoleClient()
-    const { data: profile, error: profileError } = await supabaseService
+    // Fetch user profile data using the same client
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
@@ -386,9 +384,8 @@ export async function getAuthenticatedUserForAPI(): Promise<AuthUser | null> {
   }
 
   console.log('[AUTH-DEBUG] [CACHE-MISS] Cache miss for API call, fetching fresh data')
-  // Fetch user profile data using service role to avoid RLS recursion
-  const supabaseService = createServiceRoleClient()
-  const { data: profile } = await supabaseService
+  // Fetch user profile data using the same client
+  const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
@@ -469,7 +466,7 @@ async function getUserAccessibleBusinessesInternal(userId: string, userRole: num
   console.log(`[AUTH-DEBUG] [CACHE-MISS] Cache miss or expired, fetching fresh businesses for user ${userId}`)
   
   try {
-    const supabase = createServiceRoleClient()
+    const supabase = await createClient()
     let businesses: BusinessSwitcherData[] = []
     
     // For superadmins, return all businesses with dashboard=true (bypasses profile_businesses check)
@@ -600,7 +597,7 @@ export async function validateCompanyAccess(companyId: string): Promise<boolean>
     return false
   }
   
-  const supabase = createServiceRoleClient()
+  const supabase = await createClient()
   
   // Handle null role by treating as regular user
   const effectiveRole = user.profile?.role ?? 1
@@ -643,7 +640,7 @@ export async function validateBusinessAccessForAPI(user: AuthUser, businessId: s
   }
   
   // Regular users must have explicit access via profile_businesses table
-  const supabase = createServiceRoleClient()
+  const supabase = await createClient()
   const { data: access, error } = await supabase
     .from('profile_businesses')
     .select('business_id')
@@ -703,14 +700,12 @@ export async function getEffectiveBusinessIdFromRequest(request?: Request | { se
  */
 export async function validateBusinessSwitchAccess(userId: string, businessId: string): Promise<{ success: boolean; error?: string }> {
   // Get user profile to check role using service role to avoid RLS recursion
-  const supabaseService = createServiceRoleClient()
-  const { data: profile, error: profileError } = await supabaseService
+  const supabase = await createClient()
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', userId)
     .single()
-  
-  const supabase = createServiceRoleClient()
   
   if (profileError || !profile) {
     return { success: false, error: 'User profile not found' }

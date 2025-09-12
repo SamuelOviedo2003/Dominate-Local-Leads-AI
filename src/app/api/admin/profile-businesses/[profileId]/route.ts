@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createServiceRoleClient } from '@/lib/supabase/service-role'
 import { getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
 
 export const dynamic = 'force-dynamic'
@@ -45,9 +44,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const supabase = await createClient()
-    const supabaseService = createServiceRoleClient()
+    const supabaseService = await createClient()
 
-    // Validate that the user exists (using service role to bypass RLS)
+    // Validate that the user exists 
     const { data: targetProfile, error: profileError } = await supabaseService
       .from('profiles')
       .select('id, email, full_name, role')
