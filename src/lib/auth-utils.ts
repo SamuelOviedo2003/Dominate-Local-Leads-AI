@@ -399,7 +399,7 @@ export async function getAvailableBusinesses(userId: string): Promise<string[]> 
  * Enhanced version of getAvailableBusinesses with token support
  * Handles super admins who may not have explicit profile_businesses records
  */
-export async function getAvailableBusinessesWithToken(userId: string, token?: string): Promise<{ id: string; name: string; permalink: string }[]> {
+export async function getAvailableBusinessesWithToken(userId: string, token?: string): Promise<{ id: string; name: string; permalink: string; avatar_url?: string | null; city?: string | null; state?: string | null }[]> {
   try {
     const supabase = token ? createClientWithToken(token) : await createClient()
     
@@ -439,7 +439,7 @@ export async function getAvailableBusinessesWithToken(userId: string, token?: st
         .from('profile_businesses')
         .select(`
           business_id,
-          business_clients!inner (
+          business_clients!left (
             company_name,
             permalink,
             avatar_url,
@@ -449,14 +449,17 @@ export async function getAvailableBusinessesWithToken(userId: string, token?: st
         `)
         .eq('profile_id', userId)
 
-      return businesses?.map(pb => ({
-        id: pb.business_id.toString(),
-        name: pb.business_clients.company_name || `Business ${pb.business_id}`,
-        permalink: pb.business_clients.permalink || `business-${pb.business_id}`,
-        avatar_url: pb.business_clients.avatar_url,
-        city: pb.business_clients.city,
-        state: pb.business_clients.state
-      })) || []
+      return businesses?.map(pb => {
+        const business = Array.isArray(pb.business_clients) ? pb.business_clients[0] : pb.business_clients
+        return {
+          id: pb.business_id.toString(),
+          name: business?.company_name || `Business ${pb.business_id}`,
+          permalink: business?.permalink || `business-${pb.business_id}`,
+          avatar_url: business?.avatar_url || null,
+          city: business?.city || null,
+          state: business?.state || null
+        }
+      }) || []
     }
   } catch (error) {
     console.error('Error getting available businesses with token:', error)
