@@ -77,8 +77,8 @@ build_image() {
     if [ ! -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
         BUILD_ARGS="$BUILD_ARGS --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL"
     fi
-    if [ ! -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
-        BUILD_ARGS="$BUILD_ARGS --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    if [ ! -z "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY" ]; then
+        BUILD_ARGS="$BUILD_ARGS --build-arg NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY"
     fi
     
     # Build the image
@@ -173,7 +173,7 @@ show_help() {
     echo ""
     echo "Environment Variables:"
     echo "  NEXT_PUBLIC_SUPABASE_URL       Supabase project URL"
-    echo "  NEXT_PUBLIC_SUPABASE_ANON_KEY  Supabase anonymous key"
+    echo "  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY  Supabase anonymous key"
     echo ""
     echo "Examples:"
     echo "  $0                    # Build with 'latest' tag"

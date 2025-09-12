@@ -93,7 +93,7 @@ Ensure these are set in production deployment:
 ```bash
 NEXT_PUBLIC_SITE_URL=https://dominatelocalleadsai.sliplane.app
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_anon_key
 ```
 
 ### Contact Information

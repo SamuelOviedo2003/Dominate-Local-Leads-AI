@@ -32,7 +32,7 @@ NEXT_PUBLIC_SITE_URL=https://dominatelocalleadsai.sliplane.app
 # Supabase Configuration (REQUIRED)
 # =========================================
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_anon_key_here
 
 # =========================================
 # Security Configuration
@@ -53,7 +53,7 @@ NEXTAUTH_URL=https://dominatelocalleadsai.sliplane.app
 ```
 NEXT_PUBLIC_SITE_URL=https://dominatelocalleadsai.sliplane.app
 NEXT_PUBLIC_SUPABASE_URL=[your-supabase-url]
-NEXT_PUBLIC_SUPABASE_ANON_KEY=[your-supabase-anon-key]
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=[your-supabase-anon-key]
 NEXTAUTH_SECRET=[your-secure-random-string]
 NEXTAUTH_URL=https://dominatelocalleadsai.sliplane.app
 NODE_ENV=production
@@ -67,7 +67,7 @@ The Dockerfile is configured to accept environment variables at build time and r
 ```dockerfile
 # These are already configured in the Dockerfile
 ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
 ```
 
 ### 3. Deploy and Verify

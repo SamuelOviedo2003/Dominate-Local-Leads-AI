@@ -31,7 +31,7 @@ const PropertyDetailsPage = () => {
   })
 
   const handleGoBack = () => {
-    navigateToSection('salesman')
+    navigateToSection('bookings')
   }
 
   // Handle cases where we don't have required data yet
@@ -61,7 +61,7 @@ const PropertyDetailsPage = () => {
 
   // Handle global error (like "Lead not found")
   if (error && error.includes('Lead not found')) {
-    navigateToSection('salesman')
+    navigateToSection('bookings')
     return null
   }
 

@@ -28,10 +28,10 @@ export async function GET(request: NextRequest) {
         valid_format: process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith('https://') && 
                      process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('.supabase.co')
       },
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: {
-        present: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        value: includeSecrets ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY : '***masked***',
-        length: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length || 0
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: {
+        present: !!process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+        value: includeSecrets ? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY : '***masked***',
+        length: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?.length || 0
       },
       NEXT_PUBLIC_SITE_URL: {
         present: !!process.env.NEXT_PUBLIC_SITE_URL,

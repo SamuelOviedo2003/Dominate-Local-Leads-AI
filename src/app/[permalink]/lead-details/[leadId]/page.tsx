@@ -32,6 +32,14 @@ const LeadDetailsPage = () => {
     businessId: businessId || ''
   })
 
+  // Handle global error (like "Lead not found") - use useEffect for navigation
+  // IMPORTANT: This useEffect must be before any conditional returns to follow React hooks rules
+  useEffect(() => {
+    if (error && error.includes('Lead not found')) {
+      navigateToSection('new-leads')
+    }
+  }, [error, navigateToSection])
+
   const handleGoBack = () => {
     navigateToSection('new-leads')
   }
@@ -60,13 +68,6 @@ const LeadDetailsPage = () => {
       </div>
     )
   }
-
-  // Handle global error (like "Lead not found") - use useEffect for navigation
-  useEffect(() => {
-    if (error && error.includes('Lead not found')) {
-      navigateToSection('new-leads')
-    }
-  }, [error, navigateToSection])
 
   // Show loading state if redirecting due to "Lead not found" error
   if (error && error.includes('Lead not found')) {

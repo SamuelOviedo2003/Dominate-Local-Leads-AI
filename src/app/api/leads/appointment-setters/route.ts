@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
 import { AppointmentSetter } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     console.log('Appointment setters endpoint called but functionality is temporarily disabled')
     
     // Basic authentication check to maintain API security
-    const user = await getAuthenticatedUserForAPI()
+    const user = await getAuthenticatedUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },

@@ -28,7 +28,7 @@ export default async function PermalinkProfileManagementLayout({
   const cookieStore = cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
     {
       cookies: {
         getAll() {
@@ -54,9 +54,7 @@ export default async function PermalinkProfileManagementLayout({
 
   return (
     <DynamicThemeProvider>
-      <BusinessContextProvider 
-        initialBusinesses={availableBusinesses}
-      >
+      <BusinessContextProvider>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <UniversalHeader 
             user={user} 

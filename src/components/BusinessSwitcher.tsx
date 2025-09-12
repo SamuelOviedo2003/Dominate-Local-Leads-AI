@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronDown, Building2, Check } from 'lucide-react'
 import { BusinessSwitcherData } from '@/types/auth'
 import ImageWithFallback from './ImageWithFallback'
-import { useCompanySwitching } from '@/hooks/useCompanySwitching'
 import { useBusinessContext, useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useDynamicTheme } from '@/contexts/DynamicThemeContext'
 import { ExtractedColors, invalidateColorCache } from '@/lib/color-extraction'
@@ -22,8 +21,7 @@ export default function BusinessSwitcher({
 }: BusinessSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { switchCompany, isLoading } = useCompanySwitching()
-  const { availableBusinesses, currentBusinessId } = useBusinessContext()
+  const { switchBusiness, isLoading, availableBusinesses, currentBusinessId, setSelectedCompany } = useBusinessContext()
   const currentBusiness = useCurrentBusiness()
   const { extractColors } = useDynamicTheme()
 
@@ -65,18 +63,57 @@ export default function BusinessSwitcher({
       // Use custom handler if provided
       onBusinessChange(businessId)
     } else {
-      // Use the company switching API
-      const result = await switchCompany(businessId)
-      if (!result.success) {
-        console.error('Failed to switch company:', result.error)
-        // Optionally show a toast notification or error message
+      // Use setSelectedCompany which handles both backend switching and URL redirect
+      const selectedBusiness = availableBusinesses.find(b => b.business_id === businessId)
+      if (selectedBusiness) {
+        try {
+          await setSelectedCompany(selectedBusiness)
+          // setSelectedCompany handles the URL redirect automatically
+        } catch (error) {
+          console.error('Failed to switch business:', error)
+          // Show user-friendly error message
+          alert(`Failed to switch business: ${error}`)
+        }
+      } else {
+        console.error('Selected business not found in available businesses')
+        alert('Selected business not found')
       }
-      // switchCompany handles the page reload internally
     }
   }
 
   // If no dropdown functionality is needed, just display the company info
   if (!showDropdown || (showDropdown && availableBusinesses.length <= 1)) {
+    // Handle case where no business data is available
+    if (!currentBusiness && isLoading) {
+      return (
+        <div className="flex items-center space-x-3 group">
+          <div className="w-10 h-10 bg-gray-400 animate-pulse rounded-full"></div>
+          <div>
+            <div className="w-32 h-4 bg-gray-400 animate-pulse rounded"></div>
+            <div className="w-20 h-3 bg-gray-300 animate-pulse rounded mt-1"></div>
+          </div>
+        </div>
+      )
+    }
+    
+    if (!currentBusiness && !isLoading) {
+      return (
+        <div className="flex items-center space-x-3 group">
+          <div className="w-10 h-10 bg-red-500 text-white rounded-full flex items-center justify-center text-lg font-bold">
+            !
+          </div>
+          <div>
+            <div className="text-base font-bold text-red-400 leading-tight">
+              No Business Access
+            </div>
+            <div className="text-xs text-red-300 leading-tight">
+              Contact administrator
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="flex items-center space-x-3 group">
         {/* Company Logo/Avatar */}
@@ -156,7 +193,7 @@ export default function BusinessSwitcher({
             <div className={`font-bold text-white leading-tight truncate ${
               isMobile ? 'text-sm' : 'text-base'
             }`}>
-              {currentBusiness?.company_name || 'Select Business'}
+              {currentBusiness?.company_name || (isLoading ? 'Loading...' : 'No Business Access')}
             </div>
             {currentBusiness?.city && currentBusiness?.state && (
               <div className={`text-white/70 leading-tight truncate ${

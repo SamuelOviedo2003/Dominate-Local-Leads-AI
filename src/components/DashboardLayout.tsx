@@ -14,9 +14,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
 
   return (
     <DynamicThemeProvider>
-      <BusinessContextProvider 
-        initialBusinesses={availableBusinesses}
-      >
+      <BusinessContextProvider>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
           <UniversalHeader 
             user={user} 

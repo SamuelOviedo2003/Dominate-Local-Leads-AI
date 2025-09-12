@@ -95,7 +95,7 @@ Ensure these environment variables are set in your application:
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 
 # Required - Your Supabase anon key
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-anon-key
 
 # Critical - Your application's base URL (used for email redirects)
 NEXT_PUBLIC_SITE_URL=https://dominatelocalleadsai.sliplane.app

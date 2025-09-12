@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken } from '@/lib/auth-utils'
 import { IncomingCall } from '@/types/leads'
-import { createSecureAPIHandler, addSecurityHeaders } from '@/lib/api-middleware'
 import { updateCallerTypeSchema } from '@/lib/validation'
 import { requireValidBusinessId } from '@/lib/type-utils'
 import { logger } from '@/lib/logging'
@@ -18,7 +17,7 @@ interface CallIdParams {
 export async function GET(request: NextRequest, { params }: CallIdParams) {
   try {
     // Check authentication
-    const user = await getAuthenticatedUserForAPI()
+    const user = await getAuthenticatedUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -51,8 +50,12 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
+    // Get JWT token from Authorization header for consistent auth
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
     // Check if user has access to this business data
-    const hasAccess = await validateBusinessAccessForAPI(user, callData.business_id.toString())
+    const hasAccess = await validateBusinessAccessWithToken(user.id, callData.business_id.toString(), token)
     if (!hasAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },
@@ -91,7 +94,7 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
 export async function PATCH(request: NextRequest, { params }: CallIdParams) {
   try {
     // Check authentication
-    const user = await getAuthenticatedUserForAPI()
+    const user = await getAuthenticatedUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -136,8 +139,12 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
+    // Get JWT token from Authorization header for consistent auth
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
     // Check if user has access to this business data
-    const hasAccess = await validateBusinessAccessForAPI(user, existingCall.business_id.toString())
+    const hasAccess = await validateBusinessAccessWithToken(user.id, existingCall.business_id.toString(), token)
     if (!hasAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken } from '@/lib/auth-utils'
 import { EnhancedDashboardMetrics, PlatformSpend } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -68,8 +68,8 @@ function calculateDaysDifference(startDate: string, endDate: string): number {
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile) {
+    const user = await getAuthenticatedUserFromRequest(request)
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -99,8 +99,12 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Validate business access using RLS system (for both super admins and regular users)
-    const hasAccess = await validateBusinessAccessForAPI(user, businessIdParam)
+    // Get JWT token from Authorization header for consistent auth
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    // Validate business access permissions with token
+    const hasAccess = await validateBusinessAccessWithToken(user.id, businessIdParam, token)
     if (!hasAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },

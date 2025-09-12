@@ -14,7 +14,7 @@ NEXT_TELEMETRY_DISABLED=1
 
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_anon_key_here
 
 # Security
 NEXTAUTH_SECRET=your_secure_random_string_here

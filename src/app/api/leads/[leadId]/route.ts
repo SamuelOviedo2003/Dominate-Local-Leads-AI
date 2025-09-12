@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI, validateBusinessAccessForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken } from '@/lib/auth-utils'
 import { LeadDetails, Lead, PropertyInfo, Communication, CallWindow } from '@/types/leads'
 import { logger } from '@/lib/logging'
 import { validateRequest, leadIdSchema, businessIdSchema, updateCallerTypeSchema } from '@/lib/validation'
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
   
   try {
     // Check authentication
-    const user = await getAuthenticatedUserForAPI()
+    const user = await getAuthenticatedUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -158,8 +158,12 @@ export async function GET(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // Validate business access using the new multi-business system
-    const hasBusinessAccess = await validateBusinessAccessForAPI(user, businessIdParam)
+    // Get JWT token from Authorization header for consistent auth
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    // Validate business access permissions with token
+    const hasBusinessAccess = await validateBusinessAccessWithToken(user.id, businessIdParam, token)
     if (!hasBusinessAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },
@@ -294,7 +298,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
 export async function PATCH(request: NextRequest, context: RouteParams) {
   try {
     // Check authentication
-    const user = await getAuthenticatedUserForAPI()
+    const user = await getAuthenticatedUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -331,8 +335,12 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // Validate business access using the new multi-business system
-    const hasBusinessAccess = await validateBusinessAccessForAPI(user, businessIdParam)
+    // Get JWT token from Authorization header for consistent auth
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    // Validate business access permissions with token
+    const hasBusinessAccess = await validateBusinessAccessWithToken(user.id, businessIdParam, token)
     if (!hasBusinessAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },

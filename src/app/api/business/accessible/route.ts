@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server'
-import { getAuthenticatedUserForAPI, getUserAccessibleBusinesses } from '@/lib/auth-helpers'
+import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUserFromRequest, getAvailableBusinessesWithToken } from '@/lib/auth-utils'
 
 export const dynamic = 'force-dynamic'
 
 /**
  * Get businesses accessible to the current user
- * Uses RLS policies to determine accessible businesses based on user role and profile_businesses table
+ * Enhanced to handle super admins and use JWT token authentication
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Verify user authentication
-    const user = await getAuthenticatedUserForAPI()
+    // Verify user authentication with JWT token support
+    const user = await getAuthenticatedUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
@@ -18,8 +18,12 @@ export async function GET() {
       )
     }
 
-    // Get accessible businesses using RLS policies
-    const businesses = await getUserAccessibleBusinesses()
+    // Get JWT token from Authorization header for consistent auth
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    // Get accessible businesses with full details, handling super admins properly
+    const businesses = await getAvailableBusinessesWithToken(user.id, token)
 
     if (businesses.length === 0) {
       return NextResponse.json(
@@ -28,9 +32,19 @@ export async function GET() {
       )
     }
 
+    // Convert to BusinessSwitcherData format
+    const formattedBusinesses = businesses.map(b => ({
+      business_id: b.id,
+      company_name: b.name,
+      permalink: b.permalink,
+      avatar_url: b.avatar_url || null,
+      city: b.city || null,
+      state: b.state || null
+    }))
+
     return NextResponse.json({
       success: true,
-      data: businesses
+      data: formattedBusinesses
     })
 
   } catch (error) {

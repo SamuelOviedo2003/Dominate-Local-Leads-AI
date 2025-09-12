@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUser, getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
 import { Profile } from '@/types/auth'
 
 export const dynamic = 'force-dynamic'
@@ -11,8 +11,8 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     // Check authentication
-    const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile) {
+    const user = await getAuthenticatedUser()
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -67,8 +67,8 @@ export async function GET() {
 export async function PATCH(request: NextRequest) {
   try {
     // Check authentication
-    const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile) {
+    const user = await getAuthenticatedUserFromRequest(request)
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }

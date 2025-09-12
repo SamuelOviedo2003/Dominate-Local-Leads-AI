@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateBusinessSwitchAccess, getUserAccessibleBusinesses, getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest, getAuthenticatedUser, validateBusinessAccessWithToken, getAvailableBusinessesWithToken } from '@/lib/auth-utils'
 import { BusinessSwitcherData } from '@/types/auth'
 
 export const dynamic = 'force-dynamic'
@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     // Verify user authentication
-    const user = await getAuthenticatedUserForAPI()
+    const user = await getAuthenticatedUserFromRequest(request)
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
@@ -25,19 +25,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate access to the requested business using RLS system
-    const accessResult = await validateBusinessSwitchAccess(user.id, companyId)
+    // Get JWT token from Authorization header for consistent auth
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+
+    // Validate access to the requested business using JWT token
+    const hasAccess = await validateBusinessAccessWithToken(user.id, companyId, token)
     
-    if (!accessResult.success) {
+    if (!hasAccess) {
       return NextResponse.json(
-        { success: false, error: accessResult.error || 'Access denied to the requested business' },
+        { success: false, error: 'Access denied to the requested business' },
         { status: 403 }
       )
     }
 
     // Get user's accessible businesses to find the requested company details
-    const accessibleBusinesses = await getUserAccessibleBusinesses()
-    const selectedCompany = accessibleBusinesses.find(c => c.business_id === companyId)
+    const accessibleBusinesses = await getAvailableBusinessesWithToken(user.id, token)
+    const selectedCompany = accessibleBusinesses.find(c => c.id === companyId)
 
     if (!selectedCompany) {
       return NextResponse.json(
@@ -51,8 +55,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        company: selectedCompany,
-        message: `Successfully switched to ${selectedCompany.company_name}`
+        company: {
+          business_id: selectedCompany.id,
+          company_name: selectedCompany.name,
+          permalink: selectedCompany.permalink,
+          avatar_url: selectedCompany.avatar_url,
+          city: selectedCompany.city,
+          state: selectedCompany.state
+        },
+        message: `Successfully switched to ${selectedCompany.name}`
       }
     })
 
@@ -68,7 +79,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     // Verify user authentication
-    const user = await getAuthenticatedUserForAPI()
+    const user = await getAuthenticatedUser()
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
@@ -77,7 +88,17 @@ export async function GET() {
     }
 
     // Get accessible businesses for the current user (works for both super admins and regular users)
-    const businesses = await getUserAccessibleBusinesses()
+    const businessesData = await getAvailableBusinessesWithToken(user.id)
+    
+    // Format to match BusinessSwitcherData format
+    const businesses = businessesData.map(b => ({
+      business_id: b.id,
+      company_name: b.name,
+      permalink: b.permalink,
+      avatar_url: b.avatar_url,
+      city: b.city,
+      state: b.state
+    }))
 
     if (businesses.length === 0) {
       return NextResponse.json(

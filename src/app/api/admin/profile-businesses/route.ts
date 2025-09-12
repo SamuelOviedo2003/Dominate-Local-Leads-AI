@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service-role'
-import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +13,8 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and authorization
-    const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile) {
+    const user = await getAuthenticatedUserFromRequest(request)
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Only super admins can manage profile-business assignments
-    if (user.profile.role !== 0) {
+    if (user.role !== 0) {
       return NextResponse.json(
         { error: 'Forbidden - Only super admins can manage user-business assignments' },
         { status: 403 }
@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Check authentication and authorization
-    const user = await getAuthenticatedUserForAPI()
-    if (!user || !user.profile) {
+    const user = await getAuthenticatedUserFromRequest(request)
+    if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -139,7 +139,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Only super admins can manage profile-business assignments
-    if (user.profile.role !== 0) {
+    if (user.role !== 0) {
       return NextResponse.json(
         { error: 'Forbidden - Only super admins can manage user-business assignments' },
         { status: 403 }
