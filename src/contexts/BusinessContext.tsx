@@ -27,6 +27,9 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
   const [selectedCompany, setSelectedCompanyState] = useState<BusinessSwitcherData | null>(null)
   const [userRole, setUserRole] = useState<number>(1)
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Prevent concurrent business operations
+  const [isOperationInProgress, setIsOperationInProgress] = useState(false)
 
   // Get business ID from current URL context (for permalink routes)
   const getCurrentBusinessIdFromUrl = (): string | null => {
@@ -78,8 +81,15 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
 
   // Fetch business context from server with JWT authentication
   const refreshContext = async () => {
+    // Prevent concurrent refresh operations
+    if (isOperationInProgress) {
+      console.log('[BusinessContext] Operation already in progress, skipping refreshContext')
+      return
+    }
+    
     try {
       console.log('[BusinessContext] Starting refreshContext...')
+      setIsOperationInProgress(true)
       setIsLoading(true)
       
       // Get JWT token from Supabase session
@@ -158,33 +168,54 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
       setAvailableBusinesses(businessObjects)
       setUserRole(data.role)
 
-      // Set selected company based on URL context or current business ID
+      // Improved business selection logic with better URL/profile sync
       const urlBusinessId = getCurrentBusinessIdFromUrl()
+      console.log('[BusinessContext] URL business ID:', urlBusinessId)
+      console.log('[BusinessContext] Profile business ID:', data.currentBusinessId)
+      console.log('[BusinessContext] Available businesses:', data.accessibleBusinesses)
       
-      if (urlBusinessId) {
-        // If we're on a permalink route, use the business from the URL
+      let selectedBusiness: BusinessSwitcherData | null = null
+      
+      // Priority 1: Use URL business if valid and accessible
+      if (urlBusinessId && data.accessibleBusinesses.includes(urlBusinessId)) {
         const urlBusiness = businessObjects.find((b: BusinessSwitcherData) => b.business_id === urlBusinessId)
-        if (urlBusiness && data.accessibleBusinesses.includes(urlBusinessId)) {
-          setSelectedCompanyState(urlBusiness)
+        if (urlBusiness) {
+          selectedBusiness = urlBusiness
           setCurrentBusinessId(urlBusinessId)
-        } else if (data.currentBusinessId) {
-          // Fallback to profile business if URL business not accessible
-          const current = businessObjects.find((b: BusinessSwitcherData) => b.business_id === data.currentBusinessId)
-          setSelectedCompanyState(current || null)
+          console.log('[BusinessContext] Using URL business:', urlBusiness.company_name)
         }
-      } else if (data.currentBusinessId) {
-        // Not on permalink route, use profile business ID
-        const current = businessObjects.find((b: BusinessSwitcherData) => b.business_id === data.currentBusinessId)
-        setSelectedCompanyState(current || null)
-      } else if (data.role === 0 && businessObjects.length > 0) {
-        // For super admins without a current business, select the first available one
-        setSelectedCompanyState(businessObjects[0])
-        setCurrentBusinessId(businessObjects[0].business_id)
       }
+      
+      // Priority 2: Use profile business if no URL or URL business not accessible
+      if (!selectedBusiness && data.currentBusinessId) {
+        const profileBusiness = businessObjects.find((b: BusinessSwitcherData) => b.business_id === data.currentBusinessId)
+        if (profileBusiness && data.accessibleBusinesses.includes(data.currentBusinessId)) {
+          selectedBusiness = profileBusiness
+          console.log('[BusinessContext] Using profile business:', profileBusiness.company_name)
+        }
+      }
+      
+      // Priority 3: For super admins without a valid business, select the first available one
+      if (!selectedBusiness && data.role === 0 && businessObjects.length > 0) {
+        selectedBusiness = businessObjects[0]
+        setCurrentBusinessId(businessObjects[0].business_id)
+        console.log('[BusinessContext] Super admin fallback to first business:', businessObjects[0].company_name)
+      }
+      
+      // Priority 4: For regular users, select their first accessible business
+      if (!selectedBusiness && businessObjects.length > 0) {
+        selectedBusiness = businessObjects[0]
+        setCurrentBusinessId(businessObjects[0].business_id)
+        console.log('[BusinessContext] Regular user fallback to first business:', businessObjects[0].company_name)
+      }
+      
+      setSelectedCompanyState(selectedBusiness)
+      console.log('[BusinessContext] Final selected business:', selectedBusiness?.company_name || 'None')
     } catch (error) {
       console.error('Failed to refresh business context:', error)
     } finally {
       setIsLoading(false)
+      setIsOperationInProgress(false)
     }
   }
 
@@ -228,18 +259,65 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
   }
 
   const setSelectedCompany = async (company: BusinessSwitcherData) => {
-    setSelectedCompanyState(company)
+    // Prevent concurrent business switch operations
+    if (isOperationInProgress) {
+      console.log('[BusinessContext] Business switch already in progress, ignoring request')
+      return
+    }
     
-    // Trigger business switch on server
-    const result = await switchBusiness(company.business_id)
-    
-    // If successful and we have a permalink, redirect to the new business URL
-    if (result.success && company.permalink) {
-      console.log(`[BusinessContext] Business switch successful, redirecting to /${company.permalink}/dashboard`)
-      // Use window.location.href for a full page navigation to ensure clean state
-      window.location.href = `/${company.permalink}/dashboard`
-    } else if (!result.success) {
-      console.error(`[BusinessContext] Business switch failed:`, result.error)
+    try {
+      console.log(`[BusinessContext] Starting business switch to:`, company.company_name)
+      setIsOperationInProgress(true)
+      setIsLoading(true)
+      
+      // First, trigger business switch on server (atomic database update)
+      const result = await switchBusiness(company.business_id)
+      
+      if (!result.success) {
+        console.error(`[BusinessContext] Business switch failed:`, result.error)
+        // Revert UI state on failure
+        await refreshContext()
+        return
+      }
+      
+      console.log(`[BusinessContext] Business switch successful for:`, company.company_name)
+      
+      // Update local state immediately after successful backend update
+      setCurrentBusinessId(company.business_id)
+      setSelectedCompanyState(company)
+      
+      // If we have a permalink, redirect to ensure URL synchronization
+      if (company.permalink) {
+        const currentPath = window.location.pathname
+        const isOnPermalinkRoute = currentPath.includes('/')
+        
+        // Determine the target URL based on current page
+        let targetUrl = `/${company.permalink}/dashboard`
+        
+        // Preserve the current page if we're already on a business-specific page
+        if (isOnPermalinkRoute) {
+          const pathSegments = currentPath.split('/')
+          if (pathSegments.length >= 3) {
+            const pageSegment = pathSegments[2] // e.g., 'dashboard', 'new-leads', etc.
+            targetUrl = `/${company.permalink}/${pageSegment}`
+          }
+        }
+        
+        console.log(`[BusinessContext] Redirecting to: ${targetUrl}`)
+        // Use window.location.href for a full page navigation to ensure clean state
+        window.location.href = targetUrl
+      } else {
+        console.warn(`[BusinessContext] No permalink found for business:`, company.company_name)
+        // If no permalink, refresh the context to ensure consistency
+        await refreshContext()
+      }
+    } catch (error) {
+      console.error(`[BusinessContext] Error during business switch:`, error)
+      // Revert state on error
+      await refreshContext()
+    } finally {
+      setIsLoading(false)
+      setIsOperationInProgress(false)
     }
   }
 

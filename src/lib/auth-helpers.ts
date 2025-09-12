@@ -25,8 +25,8 @@ interface AuthCache {
 }
 
 const authCache: AuthCache = { businesses: {}, rateLimits: {} }
-const CACHE_TTL = 30000 // 30 seconds TTL for fresh cache
-const STALE_CACHE_TTL = 300000 // 5 minutes TTL for stale cache (used during rate limits)
+const CACHE_TTL = 120000 // 2 minutes TTL for fresh cache (increased from 30s)
+const STALE_CACHE_TTL = 600000 // 10 minutes TTL for stale cache (increased from 5m)
 
 // Rate limiting configuration
 const RATE_LIMIT_CONFIG = {
