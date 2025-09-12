@@ -71,7 +71,7 @@ export class ColorExtractionWorkerPool {
     if (this.isSupported) {
       this.initialize()
     } else {
-      console.warn('[WORKER POOL] Web Workers not supported, falling back to main thread')
+      // Web Workers not supported, falling back to main thread
     }
   }
 
@@ -98,9 +98,9 @@ export class ColorExtractionWorkerPool {
       setInterval(() => this.cleanupIdleWorkers(), this.config.WORKER_IDLE_TIMEOUT)
       
       this.isInitialized = true
-      console.log(`[WORKER POOL] Initialized with ${this.workers.length} workers`)
+      // Initialized worker pool
     } catch (error) {
-      console.error('[WORKER POOL] Failed to initialize:', error)
+      // Failed to initialize worker pool
       this.isSupported = false
     }
   }
@@ -135,11 +135,11 @@ export class ColorExtractionWorkerPool {
       await this.waitForWorkerReady(worker)
 
       this.workers.push(workerInstance)
-      console.log(`[WORKER POOL] Created worker, total: ${this.workers.length}`)
+      // Created worker
       
       return workerInstance
     } catch (error) {
-      console.error('[WORKER POOL] Failed to create worker:', error)
+      // Failed to create worker
       throw error
     }
   }
@@ -175,7 +175,7 @@ export class ColorExtractionWorkerPool {
     const queuedRequest = this.pendingRequests.get(response.id)
 
     if (!queuedRequest) {
-      console.warn('[WORKER POOL] Received response for unknown request:', response.id)
+      // Received response for unknown request
       return
     }
 
@@ -207,7 +207,7 @@ export class ColorExtractionWorkerPool {
    * Handle worker errors
    */
   private handleWorkerError(workerInstance: WorkerInstance, error: ErrorEvent): void {
-    console.error('[WORKER POOL] Worker error:', error)
+    // Worker error occurred
     this.stats.workerErrors++
 
     // Mark worker as not busy and remove from pool
@@ -218,13 +218,13 @@ export class ColorExtractionWorkerPool {
     try {
       workerInstance.worker.terminate()
     } catch (e) {
-      console.warn('[WORKER POOL] Error terminating worker:', e)
+      // Error terminating worker
     }
 
     // Create a replacement worker if needed
     if (this.workers.length < this.config.MIN_WORKERS) {
       this.createWorker().catch(error => {
-        console.error('[WORKER POOL] Failed to create replacement worker:', error)
+        // Failed to create replacement worker
       })
     }
 
@@ -315,7 +315,7 @@ export class ColorExtractionWorkerPool {
         this.createWorker().then(() => {
           this.processQueue()
         }).catch(error => {
-          console.warn('[WORKER POOL] Failed to create additional worker:', error)
+          // Failed to create additional worker
         })
       }
       return
@@ -342,7 +342,7 @@ export class ColorExtractionWorkerPool {
     try {
       availableWorker.worker.postMessage(queuedRequest.request)
     } catch (error) {
-      console.error('[WORKER POOL] Failed to send message to worker:', error)
+      // Failed to send message to worker
       availableWorker.busy = false
       this.pendingRequests.delete(queuedRequest.request.id)
       queuedRequest.reject(new Error('Failed to send request to worker'))
@@ -385,9 +385,9 @@ export class ColorExtractionWorkerPool {
       try {
         worker.worker.terminate()
         this.workers = this.workers.filter(w => w !== worker)
-        console.log(`[WORKER POOL] Terminated idle worker, remaining: ${this.workers.length}`)
+        // Terminated idle worker
       } catch (error) {
-        console.warn('[WORKER POOL] Error terminating idle worker:', error)
+        // Error terminating idle worker
       }
     })
   }
@@ -400,7 +400,7 @@ export class ColorExtractionWorkerPool {
       const { extractColorsFromImage } = await import('./color-extraction')
       return await extractColorsFromImage(imageUrl, options)
     } catch (error) {
-      console.error('[WORKER POOL] Fallback extraction failed:', error)
+      // Fallback extraction failed
       throw error
     }
   }
@@ -455,13 +455,13 @@ export class ColorExtractionWorkerPool {
       try {
         workerInstance.worker.terminate()
       } catch (error) {
-        console.warn('[WORKER POOL] Error terminating worker:', error)
+        // Error terminating worker
       }
     })
     
     this.workers = []
     this.isInitialized = false
-    console.log('[WORKER POOL] Worker pool destroyed')
+    // Worker pool destroyed
   }
 }
 

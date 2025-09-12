@@ -46,7 +46,7 @@ export class DatabaseColorCache {
         logoUrlHash: this.hashString(data.avatar_url || '')
       }
     } catch (error) {
-      console.warn('[DATABASE CACHE] Read error:', error)
+      // Database read error
       return null
     }
   }
@@ -65,10 +65,10 @@ export class DatabaseColorCache {
         .eq('business_id', businessId)
 
       if (error) {
-        console.warn('[DATABASE CACHE] Write error:', error)
+        // Database write error
       }
     } catch (error) {
-      console.warn('[DATABASE CACHE] Database error:', error)
+      // Database error
     }
   }
 
@@ -95,7 +95,7 @@ export class DatabaseColorCache {
 
       return colorMap
     } catch (error) {
-      console.warn('[DATABASE CACHE] Preload error:', error)
+      // Database preload error
       return new Map()
     }
   }

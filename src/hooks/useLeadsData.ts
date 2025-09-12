@@ -73,7 +73,7 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch metrics'
       setMetricsError(errorMessage)
-      console.error('Error fetching metrics:', err)
+      // Error fetching metrics
     } finally {
       setIsMetricsLoading(false)
     }
@@ -108,7 +108,7 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch recent leads'
       setRecentLeadsError(errorMessage)
-      console.error('Error fetching recent leads:', err)
+      // Error fetching recent leads
     } finally {
       setIsRecentLeadsLoading(false)
     }

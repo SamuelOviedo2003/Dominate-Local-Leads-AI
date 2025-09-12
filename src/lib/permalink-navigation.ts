@@ -64,7 +64,7 @@ export function usePermalinkUrl() {
     const targetPermalink = permalink || currentPermalink
     
     if (!targetPermalink) {
-      console.warn('No permalink available for URL generation:', path)
+      // No permalink available for URL generation
       return path
     }
     
@@ -91,7 +91,7 @@ export function usePermalinkNavigation() {
     const { permalink, replace = false } = options || {}
     const url = buildUrl(path, permalink)
     
-    console.log(`[NAVIGATION] Navigating to: ${url}`)
+    // Navigating to URL
     
     if (replace) {
       router.replace(url)
@@ -155,7 +155,7 @@ export function useBusinessSwitcher() {
     const targetSection = section || currentSection || 'dashboard'
     const url = `/${permalink}/${targetSection}`
     
-    console.log(`[BUSINESS-SWITCHER] Switching to business: ${permalink}, section: ${targetSection}`)
+    // Switching to business
     router.push(url)
   }, [router, currentSection])
   
@@ -183,7 +183,7 @@ export function usePermalinkLinkProps(path: string, options?: { permalink?: stri
       href,
       onClick: (e: React.MouseEvent) => {
         // Log navigation for debugging
-        console.log(`[LINK] Navigating to: ${href}`)
+        // Navigating to link
       }
     }
   }, [buildUrl, path, options?.permalink])

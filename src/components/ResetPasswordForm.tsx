@@ -42,30 +42,26 @@ export default function ResetPasswordForm() {
         // Get code from search params
         const code = searchParams.get('code')
         
-        console.log('=== RESET PASSWORD FORM DEBUG ===')
-        console.log('Code from URL:', code ? 'Present' : 'Not found')
-        console.log('Full search params:', Array.from(searchParams.entries()))
+        // Reset password form debug
+        // Code from URL check
+        // Full search params check
         
         if (!code) {
-          console.error('No code found in URL parameters')
+          // No code found in URL parameters
           setError('Invalid reset link. The link may be expired or malformed.')
           setLoading(false)
           return
         }
 
-        console.log('Attempting code exchange for session...')
+        // Attempting code exchange for session
         
         // Exchange code for session
         const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
         
-        console.log('Exchange result:', { 
-          user: data?.user?.id || 'No user',
-          session: data?.session ? 'Session created' : 'No session',
-          error: exchangeError?.message || 'None'
-        })
+        // Exchange result logged
 
         if (exchangeError) {
-          console.error('Code exchange failed:', exchangeError)
+          // Code exchange failed
           
           // Handle specific error cases
           if (exchangeError.message.includes('expired') || exchangeError.message.includes('invalid')) {
@@ -80,18 +76,18 @@ export default function ResetPasswordForm() {
         }
 
         if (!data.user || !data.session) {
-          console.error('No user or session returned from code exchange')
+          // No user or session returned from code exchange
           setError('Authentication failed. Please request a new password reset link.')
           setLoading(false)
           return
         }
 
-        console.log('✅ Code exchange successful, session established')
+        // Code exchange successful, session established
         setSessionEstablished(true)
         setLoading(false)
         
       } catch (error) {
-        console.error('Unexpected error during code exchange:', error)
+        // Unexpected error during code exchange
         setError('An unexpected error occurred. Please try again.')
         setLoading(false)
       }
@@ -102,14 +98,14 @@ export default function ResetPasswordForm() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          console.log('✅ User already authenticated via SDK')
+          // User already authenticated via SDK
           setSessionEstablished(true)
           setLoading(false)
           return true
         }
         return false
       } catch (error) {
-        console.error('Error checking existing session:', error)
+        // Error checking existing session
         return false
       }
     }
@@ -177,7 +173,7 @@ export default function ResetPasswordForm() {
           return
         }
 
-        console.log('Updating password...')
+        // Updating password
         
         // Update the user's password
         const { data, error: updateError } = await supabase.auth.updateUser({
@@ -185,18 +181,18 @@ export default function ResetPasswordForm() {
         })
 
         if (updateError) {
-          console.error('Password update failed:', updateError)
+          // Password update failed
           setError('Failed to update password. Please try again.')
           return
         }
 
         if (!data.user) {
-          console.error('No user returned from password update')
+          // No user returned from password update
           setError('Failed to update password. Please try again.')
           return
         }
 
-        console.log('✅ Password updated successfully')
+        // Password updated successfully
         setSuccess('Password updated successfully! Redirecting to dashboard...')
         
         // Redirect to dashboard after a brief delay
@@ -205,7 +201,7 @@ export default function ResetPasswordForm() {
         }, 2000)
         
       } catch (error) {
-        console.error('Unexpected error during password update:', error)
+        // Unexpected error during password update
         setError('An unexpected error occurred. Please try again.')
       }
     })

@@ -77,9 +77,9 @@ export class ColorCacheManager {
       this.preloadFromLocalStorage()
       
       this.isInitialized = true
-      console.log('[COLOR CACHE] Multi-tier cache initialized')
+      // Multi-tier cache initialized
     } catch (error) {
-      console.warn('[COLOR CACHE] Failed to initialize cache:', error)
+      // Failed to initialize cache
     }
   }
 
@@ -116,7 +116,7 @@ export class ColorCacheManager {
       const memoryEntry = this.memoryCache.get(cacheKey)
       if (memoryEntry && this.isValidEntry(memoryEntry, now, CACHE_CONFIG.MEMORY_TTL)) {
         this.stats.memoryHits++
-        console.log('[COLOR CACHE] Memory hit:', cacheKey)
+        // Memory cache hit
         return memoryEntry.colors
       }
 
@@ -124,7 +124,7 @@ export class ColorCacheManager {
       const localStorageEntry = this.getFromLocalStorage(cacheKey)
       if (localStorageEntry && this.isValidEntry(localStorageEntry, now, CACHE_CONFIG.LOCALSTORAGE_TTL)) {
         this.stats.localStorageHits++
-        console.log('[COLOR CACHE] localStorage hit:', cacheKey)
+        // localStorage cache hit
         
         // Promote to memory cache
         this.setInMemory(cacheKey, localStorageEntry)
@@ -136,7 +136,7 @@ export class ColorCacheManager {
         const databaseEntry = await this.getFromDatabase(businessId)
         if (databaseEntry) {
           this.stats.databaseHits++
-          console.log('[COLOR CACHE] Database hit:', businessId)
+          // Database cache hit
           
           // Promote to higher tiers
           this.setInMemory(cacheKey, databaseEntry)
@@ -146,11 +146,11 @@ export class ColorCacheManager {
       }
 
       this.stats.misses++
-      console.log('[COLOR CACHE] Cache miss:', cacheKey)
+      // Cache miss
       return null
 
     } catch (error) {
-      console.warn('[COLOR CACHE] Error getting from cache:', error)
+      // Error getting from cache
       this.stats.misses++
       return null
     }
@@ -179,9 +179,9 @@ export class ColorCacheManager {
         await this.setInDatabase(businessId, colors, logoUrl)
       }
 
-      console.log('[COLOR CACHE] Colors cached:', cacheKey)
+      // Colors cached
     } catch (error) {
-      console.warn('[COLOR CACHE] Error setting cache:', error)
+      // Error setting cache
     }
   }
 
@@ -212,7 +212,7 @@ export class ColorCacheManager {
       const cache = JSON.parse(data)
       return cache[key] || null
     } catch (error) {
-      console.warn('[COLOR CACHE] localStorage read error:', error)
+      // localStorage read error
       return null
     }
   }
@@ -237,7 +237,7 @@ export class ColorCacheManager {
       cache[key] = entry
       localStorage.setItem(CACHE_CONFIG.LOCALSTORAGE_KEY, JSON.stringify(cache))
     } catch (error) {
-      console.warn('[COLOR CACHE] localStorage write error:', error)
+      // localStorage write error
     }
   }
 
@@ -248,10 +248,10 @@ export class ColorCacheManager {
     try {
       // This would use the Supabase client to fetch from business_clients table
       // Implementation depends on your existing data access patterns
-      console.log('[COLOR CACHE] Database lookup for business:', businessId)
+      // Database lookup for business
       return null // Placeholder
     } catch (error) {
-      console.warn('[COLOR CACHE] Database read error:', error)
+      // Database read error
       return null
     }
   }
@@ -260,9 +260,9 @@ export class ColorCacheManager {
     try {
       // This would use the Supabase client to update business_clients table
       // Implementation depends on your existing data access patterns
-      console.log('[COLOR CACHE] Database store for business:', businessId)
+      // Database store for business
     } catch (error) {
-      console.warn('[COLOR CACHE] Database write error:', error)
+      // Database write error
     }
   }
 
@@ -298,9 +298,9 @@ export class ColorCacheManager {
         }
       })
 
-      console.log(`[COLOR CACHE] Preloaded ${loaded} entries from localStorage`)
+      // Preloaded entries from localStorage
     } catch (error) {
-      console.warn('[COLOR CACHE] Preload error:', error)
+      // Preload error
     }
   }
 
@@ -334,11 +334,11 @@ export class ColorCacheManager {
         localStorage.setItem(CACHE_CONFIG.LOCALSTORAGE_KEY, JSON.stringify(validCache))
       }
     } catch (error) {
-      console.warn('[COLOR CACHE] Cleanup error:', error)
+      // Cleanup error
     }
 
     this.stats.lastCleanup = now
-    console.log('[COLOR CACHE] Cleanup completed, stats:', this.stats)
+    // Cleanup completed
   }
 
   /**
@@ -359,10 +359,10 @@ export class ColorCacheManager {
         localStorage.setItem(CACHE_CONFIG.LOCALSTORAGE_KEY, JSON.stringify(cache))
       }
     } catch (error) {
-      console.warn('[COLOR CACHE] Invalidation error:', error)
+      // Invalidation error
     }
 
-    console.log('[COLOR CACHE] Invalidated:', cacheKey)
+    // Cache entry invalidated
   }
 
   /**
@@ -373,9 +373,9 @@ export class ColorCacheManager {
     try {
       localStorage.removeItem(CACHE_CONFIG.LOCALSTORAGE_KEY)
     } catch (error) {
-      console.warn('[COLOR CACHE] Clear all error:', error)
+      // Clear all error
     }
-    console.log('[COLOR CACHE] All caches cleared')
+    // All caches cleared
   }
 
   /**
@@ -419,7 +419,7 @@ export class ColorCacheManager {
     }
     this.memoryCache.clear()
     this.isInitialized = false
-    console.log('[COLOR CACHE] Cache manager destroyed')
+    // Cache manager destroyed
   }
 }
 

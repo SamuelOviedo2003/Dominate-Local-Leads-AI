@@ -29,7 +29,7 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
     }
 
     if (!leadId || !businessId) {
-      console.error('[CHAT] Missing leadId or businessId')
+      // Missing leadId or businessId
       return
     }
 
@@ -37,7 +37,7 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
       // Get current user ID
       const accountId = await getCurrentUserId()
       if (!accountId) {
-        console.error('[CHAT] Could not get current user ID')
+        // Could not get current user ID
         return
       }
 
@@ -52,12 +52,12 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
       if (result.success) {
         // Clear the message input on success
         setMessage('')
-        console.log('[CHAT] Message sent successfully')
+        // Message sent successfully
       } else {
-        console.error('[CHAT] Failed to send message:', result.error)
+        // Failed to send message
       }
     } catch (error) {
-      console.error('[CHAT] Error sending message:', error)
+      // Error sending message
     }
   }, [message, leadId, businessId, sendMessage, getCurrentUserId])
 

@@ -179,7 +179,7 @@ export async function extractColorsFromImage(
     
     // Check if we're already processing this request
     if (debounceMap.has(debounceKey)) {
-      console.log('[COLOR EXTRACTION] Debouncing request:', debounceKey)
+      // Debouncing request
       return await debounceMap.get(debounceKey)!
     }
 
@@ -203,7 +203,7 @@ export async function extractColorsFromImage(
 
   } catch (error) {
     performanceMetrics.errors++
-    console.warn('[COLOR EXTRACTION] Extraction failed:', error)
+    // Extraction failed
     updateMetrics(startTime, false, false, true, 'fallback')
     return FALLBACK_COLORS
   }
@@ -230,11 +230,11 @@ async function performExtraction(
     if (cachedColors) {
       performanceMetrics.cacheHits++
       updateMetrics(startTime, true, false, false, 'memory')
-      console.log('[COLOR EXTRACTION] Cache hit for:', imageUrl)
+      // Cache hit
       return cachedColors
     }
 
-    console.log('[COLOR EXTRACTION] Cache miss, extracting colors for:', imageUrl)
+    // Cache miss, extracting colors
 
     let extractedColors: ExtractedColors
 
@@ -250,9 +250,9 @@ async function performExtraction(
         )
         performanceMetrics.workerExtractions++
         updateMetrics(startTime, false, true, false, 'extraction')
-        console.log('[COLOR EXTRACTION] Worker extraction completed for:', imageUrl)
+        // Worker extraction completed
       } catch (workerError) {
-        console.warn('[COLOR EXTRACTION] Worker extraction failed, falling back to main thread:', workerError)
+        // Worker extraction failed, falling back to main thread
         extractedColors = await mainThreadExtraction(imageUrl, extractionOptions)
         performanceMetrics.fallbackExtractions++
         updateMetrics(startTime, false, false, true, 'extraction')
@@ -266,11 +266,11 @@ async function performExtraction(
     // Cache the result
     await cacheManager.set(imageUrl, extractedColors, businessId)
     
-    console.log('[COLOR EXTRACTION] Colors extracted and cached:', extractedColors)
+    // Colors extracted and cached
     return extractedColors
 
   } catch (error) {
-    console.error('[COLOR EXTRACTION] Extraction failed:', error)
+    // Extraction failed
     throw error
   }
 }
@@ -362,7 +362,7 @@ function updateMetrics(
     (performanceMetrics.averageExtractionTime * (totalCompleted - 1)) + extractionTime
   ) / totalCompleted
 
-  console.log(`[COLOR EXTRACTION] Metrics - Time: ${extractionTime.toFixed(2)}ms, Source: ${source}, Cache: ${cacheHit}, Worker: ${workerUsed}, Fallback: ${fallbackUsed}`)
+  // Recording extraction metrics
 }
 
 /**
@@ -371,13 +371,13 @@ function updateMetrics(
 export function clearColorCache(): void {
   const cacheManager = getColorCacheManager()
   cacheManager.clearAll()
-  console.log('[COLOR CACHE] All caches cleared')
+  // All caches cleared
 }
 
 export async function invalidateColorCache(imageUrl: string, businessId?: string): Promise<void> {
   const cacheManager = getColorCacheManager()
   await cacheManager.invalidate(imageUrl, businessId)
-  console.log('[COLOR CACHE] Invalidated cache for:', imageUrl)
+  // Invalidated cache for image
 }
 
 export async function getCachedColors(imageUrl: string, businessId?: string): Promise<ExtractedColors | null> {
@@ -415,7 +415,7 @@ export async function preloadColors(
           })
           results.set(url, colors)
         } catch (error) {
-          console.warn(`Failed to preload colors for ${url}:`, error)
+          // Failed to preload colors
           results.set(url, FALLBACK_COLORS)
         }
       })
@@ -427,7 +427,7 @@ export async function preloadColors(
     }
   }
   
-  console.log(`[COLOR EXTRACTION] Preloaded colors for ${results.size} images`)
+  // Preloaded colors for images
   return results
 }
 
@@ -449,7 +449,7 @@ export function getColorExtractionStats() {
  * Warm up the color extraction system
  */
 export async function warmUpColorExtraction(imageUrls: string[] = []): Promise<void> {
-  console.log('[COLOR EXTRACTION] Warming up color extraction system...')
+  // Warming up color extraction system
   
   try {
     // Initialize cache manager
@@ -463,9 +463,9 @@ export async function warmUpColorExtraction(imageUrls: string[] = []): Promise<v
       await preloadColors(imageUrls, { priority: 10 })
     }
     
-    console.log('[COLOR EXTRACTION] Warm-up completed successfully')
+    // Warm-up completed successfully
   } catch (error) {
-    console.warn('[COLOR EXTRACTION] Warm-up failed:', error)
+    // Warm-up failed
   }
 }
 
@@ -473,7 +473,7 @@ export async function warmUpColorExtraction(imageUrls: string[] = []): Promise<v
  * Cleanup function for performance and memory management
  */
 export async function cleanupColorExtraction(): Promise<void> {
-  console.log('[COLOR EXTRACTION] Cleaning up color extraction system...')
+  // Cleaning up color extraction system
   
   try {
     // Clear debounce map
@@ -484,7 +484,7 @@ export async function cleanupColorExtraction(): Promise<void> {
       const { destroyWorkerPool } = await import('./worker-pool')
       destroyWorkerPool()
     } catch (error) {
-      console.warn('[COLOR EXTRACTION] Worker pool cleanup failed:', error)
+      // Worker pool cleanup failed
     }
     
     // Destroy cache manager using dynamic import for better compatibility
@@ -492,11 +492,11 @@ export async function cleanupColorExtraction(): Promise<void> {
       const { destroyColorCacheManager } = await import('./color-cache')
       destroyColorCacheManager()
     } catch (error) {
-      console.warn('[COLOR EXTRACTION] Cache manager cleanup failed:', error)
+      // Cache manager cleanup failed
     }
     
-    console.log('[COLOR EXTRACTION] Cleanup completed')
+    // Cleanup completed
   } catch (error) {
-    console.warn('[COLOR EXTRACTION] Cleanup error:', error)
+    // Cleanup error
   }
 }

@@ -105,13 +105,7 @@ export default function ImageWithFallback({
     
     // Additional logging for Google Maps API images
     if (src.includes('maps.googleapis.com')) {
-      console.error('[IMAGE] Google Maps API image failed to load after all attempts. This might be due to:', {
-        'CORS Issues': 'Check if the API key has proper referrer restrictions',
-        'Domain Configuration': 'Verify Next.js image domains are configured',
-        'Network Restrictions': 'Check if deployment environment blocks external requests',
-        'URL Issues': 'Verify the API URL is properly formatted',
-        'Proxy Issues': retryAttempt > 0 ? 'Image proxy also failed' : 'Proxy not attempted'
-      })
+      // Google Maps API image failed to load after all attempts
     }
     
     setHasError(true)
@@ -151,7 +145,7 @@ export default function ImageWithFallback({
         // already handles the color application
         
       } catch (error) {
-        console.warn('[IMAGE] Failed to extract colors from image:', error)
+        // Failed to extract colors from image
         onError?.(error as Error)
       } finally {
         setIsExtracting(false)

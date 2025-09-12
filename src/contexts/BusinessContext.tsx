@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { BusinessSwitcherData } from '@/types/auth'
 import { createClient } from '@/lib/supabase/client'
+import { debugSession, debugBusiness, debugAuth, debugError, extractUserMetadata, DebugContext } from '@/lib/debug'
 
 interface BusinessContextType {
   currentBusinessId: string | null
@@ -42,7 +43,11 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
       
       return businessId || null
     } catch (error) {
-      console.warn('[BusinessContext] Error getting business ID from URL:', error)
+      debugError(
+        DebugContext.BUSINESS,
+        'Failed to get business ID from URL',
+        error instanceof Error ? error : new Error(String(error))
+      )
       return null
     }
   }
@@ -50,31 +55,48 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
   // Get JWT token from Supabase session
   const getAuthToken = async (): Promise<string | null> => {
     try {
-      console.log('[BusinessContext] Getting auth token from Supabase session...')
+      debugAuth('Getting auth token from Supabase session', {})
       const supabase = createClient()
       const { data: { session }, error } = await supabase.auth.getSession()
       
-      console.log('[BusinessContext] Session data:', { 
-        hasSession: !!session, 
+      const userMetadata = extractUserMetadata(session?.user, { businessId: currentBusinessId })
+      
+      debugAuth('Retrieved session data', {
+        hasSession: !!session,
         hasAccessToken: !!session?.access_token,
-        userId: session?.user?.id,
-        error: error?.message 
-      })
+        sessionExpiry: session?.expires_at,
+        error: error?.message
+      }, userMetadata)
       
       if (error) {
-        console.error('[BusinessContext] Session error:', error)
+        debugError(
+          DebugContext.AUTH,
+          'Session error during token retrieval',
+          error,
+          userMetadata
+        )
         return null
       }
       
       if (!session?.access_token) {
-        console.warn('[BusinessContext] No access token in session')
+        debugAuth('No access token in session', {
+          hasSession: !!session,
+          sessionUser: !!session?.user
+        }, userMetadata)
         return null
       }
       
-      console.log('[BusinessContext] Successfully retrieved access token')
+      debugAuth('Successfully retrieved access token', {
+        tokenLength: session.access_token.length,
+        expiresAt: session.expires_at
+      }, userMetadata)
       return session.access_token
     } catch (error) {
-      console.error('[BusinessContext] Error getting auth token:', error)
+      debugError(
+        DebugContext.AUTH,
+        'Error getting auth token',
+        error instanceof Error ? error : new Error(String(error))
+      )
       return null
     }
   }
@@ -83,23 +105,35 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
   const refreshContext = async () => {
     // Prevent concurrent refresh operations
     if (isOperationInProgress) {
-      console.log('[BusinessContext] Operation already in progress, skipping refreshContext')
+      debugSession('Operation already in progress, skipping refreshContext', {
+        currentOperationState: 'IN_PROGRESS'
+      })
       return
     }
     
     try {
-      console.log('[BusinessContext] Starting refreshContext...')
+      debugSession('Starting refreshContext', {
+        currentBusinessId,
+        hasAvailableBusinesses: availableBusinesses.length > 0
+      })
       setIsOperationInProgress(true)
       setIsLoading(true)
       
       // Get JWT token from Supabase session
       const token = await getAuthToken()
       if (!token) {
-        console.error('[BusinessContext] No authentication token available')
+        debugError(
+          DebugContext.AUTH,
+          'No authentication token available for refreshContext',
+          new Error('No authentication token available')
+        )
         throw new Error('No authentication token available')
       }
       
-      console.log('[BusinessContext] Making API request to /api/user/business-context')
+      debugSession('Making API request to /api/user/business-context', {
+        hasToken: !!token,
+        tokenLength: token.length
+      })
       const response = await fetch('/api/user/business-context', {
         method: 'GET',
         headers: {
@@ -109,22 +143,40 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
         credentials: 'same-origin'
       })
 
-      console.log('[BusinessContext] API response:', response.status, response.statusText)
+      debugSession('API response received', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      })
       
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('[BusinessContext] API error response:', errorText)
+        debugError(
+          DebugContext.API,
+          'API error response from business-context endpoint',
+          new Error(`${response.status} ${response.statusText}: ${errorText.substring(0, 200)}`)
+        )
         throw new Error(`Failed to fetch business context: ${response.status} ${response.statusText}`)
       }
 
       const result = await response.json()
-      console.log('[BusinessContext] API success response:', result)
+      debugSession('API success response received', {
+        hasData: !!result.data,
+        currentBusinessId: result.data?.currentBusinessId,
+        accessibleBusinessesCount: result.data?.accessibleBusinesses?.length || 0,
+        userRole: result.data?.role
+      })
       const { data } = result
       
       setCurrentBusinessId(data.currentBusinessId)
       
       // Fetch full business details for all users (super admins and regular users)
-      console.log('[BusinessContext] Fetching business details for accessible businesses:', data.accessibleBusinesses)
+      const userMetadata = extractUserMetadata(null, { businessId: data.currentBusinessId })
+      debugBusiness('Fetching business details for accessible businesses', {
+        accessibleBusinessIds: data.accessibleBusinesses,
+        accessibleCount: data.accessibleBusinesses?.length || 0,
+        userRole: data.role
+      }, userMetadata)
       
       let businessObjects = []
       
@@ -139,28 +191,54 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
           credentials: 'same-origin'
         })
         
-        console.log('[BusinessContext] Business details API response:', businessResponse.status)
+        debugBusiness('Business details API response', {
+          status: businessResponse.status,
+          ok: businessResponse.ok
+        }, userMetadata)
         
         if (businessResponse.ok) {
           const businessResult = await businessResponse.json()
-          console.log('[BusinessContext] Business details result:', businessResult)
           businessObjects = businessResult.data || []
           
+          debugBusiness('Business details result', {
+            businessCount: businessObjects.length,
+            businessIds: businessObjects.map((b: BusinessSwitcherData) => b.business_id),
+            hasBusinessData: businessObjects.length > 0
+          }, userMetadata)
+          
           if (businessObjects.length === 0) {
-            console.warn('[BusinessContext] No business data returned from API')
+            debugBusiness('No business data returned from API', {
+              apiEndpoint: '/api/business/accessible',
+              expectedBusinesses: data.accessibleBusinesses
+            }, userMetadata)
           }
         } else {
           const errorText = await businessResponse.text()
-          console.error('[BusinessContext] Business details API failed:', businessResponse.status, errorText)
+          debugError(
+            DebugContext.API,
+            'Business details API failed',
+            new Error(`${businessResponse.status} ${businessResponse.statusText}: ${errorText.substring(0, 200)}`),
+            userMetadata
+          )
         }
       } catch (error) {
-        console.error('[BusinessContext] Error fetching business details:', error)
+        debugError(
+          DebugContext.API,
+          'Error fetching business details',
+          error instanceof Error ? error : new Error(String(error)),
+          userMetadata
+        )
       }
       
       // If no business objects were fetched, don't create placeholder objects
       // This prevents showing "Business X" or "B" in the header
       if (businessObjects.length === 0) {
-        console.error('[BusinessContext] No business data available - user may not have proper business access')
+        debugError(
+          DebugContext.BUSINESS,
+          'No business data available - user may not have proper business access',
+          new Error(`User role: ${data.role}, Accessible: ${data.accessibleBusinesses?.length || 0} businesses`),
+          userMetadata
+        )
         // Keep empty array - this will be handled by the UI to show appropriate messages
         businessObjects = []
       }
@@ -170,9 +248,12 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
 
       // Improved business selection logic with better URL/profile sync
       const urlBusinessId = getCurrentBusinessIdFromUrl()
-      console.log('[BusinessContext] URL business ID:', urlBusinessId)
-      console.log('[BusinessContext] Profile business ID:', data.currentBusinessId)
-      console.log('[BusinessContext] Available businesses:', data.accessibleBusinesses)
+      debugBusiness('Business selection logic - analyzing context', {
+        urlBusinessId,
+        profileBusinessId: data.currentBusinessId,
+        availableBusinessIds: data.accessibleBusinesses,
+        businessObjectsCount: businessObjects.length
+      }, userMetadata)
       
       let selectedBusiness: BusinessSwitcherData | null = null
       
@@ -182,7 +263,11 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
         if (urlBusiness) {
           selectedBusiness = urlBusiness
           setCurrentBusinessId(urlBusinessId)
-          console.log('[BusinessContext] Using URL business:', urlBusiness.company_name)
+          debugBusiness('Using URL business', {
+            businessId: urlBusinessId,
+            companyName: urlBusiness.company_name,
+            selectionPriority: 1
+          }, userMetadata)
         }
       }
       
@@ -191,7 +276,11 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
         const profileBusiness = businessObjects.find((b: BusinessSwitcherData) => b.business_id === data.currentBusinessId)
         if (profileBusiness && data.accessibleBusinesses.includes(data.currentBusinessId)) {
           selectedBusiness = profileBusiness
-          console.log('[BusinessContext] Using profile business:', profileBusiness.company_name)
+          debugBusiness('Using profile business', {
+            businessId: data.currentBusinessId,
+            companyName: profileBusiness.company_name,
+            selectionPriority: 2
+          }, userMetadata)
         }
       }
       
@@ -199,20 +288,39 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
       if (!selectedBusiness && data.role === 0 && businessObjects.length > 0) {
         selectedBusiness = businessObjects[0]
         setCurrentBusinessId(businessObjects[0].business_id)
-        console.log('[BusinessContext] Super admin fallback to first business:', businessObjects[0].company_name)
+        debugBusiness('Super admin fallback to first business', {
+          businessId: businessObjects[0].business_id,
+          companyName: businessObjects[0].company_name,
+          selectionPriority: 3,
+          userRole: data.role
+        }, userMetadata)
       }
       
       // Priority 4: For regular users, select their first accessible business
       if (!selectedBusiness && businessObjects.length > 0) {
         selectedBusiness = businessObjects[0]
         setCurrentBusinessId(businessObjects[0].business_id)
-        console.log('[BusinessContext] Regular user fallback to first business:', businessObjects[0].company_name)
+        debugBusiness('Regular user fallback to first business', {
+          businessId: businessObjects[0].business_id,
+          companyName: businessObjects[0].company_name,
+          selectionPriority: 4,
+          userRole: data.role
+        }, userMetadata)
       }
       
       setSelectedCompanyState(selectedBusiness)
-      console.log('[BusinessContext] Final selected business:', selectedBusiness?.company_name || 'None')
+      debugSession('RefreshContext completed - final business selection', {
+        selectedBusinessId: selectedBusiness?.business_id,
+        selectedCompanyName: selectedBusiness?.company_name || 'None',
+        totalAvailableBusinesses: businessObjects.length,
+        userRole: data.role
+      }, userMetadata)
     } catch (error) {
-      console.error('Failed to refresh business context:', error)
+      debugError(
+        DebugContext.SESSION,
+        'Failed to refresh business context',
+        error instanceof Error ? error : new Error(String(error))
+      )
     } finally {
       setIsLoading(false)
       setIsOperationInProgress(false)
@@ -251,7 +359,13 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
         return { success: false, error: result.error }
       }
     } catch (error) {
-      console.error('Business switch error:', error)
+      const userMetadata = extractUserMetadata(null, { businessId: currentBusinessId })
+      debugError(
+        DebugContext.BUSINESS,
+        'Business switch error',
+        error instanceof Error ? error : new Error(String(error)),
+        userMetadata
+      )
       return { success: false, error: 'Failed to switch business' }
     } finally {
       setIsLoading(false)
@@ -261,12 +375,22 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
   const setSelectedCompany = async (company: BusinessSwitcherData) => {
     // Prevent concurrent business switch operations
     if (isOperationInProgress) {
-      console.log('[BusinessContext] Business switch already in progress, ignoring request')
+      debugBusiness('Business switch already in progress, ignoring request', {
+        targetBusinessId: company.business_id,
+        targetCompanyName: company.company_name,
+        operationState: 'IN_PROGRESS'
+      })
       return
     }
     
     try {
-      console.log(`[BusinessContext] Starting business switch to:`, company.company_name)
+      const userMetadata = extractUserMetadata(null, { businessId: currentBusinessId })
+      debugBusiness('Starting business switch', {
+        fromBusinessId: currentBusinessId,
+        toBusinessId: company.business_id,
+        toCompanyName: company.company_name,
+        hasPermalink: !!company.permalink
+      }, userMetadata)
       setIsOperationInProgress(true)
       setIsLoading(true)
       
@@ -274,13 +398,22 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
       const result = await switchBusiness(company.business_id)
       
       if (!result.success) {
-        console.error(`[BusinessContext] Business switch failed:`, result.error)
+        debugError(
+          DebugContext.BUSINESS,
+          'Business switch failed',
+          new Error(`Failed to switch to ${company.company_name}: ${result.error || 'Unknown error'}`),
+          userMetadata
+        )
         // Revert UI state on failure
         await refreshContext()
         return
       }
       
-      console.log(`[BusinessContext] Business switch successful for:`, company.company_name)
+      debugBusiness('Business switch successful', {
+        newBusinessId: company.business_id,
+        newCompanyName: company.company_name,
+        hasPermalink: !!company.permalink
+      }, userMetadata)
       
       // Update local state immediately after successful backend update
       setCurrentBusinessId(company.business_id)
@@ -303,16 +436,29 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
           }
         }
         
-        console.log(`[BusinessContext] Redirecting to: ${targetUrl}`)
+        debugBusiness('Redirecting after business switch', {
+          fromUrl: window.location.pathname,
+          toUrl: targetUrl,
+          businessPermalink: company.permalink,
+          preservedPage: targetUrl.includes('/dashboard') ? 'dashboard' : 'other'
+        }, userMetadata)
         // Use window.location.href for a full page navigation to ensure clean state
         window.location.href = targetUrl
       } else {
-        console.warn(`[BusinessContext] No permalink found for business:`, company.company_name)
+        debugBusiness('No permalink found for business - refreshing context', {
+          businessId: company.business_id,
+          companyName: company.company_name,
+          availablePermalinks: availableBusinesses.filter(b => b.permalink).map(b => ({ id: b.business_id, permalink: b.permalink }))
+        }, userMetadata)
         // If no permalink, refresh the context to ensure consistency
         await refreshContext()
       }
     } catch (error) {
-      console.error(`[BusinessContext] Error during business switch:`, error)
+      debugError(
+        DebugContext.BUSINESS,
+        'Error during business switch',
+        error instanceof Error ? error : new Error(String(error))
+      )
       // Revert state on error
       await refreshContext()
     } finally {
@@ -361,11 +507,19 @@ export function useCompany() {
     setSelectedCompany: context.setSelectedCompany,
     setAvailableCompanies: (companies: BusinessSwitcherData[]) => {
       // This is now handled by refreshContext
-      console.warn('setAvailableCompanies is deprecated - use refreshContext instead')
+      debugBusiness('setAvailableCompanies deprecated call', {
+        deprecatedFunction: 'setAvailableCompanies',
+        recommendedFunction: 'refreshContext',
+        companiesCount: companies?.length || 0
+      })
     },
     isLoading: context.isLoading,
     setIsLoading: (loading: boolean) => {
-      console.warn('setIsLoading is deprecated - loading state is managed automatically')
+      debugBusiness('setIsLoading deprecated call', {
+        deprecatedFunction: 'setIsLoading',
+        requestedLoadingState: loading,
+        message: 'loading state is managed automatically'
+      })
     },
     userRole: context.userRole
   }

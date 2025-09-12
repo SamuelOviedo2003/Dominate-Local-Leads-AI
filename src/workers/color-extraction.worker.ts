@@ -11,7 +11,7 @@ async function loadColorThief() {
       const colorThiefModule = await import('colorthief')
       ColorThief = colorThiefModule.default || colorThiefModule
     } catch (error) {
-      console.warn('[WORKER] Failed to load ColorThief:', error)
+      // Failed to load ColorThief
     }
   }
 }

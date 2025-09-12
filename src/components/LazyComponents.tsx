@@ -103,7 +103,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Lazy component error:', error, errorInfo)
+    // Lazy component error
   }
 
   render() {
@@ -193,7 +193,7 @@ export const preloadComponents = {
  */
 export function trackComponentLoad(componentName: string) {
   if (process.env.NODE_ENV === 'development') {
-    console.info(`📦 Lazy loaded: ${componentName}`)
+    // Lazy loaded component
   }
 }
 

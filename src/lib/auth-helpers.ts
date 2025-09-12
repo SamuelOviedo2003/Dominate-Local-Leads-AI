@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AuthUser, Profile, BusinessClient, BusinessSwitcherData } from '@/types/auth'
 import { cache } from 'react'
+import { debugAuth, debugCache, debugError, extractUserMetadata, debugAPIRequest, debugAPIResponse, DebugContext } from '@/lib/debug'
 
 // Enhanced rate limiting for auth operations
 interface RateLimitState {
@@ -83,7 +84,13 @@ class AuthRateLimitHandler {
     
     authCache.rateLimits[operation] = state
     
-    console.log(`[AUTH-DEBUG] Rate limit recorded for ${operation}: attempt ${state.count}/${RATE_LIMIT_CONFIG.MAX_RETRIES}, next retry in ${delayMs}ms`)
+    debugAuth('Rate limit recorded for auth operation', {
+      operation,
+      count: state.count,
+      delayMs,
+      retryAfter,
+      resetTime: state.resetTime
+    })
     
     return delayMs
   }
@@ -102,7 +109,13 @@ class AuthRateLimitHandler {
  * Clear auth cache for a specific user (useful for logout or role changes)
  */
 export function clearAuthCache(userId?: string) {
-  console.log('[AUTH-DEBUG] Clearing auth cache', { userId })
+  debugCache('Clearing auth cache', {
+    userId,
+    hasUserCache: !!authCache.user,
+    hasBusinessesCache: !!authCache.businesses,
+    hasAvailableBusinessesCache: !!authCache.availableBusinesses,
+    hasRateLimits: !!authCache.rateLimits && Object.keys(authCache.rateLimits).length > 0
+  })
   if (userId && authCache.businesses) {
     delete authCache.businesses[userId]
   } else {
@@ -146,15 +159,16 @@ function handleSupabaseError(error: any, operation: string): { isRateLimit: bool
   )
   
   if (isRateLimit) {
-    console.warn(`[AUTH-DEBUG] Rate limit detected for ${operation}:`, {
-      message: error.message,
-      code: error.code,
-      details: error.details
-    })
-    
     // Try to extract retry-after header
     const retryAfter = error.details?.retry_after || error.retryAfter
     const retryAfterNum = retryAfter ? parseInt(retryAfter, 10) : undefined
+    
+    debugAuth('Rate limit detected in Supabase error', {
+      operation,
+      errorCode,
+      errorMessage: errorMessage.substring(0, 200),
+      retryAfter: retryAfterNum
+    })
     
     return { isRateLimit: true, retryAfter: retryAfterNum }
   }
@@ -169,30 +183,43 @@ function handleSupabaseError(error: any, operation: string): { isRateLimit: bool
  * Implements caching with rate limit handling and stale cache fallback
  */
 export async function getAuthenticatedUser(): Promise<AuthUser> {
-  console.log('[AUTH-DEBUG] getAuthenticatedUser called')
   const operation = 'getAuthenticatedUser'
+  debugAuth('Getting authenticated user', { operation })
   
   // Check if we're rate limited
   if (AuthRateLimitHandler.isRateLimited(operation)) {
-    console.warn('[AUTH-DEBUG] Rate limited, checking for stale cache')
+    debugAuth('Rate limited for getAuthenticatedUser, checking stale cache', {
+      operation,
+      hasStaleCache: !!(authCache.user && isCacheStale(authCache.user.timestamp))
+    })
     
     // Try to serve stale cache during rate limit
     if (authCache.user && isCacheStale(authCache.user.timestamp)) {
-      console.log('[AUTH-DEBUG] [STALE-CACHE-HIT] Serving stale cache due to rate limit')
+      debugCache('Serving stale user cache due to rate limit', {
+        operation,
+        cacheAge: Date.now() - authCache.user.timestamp,
+        userMetadata: extractUserMetadata(authCache.user.data)
+      })
       return authCache.user.data
     }
     
-    console.error('[AUTH-DEBUG] Rate limited and no stale cache available')
+    debugAuth('Rate limited and no stale cache available, redirecting to login', { operation })
     redirect('/login')
   }
   
   // Check fresh cache first
   if (authCache.user && isCacheValid(authCache.user.timestamp)) {
-    console.log('[AUTH-DEBUG] [CACHE-HIT] Returning cached user data')
+    debugCache('Cache hit: returning fresh user data', {
+      cacheAge: Date.now() - authCache.user.timestamp,
+      userMetadata: extractUserMetadata(authCache.user.data)
+    })
     return authCache.user.data
   }
 
-  console.log('[AUTH-DEBUG] [CACHE-MISS] Cache miss or expired, fetching fresh user data')
+  debugCache('Cache miss or expired for user data, fetching fresh', {
+    hasCachedUser: !!authCache.user,
+    cacheAge: authCache.user ? Date.now() - authCache.user.timestamp : null
+  })
   
   try {
     const supabase = await createClient()
@@ -205,12 +232,20 @@ export async function getAuthenticatedUser(): Promise<AuthUser> {
         
         // Try stale cache
         if (authCache.user && isCacheStale(authCache.user.timestamp)) {
-          console.log('[AUTH-DEBUG] [STALE-CACHE-HIT] Auth error with rate limit, serving stale cache')
+          debugAuth('Auth error with rate limit detected, serving stale cache', {
+            operation,
+            error: error?.message,
+            userMetadata: extractUserMetadata(authCache.user.data)
+          })
           return authCache.user.data
         }
       }
       
-      console.warn('[AUTH-DEBUG] Authentication failed:', error?.message || 'No user found')
+      debugError(
+        DebugContext.AUTH,
+        'Authentication failed in getAuthenticatedUser',
+        error || new Error('Authentication failed')
+      )
       redirect('/login')
     }
 
@@ -228,12 +263,20 @@ export async function getAuthenticatedUser(): Promise<AuthUser> {
         
         // Try stale cache
         if (authCache.user && isCacheStale(authCache.user.timestamp)) {
-          console.log('[AUTH-DEBUG] [STALE-CACHE-HIT] Profile fetch rate limited, serving stale cache')
+          debugAuth('Profile fetch rate limited, serving stale cache', {
+            operation: `${operation}-profile`,
+            error: profileError?.message,
+            userMetadata: extractUserMetadata(authCache.user.data)
+          })
           return authCache.user.data
         }
       }
       
-      console.warn('[AUTH-DEBUG] Profile not found for user:', user.id)
+      debugError(
+        DebugContext.AUTH,
+        'Profile not found for authenticated user',
+        profileError || new Error('Profile not found')
+      )
       redirect('/login')
     }
 
@@ -243,8 +286,13 @@ export async function getAuthenticatedUser(): Promise<AuthUser> {
     // Get accessible businesses directly without circular dependency
     const accessibleBusinesses = await getUserAccessibleBusinessesInternal(user.id, effectiveRole)
     
-    console.log(`[AUTH-DEBUG] User ${user.email} (role: ${effectiveRole}) has access to ${accessibleBusinesses.length} businesses:`, 
-      accessibleBusinesses.map(b => b.company_name))
+    debugAuth('User authentication successful', {
+      userId: user.id,
+      email: user.email,
+      role: effectiveRole,
+      businessCount: accessibleBusinesses.length,
+      userMetadata: extractUserMetadata({ id: user.id, email: user.email!, profile })
+    })
 
     const authUser: AuthUser = {
       id: user.id,
@@ -264,7 +312,11 @@ export async function getAuthenticatedUser(): Promise<AuthUser> {
     return authUser
     
   } catch (error) {
-    console.error('[AUTH-DEBUG] Unexpected error in getAuthenticatedUser:', error)
+    debugError(
+      DebugContext.AUTH,
+      'Unexpected error in getAuthenticatedUser',
+      error instanceof Error ? error : new Error(String(error))
+    )
     
     // Check if this looks like a rate limit error
     const errorInfo = handleSupabaseError(error, operation)
@@ -273,7 +325,11 @@ export async function getAuthenticatedUser(): Promise<AuthUser> {
       
       // Try stale cache
       if (authCache.user && isCacheStale(authCache.user.timestamp)) {
-        console.log('[AUTH-DEBUG] [STALE-CACHE-HIT] Unexpected error with rate limit, serving stale cache')
+        debugAuth('Unexpected error with rate limit, serving stale cache', {
+          operation,
+          error: error instanceof Error ? error.message : String(error),
+          userMetadata: extractUserMetadata(authCache.user.data)
+        })
         return authCache.user.data
       }
     }
@@ -289,15 +345,21 @@ export async function getAuthenticatedUser(): Promise<AuthUser> {
  * Implements caching to prevent repeated database calls
  */
 export async function getAvailableBusinesses(): Promise<BusinessSwitcherData[]> {
-  console.log('[AUTH-DEBUG] getAvailableBusinesses called')
+  debugAuth('Getting available businesses for business switcher')
   
   // Check cache first
   if (authCache.availableBusinesses && isCacheValid(authCache.availableBusinesses.timestamp)) {
-    console.log('[AUTH-DEBUG] [CACHE-HIT] Returning cached available businesses')
+    debugCache('Cache hit: returning cached available businesses', {
+      businessCount: authCache.availableBusinesses.data.length,
+      cacheAge: Date.now() - authCache.availableBusinesses.timestamp
+    })
     return authCache.availableBusinesses.data
   }
 
-  console.log('[AUTH-DEBUG] [CACHE-MISS] Cache miss or expired, fetching fresh available businesses')
+  debugCache('Cache miss or expired for available businesses, fetching fresh', {
+    hasCachedBusinesses: !!authCache.availableBusinesses,
+    cacheAge: authCache.availableBusinesses ? Date.now() - authCache.availableBusinesses.timestamp : null
+  })
   const supabase = await createClient()
 
   const { data: businesses, error } = await supabase
@@ -307,12 +369,11 @@ export async function getAvailableBusinesses(): Promise<BusinessSwitcherData[]> 
     .order('company_name') // Consistent ordering for deterministic first business selection
 
   if (error) {
-    console.error('[AUTH-DEBUG] Failed to fetch available businesses:', {
-      error: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
-    })
+    debugError(
+      DebugContext.AUTH,
+      'Failed to fetch available businesses',
+      error || new Error('Failed to fetch available businesses')
+    )
     return []
   }
 
@@ -324,7 +385,10 @@ export async function getAvailableBusinesses(): Promise<BusinessSwitcherData[]> 
     timestamp: Date.now()
   }
 
-  console.log(`[AUTH-DEBUG] Found and cached ${businessList.length} available businesses with dashboard=true`)
+  debugAuth('Successfully fetched and cached available businesses', {
+    businessCount: businessList.length,
+    businesses: businessList.map(b => ({ id: b.business_id, name: b.company_name }))
+  })
   return businessList
 }
 
@@ -334,14 +398,18 @@ export async function getAvailableBusinesses(): Promise<BusinessSwitcherData[]> 
  * Uses the same ordering as getAvailableBusinesses for consistency
  */
 export async function getFirstAvailableBusinessForSuperAdmin(): Promise<BusinessSwitcherData | null> {
-  console.log('[AUTH-DEBUG] getFirstAvailableBusinessForSuperAdmin called')
+  debugAuth('Getting first available business for super admin redirect')
   
   // Use the cached available businesses to ensure consistency
   const businesses = await getAvailableBusinesses()
   
   const firstBusiness: BusinessSwitcherData | null = businesses.length > 0 ? businesses[0] || null : null
   
-  console.log('[AUTH-DEBUG] First available business for super admin:', firstBusiness?.company_name || 'none')
+  debugAuth('Determined first available business for super admin', {
+    businessId: firstBusiness?.business_id,
+    companyName: firstBusiness?.company_name,
+    hasBusinesses: businesses.length > 0
+  })
   return firstBusiness
 }
 
@@ -368,22 +436,34 @@ export async function getHeaderData() {
  * Implements caching for API routes as well
  */
 export async function getAuthenticatedUserForAPI(): Promise<AuthUser | null> {
-  console.log('[AUTH-DEBUG] getAuthenticatedUserForAPI called')
+  debugAuth('Getting authenticated user for API route')
   const supabase = await createClient()
 
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) {
-    console.log('[AUTH-DEBUG] API auth failed:', error?.message || 'No user found')
+    debugAuth('API authentication failed', {
+      hasError: !!error,
+      hasUser: !!user,
+      error: error?.message
+    })
     return null
   }
 
   // Check cache first for API calls too
   if (authCache.user && isCacheValid(authCache.user.timestamp) && authCache.user.data.id === user.id) {
-    console.log('[AUTH-DEBUG] [CACHE-HIT] Returning cached user data for API call')
+    debugCache('Cache hit: returning cached user data for API call', {
+      userId: user.id,
+      cacheAge: Date.now() - authCache.user.timestamp,
+      userMetadata: extractUserMetadata(authCache.user.data)
+    })
     return authCache.user.data
   }
 
-  console.log('[AUTH-DEBUG] [CACHE-MISS] Cache miss for API call, fetching fresh data')
+  debugCache('Cache miss for API call, fetching fresh user data', {
+    userId: user.id,
+    hasCachedUser: !!authCache.user,
+    cacheValid: authCache.user ? isCacheValid(authCache.user.timestamp) : false
+  })
   // Fetch user profile data using the same client
   const { data: profile } = await supabase
     .from('profiles')
@@ -392,7 +472,11 @@ export async function getAuthenticatedUserForAPI(): Promise<AuthUser | null> {
     .single() as { data: Profile | null }
 
   if (!profile) {
-    console.log('[AUTH-DEBUG] Profile not found for API user:', user.id)
+    debugError(
+      DebugContext.AUTH,
+      'Profile not found for API user',
+      new Error('Profile not found for API user')
+    )
     return null
   }
 
@@ -440,30 +524,55 @@ export async function getSuperAdminCompanies(): Promise<BusinessSwitcherData[]> 
  * Implements caching with rate limit handling and stale cache fallback
  */
 async function getUserAccessibleBusinessesInternal(userId: string, userRole: number | null): Promise<BusinessSwitcherData[]> {
-  console.log(`[AUTH-DEBUG] getUserAccessibleBusinessesInternal called for user ${userId} with role ${userRole}`)
   const operation = `getUserAccessibleBusinesses-${userId}`
+  debugAuth('Getting user accessible businesses (internal)', {
+    userId,
+    userRole,
+    operation
+  })
   
   // Check if we're rate limited
   if (AuthRateLimitHandler.isRateLimited(operation)) {
-    console.warn(`[AUTH-DEBUG] Rate limited for user ${userId}, checking for stale cache`)
+    debugAuth('Rate limited for getUserAccessibleBusinessesInternal, checking stale cache', {
+      userId,
+      operation,
+      hasStaleCache: !!(authCache.businesses?.[userId] && isCacheStale(authCache.businesses[userId].timestamp))
+    })
     
     // Try to serve stale cache during rate limit
     if (authCache.businesses?.[userId] && isCacheStale(authCache.businesses[userId].timestamp)) {
-      console.log(`[AUTH-DEBUG] [STALE-CACHE-HIT] Serving stale businesses cache for user ${userId} due to rate limit`)
+      debugCache('Serving stale businesses cache due to rate limit', {
+        userId,
+        operation,
+        businessCount: authCache.businesses[userId].data.length,
+        cacheAge: Date.now() - authCache.businesses[userId].timestamp
+      })
       return authCache.businesses[userId].data
     }
     
-    console.warn(`[AUTH-DEBUG] Rate limited and no stale cache available for user ${userId}`)
+    debugAuth('Rate limited and no stale businesses cache available', {
+      userId,
+      operation
+    })
     return []
   }
   
   // Check fresh cache first
   if (authCache.businesses?.[userId] && isCacheValid(authCache.businesses[userId].timestamp)) {
-    console.log(`[AUTH-DEBUG] [CACHE-HIT] Returning cached businesses for user ${userId}`)
+    debugCache('Cache hit: returning cached businesses for user', {
+      userId,
+      businessCount: authCache.businesses[userId].data.length,
+      cacheAge: Date.now() - authCache.businesses[userId].timestamp
+    })
     return authCache.businesses[userId].data
   }
 
-  console.log(`[AUTH-DEBUG] [CACHE-MISS] Cache miss or expired, fetching fresh businesses for user ${userId}`)
+  debugCache('Cache miss or expired for user businesses, fetching fresh', {
+    userId,
+    userRole,
+    hasCachedBusinesses: !!(authCache.businesses?.[userId]),
+    cacheAge: authCache.businesses?.[userId] ? Date.now() - authCache.businesses[userId].timestamp : null
+  })
   
   try {
     const supabase = await createClient()
@@ -471,12 +580,18 @@ async function getUserAccessibleBusinessesInternal(userId: string, userRole: num
     
     // For superadmins, return all businesses with dashboard=true (bypasses profile_businesses check)
     if (userRole === 0) {
-      console.log('[AUTH-DEBUG] User is superadmin, fetching all available businesses')
+      debugAuth('User is superadmin, fetching all available businesses', {
+        userId,
+        userRole
+      })
       // Use the cached getAvailableBusinesses which now has proper caching
       businesses = await getAvailableBusinesses()
     } else {
+      debugAuth('User is regular user, fetching from profile_businesses table', {
+        userId,
+        userRole
+      })
       // For regular users, get businesses from profile_businesses table
-      console.log('[AUTH-DEBUG] User is regular user, fetching businesses from profile_businesses table')
       const { data: userBusinesses, error } = await supabase
         .from('profile_businesses')
         .select(`
@@ -499,26 +614,34 @@ async function getUserAccessibleBusinessesInternal(userId: string, userRole: num
           
           // Try stale cache
           if (authCache.businesses?.[userId] && isCacheStale(authCache.businesses[userId].timestamp)) {
-            console.log(`[AUTH-DEBUG] [STALE-CACHE-HIT] Rate limited, serving stale businesses cache for user ${userId}`)
+            debugAuth('Rate limited fetching user businesses, serving stale cache', {
+              userId,
+              operation,
+              error: error?.message,
+              businessCount: authCache.businesses[userId].data.length
+            })
             return authCache.businesses[userId].data
           }
         }
         
-        console.error('[AUTH-DEBUG] Failed to fetch user accessible businesses:', {
-          userId,
-          userRole,
-          error: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        })
+        debugError(
+          DebugContext.AUTH,
+          'Failed to fetch user accessible businesses',
+          error || new Error('Failed to fetch user accessible businesses')
+        )
         return []
       }
       
-      console.log(`[AUTH-DEBUG] Found ${userBusinesses?.length || 0} raw businesses for user ${userId}`)
+      debugAuth('Successfully fetched raw businesses for user', {
+        userId,
+        rawBusinessCount: userBusinesses ? userBusinesses.length : 0
+      })
       
       if (!userBusinesses || userBusinesses.length === 0) {
-        console.warn(`[AUTH-DEBUG] No businesses found for user ${userId}. This user may not have any business assignments.`)
+        debugAuth('No businesses found for user in profile_businesses table', {
+          userId,
+          userRole
+        })
         return []
       }
       
@@ -532,7 +655,11 @@ async function getUserAccessibleBusinessesInternal(userId: string, userRole: num
         permalink: ub.business_clients.permalink
       }))
       
-      console.log('[AUTH-DEBUG] Transformed businesses:', businesses)
+      debugAuth('Successfully transformed businesses for user', {
+        userId,
+        businessCount: businesses.length,
+        businesses: businesses.map(b => ({ id: b.business_id, name: b.company_name }))
+      })
     }
     
     // Cache the result and clear rate limits on success
@@ -545,11 +672,19 @@ async function getUserAccessibleBusinessesInternal(userId: string, userRole: num
     }
     
     AuthRateLimitHandler.clearRateLimit(operation)
-    console.log(`[AUTH-DEBUG] Cached ${businesses.length} businesses for user ${userId}`)
+    debugCache('Successfully cached businesses for user', {
+      userId,
+      businessCount: businesses.length,
+      operation
+    })
     return businesses
     
   } catch (error) {
-    console.error(`[AUTH-DEBUG] Unexpected error fetching businesses for user ${userId}:`, error)
+    debugError(
+      DebugContext.AUTH,
+      'Unexpected error fetching businesses for user',
+      error instanceof Error ? error : new Error(String(error))
+    )
     
     // Check if this looks like a rate limit error
     const errorInfo = handleSupabaseError(error, operation)
@@ -558,7 +693,12 @@ async function getUserAccessibleBusinessesInternal(userId: string, userRole: num
       
       // Try stale cache
       if (authCache.businesses?.[userId] && isCacheStale(authCache.businesses[userId].timestamp)) {
-        console.log(`[AUTH-DEBUG] [STALE-CACHE-HIT] Unexpected error with rate limit, serving stale businesses cache for user ${userId}`)
+        debugAuth('Unexpected error with rate limit, serving stale businesses cache', {
+          userId,
+          operation,
+          error: error instanceof Error ? error.message : String(error),
+          businessCount: authCache.businesses[userId].data.length
+        })
         return authCache.businesses[userId].data
       }
     }

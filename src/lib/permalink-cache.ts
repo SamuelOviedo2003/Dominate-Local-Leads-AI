@@ -95,7 +95,7 @@ class PermalinkRateLimitHandler {
     
     this.rateLimitState.set(permalink, state)
     
-    console.log(`[PERMALINK-CACHE] Rate limit recorded for ${permalink}: attempt ${state.count}/${PERMALINK_CACHE_CONFIG.RATE_LIMIT.MAX_RETRIES}, next retry in ${delayMs}ms`)
+    // Rate limit recorded for permalink
     
     return delayMs
   }
@@ -117,7 +117,7 @@ export async function getCachedBusiness(permalink: string): Promise<PermalinkCac
   // Check cache first
   const cached = cache.get<BusinessData>(cacheKey)
   if (cached) {
-    console.log(`[PERMALINK-CACHE] [CACHE-HIT] Business found in cache: ${cached.company_name}`)
+    // Business found in cache
     return {
       business: cached,
       timestamp: Date.now(),
@@ -125,11 +125,11 @@ export async function getCachedBusiness(permalink: string): Promise<PermalinkCac
     }
   }
   
-  console.log(`[PERMALINK-CACHE] [CACHE-MISS] No cached data for permalink: ${permalink}`)
+  // No cached data for permalink
   
   // Check if we're rate limited
   if (PermalinkRateLimitHandler.isRateLimited(permalink)) {
-    console.warn(`[PERMALINK-CACHE] Rate limited for permalink: ${permalink}, returning null`)
+    // Rate limited for permalink, returning null
     return null
   }
   
@@ -144,7 +144,7 @@ export async function fetchBusinessFromDatabase(permalink: string): Promise<Perm
   const invalidCacheKey = `permalink:invalid:${permalink}`
   
   try {
-    console.log(`[PERMALINK-CACHE] Fetching business from database for permalink: ${permalink}`)
+    // Fetching business from database for permalink
     
     // Use regular client with publishable key - business_clients table should be publicly readable for permalinks
     const supabase = await createClient()
@@ -159,19 +159,19 @@ export async function fetchBusinessFromDatabase(permalink: string): Promise<Perm
       // Handle specific Supabase errors
       if (error.code === '23505') {
         // Unique constraint violation - shouldn't happen for reads
-        console.warn(`[PERMALINK-CACHE] Unique constraint violation for permalink: ${permalink}`)
+        // Unique constraint violation for permalink
         return null
       }
       
       if (error.message.includes('rate limit') || error.code === 'rate_limit_exceeded') {
         // Rate limit error
-        console.warn(`[PERMALINK-CACHE] Rate limit error for permalink: ${permalink}`)
+        // Rate limit error for permalink
         const delayMs = PermalinkRateLimitHandler.recordRateLimit(permalink)
         
         // Try to serve from cache if available (even if expired)
         const staleCache = cache.get<BusinessData>(cacheKey)
         if (staleCache) {
-          console.log(`[PERMALINK-CACHE] Serving stale cache due to rate limit: ${staleCache.company_name}`)
+          // Serving stale cache due to rate limit
           return {
             business: staleCache,
             timestamp: Date.now(),
@@ -184,28 +184,23 @@ export async function fetchBusinessFromDatabase(permalink: string): Promise<Perm
       
       if (error.details?.includes('Results contain 0 rows') || error.message.includes('No rows returned')) {
         // Business not found - cache the negative result for a shorter time
-        console.log(`[PERMALINK-CACHE] Business not found for permalink: ${permalink}`)
+        // Business not found for permalink
         cache.set(invalidCacheKey, true, PERMALINK_CACHE_CONFIG.TTL.INVALID_PERMALINK, [CACHE_TAGS.BUSINESS])
         return null
       }
       
       // Other errors
-      console.error(`[PERMALINK-CACHE] Database error for permalink ${permalink}:`, {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
+      // Database error for permalink
       return null
     }
     
     if (!business) {
-      console.log(`[PERMALINK-CACHE] No business data returned for permalink: ${permalink}`)
+      // No business data returned for permalink
       cache.set(invalidCacheKey, true, PERMALINK_CACHE_CONFIG.TTL.INVALID_PERMALINK, [CACHE_TAGS.BUSINESS])
       return null
     }
     
-    console.log(`[PERMALINK-CACHE] Business fetched successfully: ${business.company_name} (${business.business_id})`)
+    // Business fetched successfully
     
     // Cache the valid business for the full TTL
     cache.set(
@@ -225,7 +220,7 @@ export async function fetchBusinessFromDatabase(permalink: string): Promise<Perm
     }
     
   } catch (error) {
-    console.error(`[PERMALINK-CACHE] Unexpected error fetching business for permalink ${permalink}:`, error)
+    // Unexpected error fetching business for permalink
     
     // Check if this looks like a rate limit error
     if (error instanceof Error && (
@@ -249,7 +244,7 @@ export async function getBusinessByPermalink(permalink: string): Promise<Permali
   const invalidCacheKey = `permalink:invalid:${permalink}`
   const isInvalid = cache.get<boolean>(invalidCacheKey)
   if (isInvalid) {
-    console.log(`[PERMALINK-CACHE] [CACHE-HIT] Permalink marked as invalid: ${permalink}`)
+    // Permalink marked as invalid
     return null
   }
   
@@ -284,7 +279,7 @@ export function invalidatePermalinkCache(permalink: string): void {
   // Clear rate limit state
   PermalinkRateLimitHandler.clearRateLimit(permalink)
   
-  console.log(`[PERMALINK-CACHE] Cache invalidated for permalink: ${permalink}`)
+  // Cache invalidated for permalink
 }
 
 /**
@@ -292,7 +287,7 @@ export function invalidatePermalinkCache(permalink: string): void {
  */
 export function invalidateBusinessCache(businessId: number): void {
   cache.invalidate(undefined, [`business_${businessId}`])
-  console.log(`[PERMALINK-CACHE] Cache invalidated for business: ${businessId}`)
+  // Cache invalidated for business
 }
 
 /**

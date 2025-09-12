@@ -29,7 +29,7 @@ export class ServerColorExtractor {
       return defaultColors
       
     } catch (error) {
-      console.error('[SERVER EXTRACTION] Failed:', error)
+      // Server extraction failed
       throw new Error(`Color extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }

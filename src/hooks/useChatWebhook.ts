@@ -57,17 +57,13 @@ export function useChatWebhook() {
         responseData = { success: true }
       }
       
-      console.log('[CHAT-WEBHOOK] Message sent successfully:', {
-        lead_id: payload.lead_id,
-        business_id: payload.business_id,
-        message_length: payload.message.length
-      })
+      // Message sent successfully
       
       return { success: true }
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      console.error('[CHAT-WEBHOOK] Failed to send message:', errorMessage)
+      // Failed to send message
       setError(errorMessage)
       
       return {
@@ -88,13 +84,13 @@ export function useChatWebhook() {
       const { data: { user }, error } = await supabase.auth.getUser()
       
       if (error || !user) {
-        console.error('[CHAT-WEBHOOK] Failed to get current user:', error?.message || 'No user found')
+        // Failed to get current user
         return null
       }
       
       return user.id
     } catch (error) {
-      console.error('[CHAT-WEBHOOK] Error getting current user:', error)
+      // Error getting current user
       return null
     }
   }, [])

@@ -126,7 +126,7 @@ export function useBusinessData(userId: string, userRole?: number): UseBusinessD
         }
 
         if (businessesError) {
-          console.warn('Failed to fetch available businesses:', businessesError.message)
+          // Failed to fetch available businesses
           setAvailableBusinesses([])
         } else {
           setAvailableBusinesses(businesses as BusinessSwitcherData[])
@@ -136,7 +136,7 @@ export function useBusinessData(userId: string, userRole?: number): UseBusinessD
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
       setError(errorMessage)
-      console.error('Error fetching business data:', err)
+      // Error fetching business data
     } finally {
       setIsLoading(false)
     }

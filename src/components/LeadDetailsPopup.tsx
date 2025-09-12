@@ -79,7 +79,7 @@ export function LeadDetailsPopup({ lead, isOpen, onClose, businessId }: LeadDeta
       setSelectedCallerType(newCallerType)
       
     } catch (error) {
-      console.error('Error updating caller type:', error)
+      // Error updating caller type
       setUpdateError(error instanceof Error ? error.message : 'Failed to update caller type')
       // Revert the selection on error
       setSelectedCallerType(lead.caller_type || '')

@@ -103,7 +103,7 @@ export function useLeadDetailsData({ leadId, businessId }: UseLeadDetailsDataPro
       setIsCallWindowsLoading(false)
       setIsCommunicationsLoading(false)
       
-      console.error('Error fetching lead details:', err)
+      // Error fetching lead details
     }
   }, [leadId, businessId])
 

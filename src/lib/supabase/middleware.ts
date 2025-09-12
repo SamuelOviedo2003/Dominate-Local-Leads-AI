@@ -5,7 +5,7 @@ import { validatePermalinkExists } from '@/lib/permalink-cache'
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
-  console.log(`[MIDDLEWARE] Processing request for: ${pathname}`)
+  // Processing request
   
   let supabaseResponse = NextResponse.next({
     request,
@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
   if (isPublicRoute) {
-    console.log(`[MIDDLEWARE] Public route ${pathname}, bypassing validation`)
+    // Public route, bypassing validation
     return supabaseResponse
   }
 
@@ -55,12 +55,12 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (authError) {
-    console.warn('[MIDDLEWARE] Authentication error:', authError.message)
+    // Authentication error
     return supabaseResponse
   }
 
   if (!user) {
-    console.log(`[MIDDLEWARE] No authenticated user, redirecting to login from ${pathname}`)
+    // No authenticated user, redirecting to login
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -70,31 +70,31 @@ export async function updateSession(request: NextRequest) {
   const permalink = extractPermalinkFromPath(pathname)
   
   if (permalink) {
-    console.log(`[MIDDLEWARE] Permalink route detected: ${permalink} for path ${pathname}`)
+    // Permalink route detected
     
     try {
       // Use the new cached permalink validation
       const isValid = await validatePermalinkExists(permalink)
       
       if (!isValid) {
-        console.log(`[MIDDLEWARE] Invalid permalink: ${permalink}, returning 404`)
+        // Invalid permalink, returning 404
         return new NextResponse(null, { status: 404 })
       }
 
-      console.log(`[MIDDLEWARE] Valid permalink: ${permalink}`)
-      console.log(`[MIDDLEWARE] Permalink validation complete, letting layout handle all business logic`)
+      // Valid permalink
+      // Permalink validation complete
       
       // Middleware responsibility ends here - layout handles all access validation and redirects
       return supabaseResponse
       
     } catch (error) {
-      console.error(`[MIDDLEWARE] Error validating permalink ${permalink}:`, error)
+      // Error validating permalink
       // On error, let the request through and let layout handle it
       // This prevents middleware from blocking requests due to transient errors
       return supabaseResponse
     }
   }
 
-  console.log(`[MIDDLEWARE] Non-permalink route ${pathname}, passing through`)
+  // Non-permalink route, passing through
   return supabaseResponse
 }

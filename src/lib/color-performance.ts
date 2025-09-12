@@ -57,7 +57,7 @@ export class ColorPerformanceMonitor {
       this.cleanupOldMetrics()
     }, 30000)
 
-    console.log('[PERFORMANCE MONITOR] Started monitoring color extraction performance')
+    // Started monitoring color extraction performance
   }
 
   /**
@@ -76,7 +76,7 @@ export class ColorPerformanceMonitor {
     // Check for immediate alerts
     this.checkMetricAlert(metric)
 
-    console.log(`[PERFORMANCE] ${name}: ${value}${this.getUnitForMetric(name)}`, metadata || '')
+    // Recording performance metric
   }
 
   /**
@@ -155,7 +155,7 @@ export class ColorPerformanceMonitor {
       }
 
     } catch (error) {
-      console.warn('[PERFORMANCE MONITOR] Error collecting system metrics:', error)
+      // Error collecting system metrics
     }
   }
 
@@ -248,7 +248,7 @@ export class ColorPerformanceMonitor {
     const messagePrefix = message.split(':')[0] || ''
     if (!this.alerts.some(alert => alert.includes(messagePrefix))) {
       this.alerts.push(`[${new Date().toISOString()}] ${message}`)
-      console.warn('[PERFORMANCE ALERT]', message)
+      // Performance alert triggered
       
       // Keep only last 20 alerts
       if (this.alerts.length > 20) {
@@ -356,7 +356,7 @@ export class ColorPerformanceMonitor {
   clear(): void {
     this.metrics = []
     this.alerts = []
-    console.log('[PERFORMANCE MONITOR] Cleared all metrics and alerts')
+    // Cleared all metrics and alerts
   }
 
   /**
@@ -364,7 +364,7 @@ export class ColorPerformanceMonitor {
    */
   stopMonitoring(): void {
     this.isMonitoring = false
-    console.log('[PERFORMANCE MONITOR] Stopped monitoring')
+    // Stopped monitoring
   }
 
   /**

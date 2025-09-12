@@ -98,7 +98,7 @@ const AudioPlayerComponent = ({ src, className = '' }: AudioPlayerProps) => {
         }
       }
     } catch (err) {
-      console.error('Audio playback error:', err)
+      // Audio playback error
       setError('Playback failed')
       setIsPlaying(false)
     }

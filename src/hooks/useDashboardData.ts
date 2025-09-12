@@ -55,7 +55,7 @@ export function useDashboardData({ timePeriod, businessId }: UseDashboardDataPro
       setPlatformSpendMetrics(platformSpendData.data)
 
     } catch (err) {
-      console.error('Error fetching dashboard data:', err)
+      // Error fetching dashboard data
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setIsLoading(false)

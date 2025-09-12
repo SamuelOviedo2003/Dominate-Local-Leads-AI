@@ -106,7 +106,7 @@ const CustomAudioPlayer = ({ src, className = '' }: CustomAudioPlayerProps) => {
         }
       }
     } catch (err) {
-      console.error('Audio playback error:', err)
+      // Audio playback error
       setError('Playback failed')
       setIsPlaying(false)
     }
@@ -263,7 +263,7 @@ const RecentCallsPopup = memo(function RecentCallsPopup({
       setCallData(prev => prev ? { ...prev, caller_type: newCallerType || null } : null)
       
     } catch (err) {
-      console.error('Failed to update caller type:', err)
+      // Failed to update caller type
       // Could add a toast notification here
     } finally {
       setIsUpdatingCallerType(false)

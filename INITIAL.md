@@ -14,6 +14,7 @@
 - [Settings](#settings)
 - [Loading System](#loading-system)
 - [Session Security Architecture](#session-security-architecture)
+- [Session Debugging & Observability System](#session-debugging--observability-system)
 - [Database Schema](#database-schema)
 - [Technical Requirements](#technical-requirements)
 - [Error Handling](#error-handling)
@@ -43,14 +44,31 @@ A comprehensive lead management system for roofing businesses that tracks leads,
 
 ## Authentication & User Management
 
+### Architecture Requirements
+
+#### JWT-Only Authentication System
+- **CRITICAL**: System uses **ONLY** `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` - NO service role keys
+- **CRITICAL**: All authentication operations use JWT tokens with RLS (Row Level Security) policies
+- **CRITICAL**: No `SUPABASE_SERVICE_ROLE_KEY` dependencies anywhere in the system
+- **JWT Security**: Tokens transmitted via Authorization headers: `Bearer ${token}`
+- **Session Isolation**: Each user session completely isolated with no global state sharing
+- **Rate Limiting**: Comprehensive rate limiting with stale cache fallback during high traffic
+
+#### User Role System
+- **Super Admin (role: 0)**: Access to ALL businesses with `dashboard=true`
+- **Admin/User (role: 1+)**: Access ONLY to assigned businesses in `profile_businesses` table
+- **Business Access**: Validated on every request using JWT tokens and RLS policies
+- **Role Validation**: `profile.role ?? 1` (null defaults to regular user)
+
 ### Functional Requirements
 
 #### Login System
-- **Requirement**: Users must authenticate using email and password
-- **Requirement**: Sessions must persist with automatic token refresh
+- **Requirement**: Users must authenticate using email and password via Supabase Auth
+- **Requirement**: JWT tokens stored in HTTP-only cookies with automatic refresh
 - **Requirement**: All routes except login must require authentication
-- **Requirement**: System must support different user roles (including Super Admin with role 0)
+- **Requirement**: System must support different user roles (Super Admin with role 0, Admins/Users with role 1+)
 - **Requirement**: Each user must be associated with business data from `business_clients` table
+- **Smart Redirect**: Role-based post-login redirection to appropriate permalink-based dashboard
 
 #### Signup System
 - **Requirement**: New users can create accounts with email, password, and full name
@@ -61,23 +79,49 @@ A comprehensive lead management system for roofing businesses that tracks leads,
 - **Requirement**: Comprehensive error handling with user-friendly messages
 - **Requirement**: Signup errors redirect to login page with error mode
 
+#### Business Context & Switching System
+- **CRITICAL**: Atomic business switching with race condition prevention
+- **URL Synchronization**: Business changes must update both backend state and URL/permalink
+- **Context Priority**: URL business (if valid) > Profile business > Role-based fallback
+- **State Management**: React Context with mutex-like operation protection
+- **Database Updates**: `profiles.business_id` updated atomically on business switches
+- **Access Control**: Super Admins can switch to any business; others restricted to assigned businesses
+
 #### Authentication Flow Fixes
 - **Fixed**: All signup error redirects now go to `/login?error=...&mode=signup` instead of non-existent `/signup` routes
 - **Fixed**: Database trigger conflicts resolved - profile creation now handled exclusively by `handle_new_user()` trigger
 - **Fixed**: Email confirmation flow properly implemented with success/error messaging
 - **Fixed**: NEXT_REDIRECT errors no longer caught in try-catch blocks to allow proper redirects
 - **Removed**: Forgot password functionality completely disabled until proper email service configuration
+- **Enhanced**: Business switching with comprehensive error recovery and state consistency
 
 #### SQL Queries Required
 ```sql
--- Fetch user profile after authentication
-SELECT * FROM profiles WHERE id = $userId;
+-- Fetch user profile with role for JWT authentication
+SELECT id, email, role, business_id FROM profiles WHERE id = $userId;
 
--- Fetch business data for authenticated user
-SELECT * FROM business_clients WHERE business_id = $businessId;
+-- Super Admin: Fetch ALL businesses with dashboard enabled
+SELECT business_id, company_name, permalink, avatar_url, city, state 
+FROM business_clients 
+WHERE dashboard = true 
+ORDER BY company_name;
 
--- Super Admin: Fetch all businesses with avatars
-SELECT * FROM business_clients WHERE avatar_url IS NOT NULL;
+-- Regular User: Fetch ONLY assigned businesses via profile_businesses
+SELECT bc.business_id, bc.company_name, bc.permalink, bc.avatar_url, bc.city, bc.state
+FROM profile_businesses pb
+JOIN business_clients bc ON pb.business_id = bc.business_id
+WHERE pb.profile_id = $userId
+ORDER BY bc.company_name;
+
+-- Validate business access for user (JWT-based)
+SELECT COUNT(*) > 0 as has_access
+FROM profile_businesses 
+WHERE profile_id = $userId AND business_id = $businessId;
+
+-- Update user's current business context (atomic)
+UPDATE profiles 
+SET business_id = $newBusinessId 
+WHERE id = $userId;
 ```
 
 ### UI Requirements
@@ -98,14 +142,24 @@ SELECT * FROM business_clients WHERE avatar_url IS NOT NULL;
 
 #### Authentication Flow
 - **Requirement**: Unauthenticated users must redirect to login page
-- **Requirement**: Successful login must redirect to `/dashboard` page
-- **Requirement**: Super Admins must see business switcher in header if multiple businesses exist
-- **Requirement**: User profile must display email initial in header avatar
+- **UPDATED**: Successful login redirects to permalink-based dashboard: `/{business.permalink}/dashboard`
+- **Super Admin Redirect**: Redirects to first available business or profile management if no businesses
+- **Regular User Redirect**: Redirects to first assigned business dashboard
+- **Business Switcher**: Super Admins see business switcher in header for all accessible businesses
+- **User Profile**: Header displays email initial with dropdown menu for logout
+- **Session Persistence**: JWT tokens automatically refreshed, sessions persist across browser restarts
+- **Error Handling**: Invalid permalinks return 404, access denied redirects to accessible business
 
 ### Edge Cases
 - **Failed Authentication**: Must show error message and remain on login page
 - **Session Expiry**: Must automatically logout and redirect to login
 - **Missing Business Data**: Must show loading state until data loads
+- **Invalid Permalink**: Return 404 for non-existent business permalinks
+- **Access Denied**: Redirect users to their first accessible business if accessing unauthorized business
+- **Business Switch Race Conditions**: Prevent concurrent business switching with operation mutex
+- **Cache Poisoning**: User-scoped caching prevents cross-account data contamination
+- **Rate Limiting**: Graceful degradation with stale cache during high traffic periods
+- **URL/State Sync**: Ensure URL permalink always matches selected business context
 
 ---
 
@@ -946,6 +1000,150 @@ REDIS_COMMAND_TIMEOUT=3000
 
 ---
 
+## Session Debugging & Observability System
+
+### Overview
+A comprehensive debugging system designed to identify and resolve user data mixing issues through structured, secure, and user-specific debug logs that track authentication, business context, cache operations, and API requests across frontend and backend components.
+
+### Debugging System Architecture
+
+#### Core Debug Infrastructure (`src/lib/debug.ts`)
+- **Requirement**: Must provide structured, secure debugging utility with automatic data masking
+- **Requirement**: Must generate unique tab/session identifiers for each browser tab
+- **Requirement**: Must support conditional logging that can be enabled/disabled in production
+- **Requirement**: Must implement automatic sensitive data masking (JWT tokens, passwords, emails)
+- **Requirement**: Must provide user-specific tracking with consistent metadata extraction
+- **Security Features**:
+  - JWT token masking: Shows only first/last 8 characters for correlation
+  - Email masking: Protects user privacy while maintaining debuggability
+  - Sensitive field detection: Automatically masks passwords, secrets, keys
+  - No data persistence: Debug logs exist only in browser session
+
+#### Debug Context Categories
+- **AUTH**: Authentication operations, JWT validation, session management
+- **BUSINESS**: Business switching, access validation, context synchronization
+- **CACHE**: Cache hits/misses, performance metrics, invalidation tracking
+- **API**: API route operations, request/response logging, error handling
+- **SESSION**: Session management, context refresh, cross-tab coordination
+- **UI**: User interface operations, component state changes, user interactions
+
+#### API Route Debug Middleware (`src/lib/api-debug-middleware.ts`)
+- **Requirement**: Must provide consistent debugging for Next.js API routes
+- **Requirement**: Must track request/response flow, authentication, and business context
+- **Requirement**: Must operate as passive observer without affecting actual API responses
+- **Requirement**: Must include request correlation IDs for end-to-end tracing
+- **Requirement**: Must handle debug operation failures gracefully without crashing APIs
+- **Key Functions**: `withApiDebug()`, `withAuthenticatedApiDebug()`, `logBusinessAccess()`
+
+### Frontend Debug Integration
+
+#### Business Context Debugging (`src/contexts/BusinessContext.tsx`)
+- **Requirement**: Must log all business switching operations with full context
+- **Requirement**: Must track authentication token correlation across operations
+- **Requirement**: Must monitor session context refresh and synchronization
+- **Requirement**: Must log URL vs context synchronization for permalink routes
+- **Key Debug Points**: 
+  - Authentication token retrieval and validation
+  - Business context refresh operations
+  - Business switching attempts and results
+  - Context state updates and component synchronization
+
+#### Authentication Flow Debugging (`src/lib/auth-helpers.ts`)
+- **Requirement**: Must log all authentication operations with cache performance
+- **Requirement**: Must track rate limiting and stale cache serving
+- **Requirement**: Must monitor business access validation and role-based operations
+- **Requirement**: Must log cache hits/misses with timing and performance metrics
+- **Key Debug Points**:
+  - User authentication success/failure with detailed context
+  - Cache performance monitoring (hits, misses, stale serving)
+  - Rate limit detection and handling
+  - Business access validation for different user roles
+
+### Backend Debug Integration
+
+#### Cache System Debugging (`src/lib/cache.ts`)
+- **Requirement**: Must log all cache operations with performance metrics
+- **Requirement**: Must track cache hit rates and aging patterns
+- **Requirement**: Must monitor cache invalidation and eviction operations
+- **Requirement**: Must provide insights into cache efficiency and optimization needs
+- **Key Debug Points**:
+  - Cache hit/miss events with age and performance data
+  - Cache set operations with TTL and tag information
+  - Cache invalidation tracking with eviction counts
+  - Memory usage and cleanup operations
+
+#### API Route Debugging Implementation
+- **Requirement**: Must instrument critical API routes with comprehensive logging
+- **Routes Instrumented**:
+  - `/api/user/business-context` - User context fetching with full debugging
+  - `/api/user/switch-business` - Business switching with access validation logging
+- **Debug Features**:
+  - Authentication debugging with request correlation
+  - Business access validation logging
+  - Error handling with full context
+  - Performance timing for all operations
+
+### Debug Log Format & Correlation
+
+#### Structured Log Format
+```
+[LEVEL][CONTEXT][TAB_ID][U:USER_ID][B:BUSINESS_ID][JWT:TOKEN_HASH][REQUEST_ID] Message
+```
+
+#### Example Debug Flows
+```
+[DEBUG][AUTH][tab_abc123][][JWT:eyJhbGci] Authentication attempt
+[DEBUG][AUTH][tab_abc123][U:user1][JWT:eyJhbGci] Authentication successful
+[DEBUG][CACHE][tab_abc123][U:user1] Cache SET: user:1:businesses
+[DEBUG][BUSINESS][tab_abc123][U:user1][B:biz1] Business switch attempt
+[DEBUG][API][tab_abc123][U:user1][B:biz1] POST /api/user/switch-business - START
+[DEBUG][BUSINESS][tab_abc123][U:user1][B:biz2] Business switch successful
+```
+
+### Debug Activation & Control
+
+#### Activation Methods
+- **Development**: Automatically enabled in development mode
+- **Production Browser**: `__enableSessionDebug()` / `__disableSessionDebug()` in console
+- **URL Parameter**: `?debug=true` in URL
+- **Environment Variable**: `DEBUG_SESSION_TRACKING=true`
+
+#### Debug Status Functions
+- **Browser Console**: `__debugStatus()` - Check current debug status
+- **Dynamic Control**: Enable/disable logging without application restart
+- **Performance Monitoring**: Zero impact when disabled in production
+
+### User Data Mixing Detection
+
+#### Key Detection Patterns
+- **Session Isolation Monitoring**: Multiple user IDs appearing in same tab session
+- **Authentication Flow Tracking**: JWT token correlation across requests
+- **Business Context Synchronization**: Business switches should be atomic and consistent
+- **Cache Performance Issues**: Cache serving wrong user data or stale entries
+
+#### Debug Investigation Workflow
+1. **Enable Debug Logging**: Activate structured logging for affected users
+2. **Monitor Log Patterns**: Look for user ID mismatches, business context inconsistencies
+3. **Trace Request Flows**: Use request IDs to follow operations end-to-end
+4. **Analyze Cache Behavior**: Monitor cache hits/misses and data consistency
+5. **Validate Session Isolation**: Ensure each browser tab maintains consistent context
+
+### Production Deployment Requirements
+
+#### Security & Performance
+- **Requirement**: Debug logging must have zero performance impact when disabled
+- **Requirement**: Sensitive data must be automatically masked in all debug output
+- **Requirement**: Debug logs must not persist beyond browser session
+- **Requirement**: Production deployment must disable debugging by default
+
+#### Monitoring Integration
+- **Requirement**: Debug system must integrate with existing session security monitoring
+- **Requirement**: Debug events must be correlatable with session diagnostics
+- **Requirement**: Debug system must support external monitoring and alerting integration
+- **Requirement**: Must provide debug performance metrics and health monitoring
+
+---
+
 ## Database Schema
 
 ### Core Tables
@@ -1009,7 +1207,7 @@ REDIS_COMMAND_TIMEOUT=3000
 - **NPM**: Version 8.0.0 or higher
 - **Environment Variables**: 
   - NEXT_PUBLIC_SUPABASE_URL
-  - NEXT_PUBLIC_SUPABASE_ANON_KEY
+  - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
   - NEXT_PUBLIC_SITE_URL (required for production deployments)
 
 ### React Hooks Compliance Requirements

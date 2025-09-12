@@ -32,7 +32,7 @@ export default function ForgotPasswordForm() {
         const { forgotPassword } = await import('@/app/forgot-password/actions')
         await forgotPassword(formData)
       } catch (error) {
-        console.error('Forgot password error:', error)
+        // Forgot password error
         window.location.href = '/forgot-password?error=An unexpected error occurred. Please try again.'
       }
     })

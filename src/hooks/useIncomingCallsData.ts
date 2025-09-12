@@ -67,7 +67,7 @@ export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCall
       }
 
     } catch (err) {
-      console.error('Error fetching source caller types:', err)
+      // Error fetching source caller types
       return null
     }
   }
@@ -138,7 +138,7 @@ export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCall
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(errorMessage)
-      console.error('Error fetching incoming calls data:', err)
+      // Error fetching incoming calls data
     } finally {
       setIsLoading(false)
     }

@@ -29,11 +29,11 @@ export function usePerformance() {
           },
           body: JSON.stringify({ metrics: allMetrics }),
         }).catch(error => {
-          console.warn('Failed to log performance metrics:', error);
+          // Failed to log performance metrics
         });
       }
     } catch (error) {
-      console.error('Failed to collect performance metrics:', error);
+      // Failed to collect performance metrics
     } finally {
       setIsCollecting(false);
     }
@@ -52,7 +52,7 @@ export function usePerformance() {
       },
       body: JSON.stringify({ metrics: [metric] }),
     }).catch(error => {
-      console.warn('Failed to log database metric:', error);
+      // Failed to log database metric
     });
   }, []);
 
@@ -69,7 +69,7 @@ export function usePerformance() {
       },
       body: JSON.stringify({ metrics: [metric] }),
     }).catch(error => {
-      console.warn('Failed to log component metric:', error);
+      // Failed to log component metric
     });
   }, []);
 

@@ -54,7 +54,7 @@ export function useAppointmentSetters({ timePeriod, businessId }: UseAppointment
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch appointment setters'
       setError(errorMessage)
-      console.error('Error fetching appointment setters:', err)
+      // Error fetching appointment setters
     } finally {
       setIsLoading(false)
     }

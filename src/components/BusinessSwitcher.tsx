@@ -70,12 +70,12 @@ export default function BusinessSwitcher({
           await setSelectedCompany(selectedBusiness)
           // setSelectedCompany handles the URL redirect automatically
         } catch (error) {
-          console.error('Failed to switch business:', error)
+          // Failed to switch business
           // Show user-friendly error message
           alert(`Failed to switch business: ${error}`)
         }
       } else {
-        console.error('Selected business not found in available businesses')
+        // Selected business not found in available businesses
         alert('Selected business not found')
       }
     }

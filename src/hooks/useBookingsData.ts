@@ -74,7 +74,7 @@ export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch metrics'
       setMetricsError(errorMessage)
-      console.error('Error fetching metrics:', err)
+      // Error fetching metrics
     } finally {
       setIsMetricsLoading(false)
     }
@@ -108,7 +108,7 @@ export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch bookings leads'
       setBookingsLeadsError(errorMessage)
-      console.error('Error fetching bookings leads:', err)
+      // Error fetching bookings leads
     } finally {
       setIsBookingsLeadsLoading(false)
     }

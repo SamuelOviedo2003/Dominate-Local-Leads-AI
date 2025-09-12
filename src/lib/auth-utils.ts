@@ -38,7 +38,7 @@ export async function getAuthenticatedUser(): Promise<SessionUser | null> {
       .maybeSingle()
 
     if (profileError || !profile) {
-      console.error('Failed to get user profile:', profileError)
+      // Failed to get user profile
       return null
     }
 
@@ -65,7 +65,7 @@ export async function getAuthenticatedUser(): Promise<SessionUser | null> {
       accessibleBusinesses
     }
   } catch (error) {
-    console.error('Authentication error:', error)
+    // Authentication error
     return null
   }
 }
@@ -98,7 +98,7 @@ export async function validateBusinessAccess(userId: string, businessId: string)
 
     return !!access
   } catch (error) {
-    console.error('Business access validation error:', error)
+    // Business access validation error
     return false
   }
 }
@@ -110,7 +110,7 @@ export async function getAuthenticatedUserForAPI(): Promise<SessionUser | null> 
   try {
     return await getAuthenticatedUser()
   } catch (error) {
-    console.error('API authentication error:', error)
+    // API authentication error
     return null
   }
 }
@@ -125,7 +125,7 @@ export async function updateUserBusinessContext(userId: string, businessId: stri
     // First validate business access
     const hasAccess = await validateBusinessAccess(userId, businessId)
     if (!hasAccess) {
-      console.error('Access denied to business:', businessId)
+      // Access denied to business
       return false
     }
 
@@ -136,13 +136,13 @@ export async function updateUserBusinessContext(userId: string, businessId: stri
       .eq('id', userId)
 
     if (updateError) {
-      console.error('Failed to update business context:', updateError)
+      // Failed to update business context
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Error updating business context:', error)
+    // Error updating business context
     return false
   }
 }
@@ -178,52 +178,44 @@ function createClientWithToken(token: string) {
  */
 export async function getAuthenticatedUserFromRequest(request: NextRequest): Promise<SessionUser | null> {
   try {
-    console.log('[AuthUtils] Starting authentication for request:', request.url)
+    // Starting authentication for request
     
     // Try to get token from Authorization header first
     const authHeader = request.headers.get('authorization')
     const token = authHeader?.replace('Bearer ', '')
     
-    console.log('[AuthUtils] Auth header present:', !!authHeader)
-    console.log('[AuthUtils] Token extracted:', !!token)
+    // Checking auth header
+    // Token extracted
     
     let supabaseClient
     let user
     
     if (token) {
-      console.log('[AuthUtils] Using token-based authentication')
+      // Using token-based authentication
       // Use token from Authorization header
       supabaseClient = createClientWithToken(token)
       // Note: When using createClientWithToken, the token is already set in the client
       // So we call getUser() without parameters
       const { data: userData, error: authError } = await supabaseClient.auth.getUser()
       
-      console.log('[AuthUtils] Token validation result:', {
-        hasUser: !!userData.user,
-        userId: userData.user?.id,
-        error: authError?.message
-      })
+      // Token validation result
       
       if (authError || !userData.user) {
-        console.error('[AuthUtils] JWT validation failed:', authError)
+        // JWT validation failed
         return null
       }
       
       user = userData.user
     } else {
-      console.log('[AuthUtils] Using cookie-based authentication fallback')
+      // Using cookie-based authentication fallback
       // Fallback to cookie-based authentication
       supabaseClient = await createClient()
       const { data: userData, error: authError } = await supabaseClient.auth.getUser()
       
-      console.log('[AuthUtils] Cookie auth result:', {
-        hasUser: !!userData.user,
-        userId: userData.user?.id,
-        error: authError?.message
-      })
+      // Cookie auth result
       
       if (authError || !userData.user) {
-        console.error('[AuthUtils] Cookie authentication failed:', authError)
+        // Cookie authentication failed
         return null
       }
       
@@ -231,7 +223,7 @@ export async function getAuthenticatedUserFromRequest(request: NextRequest): Pro
     }
     
     // Get user profile with business context using the appropriate client
-    console.log('[AuthUtils] Fetching user profile for user:', user.id)
+    // Fetching user profile for user
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select(`
@@ -242,16 +234,10 @@ export async function getAuthenticatedUserFromRequest(request: NextRequest): Pro
       .eq('id', user.id)
       .maybeSingle()
 
-    console.log('[AuthUtils] Profile query result:', {
-      hasProfile: !!profile,
-      role: profile?.role,
-      businessId: profile?.business_id,
-      accessibleBusinesses: profile?.profile_businesses?.length || 0,
-      error: profileError?.message
-    })
+    // Profile query result
 
     if (profileError || !profile) {
-      console.error('[AuthUtils] Failed to get user profile:', profileError)
+      // Failed to get user profile
       return null
     }
 
@@ -278,16 +264,11 @@ export async function getAuthenticatedUserFromRequest(request: NextRequest): Pro
       accessibleBusinesses: accessibleBusinessesForApi
     }
     
-    console.log('[AuthUtils] Successfully created session user:', {
-      id: sessionUser.id,
-      role: sessionUser.role,
-      businessId: sessionUser.businessId,
-      accessibleBusinesses: sessionUser.accessibleBusinesses
-    })
+    // Successfully created session user
 
     return sessionUser
   } catch (error) {
-    console.error('Authentication error:', error)
+    // Authentication error
     return null
   }
 }
@@ -320,7 +301,7 @@ export async function validateBusinessAccessWithToken(userId: string, businessId
 
     return !!access
   } catch (error) {
-    console.error('Business access validation error:', error)
+    // Business access validation error
     return false
   }
 }
@@ -335,7 +316,7 @@ export async function updateUserBusinessContextWithToken(userId: string, busines
     // First validate business access
     const hasAccess = await validateBusinessAccessWithToken(userId, businessId, token)
     if (!hasAccess) {
-      console.error('Access denied to business:', businessId)
+      // Access denied to business
       return false
     }
 
@@ -346,13 +327,13 @@ export async function updateUserBusinessContextWithToken(userId: string, busines
       .eq('id', userId)
 
     if (updateError) {
-      console.error('Failed to update business context:', updateError)
+      // Failed to update business context
       return false
     }
 
     return true
   } catch (error) {
-    console.error('Error updating business context:', error)
+    // Error updating business context
     return false
   }
 }
@@ -390,7 +371,7 @@ export async function getAvailableBusinesses(userId: string): Promise<string[]> 
       return businesses?.map(b => b.business_id.toString()) || []
     }
   } catch (error) {
-    console.error('Error getting available businesses:', error)
+    // Error getting available businesses
     return []
   }
 }
@@ -462,7 +443,7 @@ export async function getAvailableBusinessesWithToken(userId: string, token?: st
       }) || []
     }
   } catch (error) {
-    console.error('Error getting available businesses with token:', error)
+    // Error getting available businesses with token
     return []
   }
 }

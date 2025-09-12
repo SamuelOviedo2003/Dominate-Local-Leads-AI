@@ -11,7 +11,7 @@ export default function LoginLogo({ className = '' }: LoginLogoProps) {
   const [imageLoaded, setImageLoaded] = useState(false)
 
   const handleImageError = () => {
-    console.warn('Failed to load logo image, showing fallback text')
+    // Failed to load logo image, showing fallback text
     setImageError(true)
   }
 
