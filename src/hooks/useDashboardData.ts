@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { EnhancedDashboardMetrics, TimePeriod, ApiResponse } from '@/types/leads'
+import { authGet } from '@/lib/auth-fetch'
 
 interface UseDashboardDataProps {
   timePeriod: TimePeriod
@@ -39,14 +40,8 @@ export function useDashboardData({ timePeriod, businessId }: UseDashboardDataPro
         businessId
       })
 
-      // Fetch platform spend data
-      const platformSpendRes = await fetch(`/api/dashboard/platform-spend?${params}`)
-
-      if (!platformSpendRes.ok) {
-        throw new Error(`HTTP error! status: ${platformSpendRes.status}`)
-      }
-
-      const platformSpendData: ApiResponse<EnhancedDashboardMetrics> = await platformSpendRes.json()
+      // Fetch platform spend data with authenticated request
+      const platformSpendData: ApiResponse<EnhancedDashboardMetrics> = await authGet(`/api/dashboard/platform-spend?${params}`)
 
       if (!platformSpendData.success) {
         throw new Error(platformSpendData.error || 'Failed to fetch platform spend data')

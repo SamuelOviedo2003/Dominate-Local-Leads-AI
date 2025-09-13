@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Building, Plus, Minus, Eye, AlertCircle } from 'lucide-react'
+import { Users, Building, Plus, Minus, Eye, AlertCircle, Shield, User, Lock } from 'lucide-react'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import { authGet, authPost, authDelete, authPatch } from '@/lib/auth-fetch'
 
 interface User {
   id: string
@@ -32,6 +33,7 @@ export default function ProfileManagementClient() {
   const [users, setUsers] = useState<User[]>([])
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,26 +48,45 @@ export default function ProfileManagementClient() {
       setIsLoading(true)
       setError(null)
 
-      // Fetch users and businesses in parallel
-      const [usersResponse, businessesResponse] = await Promise.all([
-        fetch('/api/admin/users'),
-        fetch('/api/admin/businesses')
+      console.log('🔍 [CLIENT DEBUG] Starting to fetch users and businesses data...')
+
+      // Fetch users and businesses in parallel with authentication
+      const [usersData, businessesData] = await Promise.all([
+        authGet('/api/admin/users'),
+        authGet('/api/admin/businesses')
       ])
 
-      if (!usersResponse.ok) {
-        throw new Error('Failed to fetch users')
-      }
-
-      if (!businessesResponse.ok) {
-        throw new Error('Failed to fetch businesses')
-      }
-
-      const usersData = await usersResponse.json()
-      const businessesData = await businessesResponse.json()
+      console.log('🔍 [CLIENT DEBUG] API responses received:', {
+        usersData: {
+          success: usersData.success,
+          dataCount: usersData.data?.length || 0,
+          users: usersData.data?.map((u: User) => ({ id: u.id, email: u.email, role: u.role })) || [],
+          error: usersData.error
+        },
+        businessesData: {
+          success: businessesData.success,
+          dataCount: businessesData.data?.length || 0,
+          error: businessesData.error
+        }
+      })
 
       const newUsers = usersData.data || []
       setUsers(newUsers)
       setBusinesses(businessesData.data || [])
+
+      console.log('🔍 [CLIENT DEBUG] State updated with:', {
+        usersCount: newUsers.length,
+        businessesCount: businessesData.data?.length || 0
+      })
+
+      // Find and set current user ID (the super admin using this interface)
+      const currentSuperAdmin = newUsers.find((user: User) => user.role === 0)
+      if (currentSuperAdmin) {
+        setCurrentUserId(currentSuperAdmin.id)
+        console.log('🔍 [CLIENT DEBUG] Found current super admin:', currentSuperAdmin.email)
+      } else {
+        console.log('🔍 [CLIENT DEBUG] No super admin found in users list')
+      }
 
       // Update selectedUser with fresh data if a user is currently selected
       if (selectedUser) {
@@ -75,6 +96,7 @@ export default function ProfileManagementClient() {
         }
       }
     } catch (err) {
+      console.error('🔍 [CLIENT DEBUG] Error in loadData:', err)
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setIsLoading(false)
@@ -87,21 +109,10 @@ export default function ProfileManagementClient() {
       setError(null)
       setSuccess(null)
 
-      const response = await fetch('/api/admin/profile-businesses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          profileId,
-          businessId
-        })
+      await authPost('/api/admin/profile-businesses', {
+        profileId,
+        businessId
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to assign business')
-      }
 
       setSuccess('Business successfully assigned to user')
       await loadData() // Refresh data
@@ -118,22 +129,34 @@ export default function ProfileManagementClient() {
       setError(null)
       setSuccess(null)
 
-      const response = await fetch(
-        `/api/admin/profile-businesses?profileId=${profileId}&businessId=${businessId}`,
-        {
-          method: 'DELETE'
-        }
+      await authDelete(
+        `/api/admin/profile-businesses?profileId=${profileId}&businessId=${businessId}`
       )
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to remove business access')
-      }
 
       setSuccess('Business access successfully removed from user')
       await loadData() // Refresh data
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove business access')
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const updateUserRole = async (userId: string, newRole: number) => {
+    try {
+      setIsUpdating(true)
+      setError(null)
+      setSuccess(null)
+
+      await authPatch('/api/admin/users', {
+        userId,
+        role: newRole
+      })
+
+      setSuccess(`User role successfully updated to ${newRole === 0 ? 'Super Admin' : 'Regular User'}`)
+      await loadData() // Refresh data
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update user role')
     } finally {
       setIsUpdating(false)
     }
@@ -206,19 +229,62 @@ export default function ProfileManagementClient() {
                 onClick={() => setSelectedUser(user)}
               >
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
                       {user.full_name || user.email}
                     </p>
                     <p className="text-sm text-gray-500">{user.email}</p>
-                    <div className="flex items-center mt-1">
+                    <div className="flex items-center justify-between mt-2">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.role === 0 
-                          ? 'bg-purple-100 text-purple-800' 
-                          : 'bg-gray-100 text-gray-800'
+                        user.role === 0
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-blue-100 text-blue-800'
                       }`}>
                         {user.role === 0 ? 'Super Admin' : 'Regular User'}
                       </span>
+
+                      {/* Role modification button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const newRole = user.role === 0 ? 1 : 0
+                          updateUserRole(user.id, newRole)
+                        }}
+                        disabled={isUpdating || (user.id === currentUserId && user.role === 0)}
+                        className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded transition-colors ${
+                          user.id === currentUserId && user.role === 0
+                            ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                            : user.role === 0
+                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50'
+                            : 'bg-purple-100 text-purple-700 hover:bg-purple-200 disabled:opacity-50'
+                        }`}
+                        title={
+                          user.id === currentUserId && user.role === 0
+                            ? 'Cannot downgrade your own Super Admin role'
+                            : user.role === 0
+                            ? 'Downgrade to Regular User'
+                            : 'Promote to Super Admin'
+                        }
+                      >
+                        {isUpdating ? (
+                          <LoadingSpinner size="sm" />
+                        ) : user.id === currentUserId && user.role === 0 ? (
+                          <>
+                            <Lock className="w-3 h-3 mr-1" />
+                            Protected
+                          </>
+                        ) : user.role === 0 ? (
+                          <>
+                            <User className="w-3 h-3 mr-1" />
+                            Make User
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="w-3 h-3 mr-1" />
+                            Make Admin
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                   <div className="text-right">

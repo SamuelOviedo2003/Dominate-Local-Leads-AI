@@ -1,4 +1,4 @@
-import { getAuthenticatedUser } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers'
 import { BookingsClient } from '@/app/(dashboard)/bookings/client'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +16,20 @@ export default async function PermalinkBookingsPage({
   params 
 }: PermalinkBookingsPageProps) {
   // Get authenticated user on server side
-  const user = await getAuthenticatedUser()
+  const user = await getAuthenticatedUserFromRequest()
+  
+  // Handle case where user is not authenticated
+  if (!user) {
+    return (
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-red-600">Authentication required. Please log in.</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
   
   // Check if user has access to any businesses using the new profile_businesses system
   if (!user.accessibleBusinesses || user.accessibleBusinesses.length === 0) {

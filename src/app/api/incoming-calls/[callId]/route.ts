@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken } from '@/lib/auth-utils'
+import { createCookieClient } from '@/lib/supabase/server'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
 import { IncomingCall } from '@/types/leads'
 import { updateCallerTypeSchema } from '@/lib/validation'
 import { requireValidBusinessId } from '@/lib/type-utils'
@@ -17,7 +17,7 @@ interface CallIdParams {
 export async function GET(request: NextRequest, { params }: CallIdParams) {
   try {
     // Check authentication
-    const user = await getAuthenticatedUserFromRequest(request)
+    const user = await getAuthenticatedUserFromRequest()
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -33,7 +33,8 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-    const supabase = await createClient()
+
+    const supabase = createCookieClient()
 
     // Fetch the specific call details
     const { data: callData, error } = await supabase
@@ -50,12 +51,10 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
     // Check if user has access to this business data
-    const hasAccess = await validateBusinessAccessWithToken(user.id, callData.business_id.toString(), token)
+    const hasAccess = await user.accessibleBusinesses?.some(business =>
+      business.business_id === callData.business_id.toString()
+    )
     if (!hasAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },
@@ -94,7 +93,7 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
 export async function PATCH(request: NextRequest, { params }: CallIdParams) {
   try {
     // Check authentication
-    const user = await getAuthenticatedUserFromRequest(request)
+    const user = await getAuthenticatedUserFromRequest()
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -122,7 +121,8 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-    const supabase = await createClient()
+
+    const supabase = createCookieClient()
 
     // First, verify the call exists and user has access
     const { data: existingCall, error: fetchError } = await supabase
@@ -139,12 +139,10 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
     // Check if user has access to this business data
-    const hasAccess = await validateBusinessAccessWithToken(user.id, existingCall.business_id.toString(), token)
+    const hasAccess = await user.accessibleBusinesses?.some(business =>
+      business.business_id === existingCall.business_id.toString()
+    )
     if (!hasAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },

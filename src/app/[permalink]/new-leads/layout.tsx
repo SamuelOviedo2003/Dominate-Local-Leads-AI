@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { getHeaderData } from '@/lib/auth-helpers'
+import { getHeaderData } from '@/lib/auth-helpers-simple'
 import UniversalHeader from '@/components/UniversalHeader'
 import { logout } from '@/app/home/actions'
 import { BusinessContextProvider } from '@/contexts/BusinessContext'
@@ -22,7 +22,14 @@ export default async function PermalinkNewLeadsLayout({
   params 
 }: PermalinkNewLeadsLayoutProps) {
   const { permalink } = params
-  const { user, availableBusinesses } = await getHeaderData()
+  const headerData = await getHeaderData()
+  const { user, availableBusinesses } = headerData || { user: null, availableBusinesses: [] }
+
+  // If no authenticated user, this should not happen as permalink layout validates authentication
+  if (!user) {
+    console.error('[NEW_LEADS_LAYOUT] No authenticated user found - this should not happen after permalink layout validation')
+    return null
+  }
 
   // Create Supabase client to resolve the current business from permalink
   const cookieStore = cookies()

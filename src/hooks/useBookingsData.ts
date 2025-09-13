@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { BookingsMetrics, LeadWithClient, TimePeriod, ApiResponse } from '@/types/leads'
+import { authGet } from '@/lib/auth-fetch'
 
 interface UseBookingsDataProps {
   timePeriod: TimePeriod
@@ -59,12 +60,7 @@ export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps
         timePeriod
       })
 
-      const metricsRes = await fetch(`/api/bookings/metrics?${metricsParams}`)
-      if (!metricsRes.ok) {
-        throw new Error('Failed to fetch metrics')
-      }
-
-      const metricsData: ApiResponse<BookingsMetrics> = await metricsRes.json()
+      const metricsData: ApiResponse<BookingsMetrics> = await authGet(`/api/bookings/metrics?${metricsParams}`)
       
       if (metricsData.success) {
         setMetrics(metricsData.data)
@@ -93,12 +89,7 @@ export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps
         businessId: businessId.toString()
       })
 
-      const leadsRes = await fetch(`/api/bookings/leads?${baseParams}`)
-      if (!leadsRes.ok) {
-        throw new Error('Failed to fetch bookings leads')
-      }
-
-      const leadsData: ApiResponse<LeadWithClient[]> = await leadsRes.json()
+      const leadsData: ApiResponse<LeadWithClient[]> = await authGet(`/api/bookings/leads?${baseParams}`)
       
       if (leadsData.success) {
         setBookingsLeads(leadsData.data)

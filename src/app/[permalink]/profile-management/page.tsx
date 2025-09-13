@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getAuthenticatedUser } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers'
 import ProfileManagementClient from '@/app/(dashboard)/profile-management/client'
 
 export const dynamic = 'force-dynamic'
@@ -17,7 +17,12 @@ export default async function PermalinkProfileManagementPage({
   params 
 }: PermalinkProfileManagementPageProps) {
   // Check authentication and authorization
-  const user = await getAuthenticatedUser()
+  const user = await getAuthenticatedUserFromRequest()
+  
+  // Handle case where user is not authenticated
+  if (!user) {
+    redirect('/login')
+  }
   
   // Only super admins (role 0) can access profile management
   if (user.profile?.role !== 0) {

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { getHeaderData } from '@/lib/auth-helpers'
+import { getHeaderData } from '@/lib/auth-helpers-simple'
 import UniversalHeader from '@/components/UniversalHeader'
 import { logout } from '@/app/home/actions'
 import { BusinessContextProvider } from '@/contexts/BusinessContext'
@@ -14,15 +14,22 @@ interface PermalinkDashboardLayoutProps {
 
 /**
  * Dashboard layout for permalink-based routes
- * This provides the same dashboard UI structure as the regular dashboard
+ * This provides the same UI structure with BusinessContextProvider
  * but uses the business context established by the permalink layout
  */
-export default async function PermalinkDashboardLayout({ 
+export default async function PermalinkDashboardLayout({
   children,
-  params 
+  params
 }: PermalinkDashboardLayoutProps) {
   const { permalink } = params
-  const { user, availableBusinesses } = await getHeaderData()
+  const headerData = await getHeaderData()
+  const { user, availableBusinesses } = headerData || { user: null, availableBusinesses: [] }
+
+  // If no authenticated user, this should not happen as permalink layout validates authentication
+  if (!user) {
+    console.error('[DASHBOARD_LAYOUT] No authenticated user found - this should not happen after permalink layout validation')
+    return null
+  }
 
   // Create Supabase client to resolve the current business from permalink
   const cookieStore = cookies()
@@ -40,7 +47,7 @@ export default async function PermalinkDashboardLayout({
       },
     }
   )
-  
+
   // Resolve current business from permalink
   const { data: currentBusiness } = await supabase
     .from('business_clients')
@@ -56,12 +63,12 @@ export default async function PermalinkDashboardLayout({
     <DynamicThemeProvider>
       <BusinessContextProvider>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <UniversalHeader 
-            user={user} 
+          <UniversalHeader
+            user={user}
             logoutAction={logout}
             availableBusinesses={availableBusinesses}
           />
-          
+
           <main className="flex-1">
             {children}
           </main>

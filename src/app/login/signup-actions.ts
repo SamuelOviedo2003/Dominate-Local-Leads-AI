@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createCookieClient } from '@/lib/supabase/server'
 
 /**
  * Server action for user signup with profile creation and business association
@@ -17,7 +17,7 @@ import { createClient } from '@/lib/supabase/server'
  * 5. Handles proper error reporting and redirects
  */
 export async function signup(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createCookieClient()
 
   // Extract and validate form data
   const email = formData.get('email') as string

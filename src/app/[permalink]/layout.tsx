@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { notFound, redirect } from 'next/navigation'
-import { getAuthenticatedUser, getFirstAvailableBusinessForSuperAdmin } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
 import { getBusinessByPermalink } from '@/lib/permalink-cache'
 import { headers } from 'next/headers'
 
@@ -29,7 +29,18 @@ export default async function PermalinkLayout({
   
   try {
     // Get authenticated user with enhanced caching and rate limit handling
-    const user = await getAuthenticatedUser()
+    const user = await getAuthenticatedUserFromRequest()
+    
+    // Handle case where no user is authenticated (common in localStorage mode for server components)
+    if (!user) {
+      console.log(`[LAYOUT] No authenticated user found for ${permalink}, redirecting to login`)
+      if (pathname !== '/login') {
+        redirect('/login')
+      } else {
+        notFound()
+      }
+    }
+    
     console.log(`[LAYOUT] User ${user.email} (role: ${user.profile?.role ?? 1}) accessing ${permalink}`)
     
     // Resolve business from permalink using cached resolution
@@ -67,19 +78,9 @@ export default async function PermalinkLayout({
       
       // Handle access denial based on user role
       if (effectiveRole === 0) {
-        // Super admin without access - redirect to first available business or profile management
-        console.log(`[LAYOUT] Super admin without access, finding first available business`)
+        // Super admin without access - redirect to profile management
+        console.log(`[LAYOUT] Super admin without access to ${permalink}, redirecting to profile management`)
         
-        const firstBusiness = await getFirstAvailableBusinessForSuperAdmin()
-        if (firstBusiness?.permalink && firstBusiness.permalink !== permalink) {
-          const targetPath = `/${firstBusiness.permalink}/dashboard`
-          if (pathname !== targetPath) {
-            console.log(`[LAYOUT] Redirecting super admin from ${pathname} to ${targetPath}`)
-            redirect(targetPath)
-          }
-        }
-        
-        // No businesses available or already at the target, redirect to profile management
         if (pathname !== '/profile-management') {
           console.log(`[LAYOUT] Redirecting super admin from ${pathname} to profile management`)
           redirect('/profile-management')

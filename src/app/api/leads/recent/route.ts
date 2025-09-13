@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken } from '@/lib/auth-utils'
+import { createCookieClient } from '@/lib/supabase/server'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
 import { LeadWithClient } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUserFromRequest(request)
+    // Check authentication using cookie-based auth
+    const user = await getAuthenticatedUserFromRequest()
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -36,14 +36,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
-    // Validate business access permissions with token
+    // Validate business access permissions using user's accessible businesses
     if (businessIdParam) {
-      const hasAccess = await validateBusinessAccessWithToken(user.id, businessIdParam, token)
+      const hasAccess = user.accessibleBusinesses?.some(
+        business => business.business_id === businessIdParam || business.business_id === requestedBusinessId.toString()
+      )
       if (!hasAccess) {
+        console.log(`Access denied: User ${user.email} tried to access business ${businessIdParam}. Available businesses:`, user.accessibleBusinesses?.map(b => b.business_id))
         return NextResponse.json(
           { error: 'Access denied - You do not have access to this business data' },
           { status: 403 }
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const supabase = await createClient()
+    const supabase = createCookieClient()
 
     // Fetch leads with clients data - filter for stage = 1 OR stage = 2 (Recent Leads)
     // RLS policies will automatically filter results based on user's accessible businesses

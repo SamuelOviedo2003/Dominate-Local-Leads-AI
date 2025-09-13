@@ -1,6 +1,6 @@
 import { type EmailOtpType } from '@supabase/supabase-js'
 import { type NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createCookieClient } from '@/lib/supabase/server'
 
 /**
  * API Route for handling email confirmation tokens in PKCE flow
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = await createClient()
+    const supabase = createCookieClient()
     console.log('✅ Supabase client created successfully')
 
     // For password recovery, redirect to the new reset password page with code

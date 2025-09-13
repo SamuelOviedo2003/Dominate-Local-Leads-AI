@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUser, getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
+import { createCookieClient } from '@/lib/supabase/server'
 import { Profile } from '@/types/auth'
 
 export const dynamic = 'force-dynamic'
@@ -10,16 +9,17 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET() {
   try {
+    // Create Supabase client for cookie-based auth
+    const supabase = createCookieClient()
+    
     // Check authentication
-    const user = await getAuthenticatedUser()
-    if (!user) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
       )
     }
-
-    const supabase = await createClient()
 
     // Fetch complete profile data with latest information
     const { data: profileData, error: profileError } = await supabase
@@ -35,9 +35,8 @@ export async function GET() {
       )
     }
 
-    // Check if email is verified using Supabase auth
-    const { data: authUser, error: authError } = await supabase.auth.getUser()
-    const emailVerified = !authError && authUser.user?.email_confirmed_at !== null
+    // Email is already verified if user exists (Supabase requirement)
+    const emailVerified = user.email_confirmed_at !== null
 
     const profile: Profile = {
       ...profileData,
@@ -66,9 +65,12 @@ export async function GET() {
  */
 export async function PATCH(request: NextRequest) {
   try {
+    // Create Supabase client for cookie-based auth
+    const supabase = createCookieClient()
+    
     // Check authentication
-    const user = await getAuthenticatedUserFromRequest(request)
-    if (!user) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
         { status: 401 }
@@ -101,8 +103,6 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    const supabase = await createClient()
 
     // Build update object with only provided fields
     const updateData: Partial<Profile> = {

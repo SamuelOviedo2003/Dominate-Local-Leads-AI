@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken } from '@/lib/auth-utils'
+import { createCookieClient } from '@/lib/supabase/server'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
 import { CallerTypeDistribution } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
       console.warn('Bot/crawler detected, consider rate limiting')
     }
 
-    // Check authentication
-    const user = await getAuthenticatedUserFromRequest(request)
+    // Check authentication using cookie-based auth
+    const user = await getAuthenticatedUserFromRequest()
     if (!user) {
       console.warn('Unauthorized access attempt to source-caller-types endpoint')
       return NextResponse.json(
@@ -115,12 +115,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
-    // Validate business access permissions with token
-    const hasAccess = await validateBusinessAccessWithToken(user.id, businessIdParam!, token)
+    // Validate business access permissions using cookie-based auth
+    const hasAccess = user.accessibleBusinesses?.some(business =>
+      business.business_id === businessIdParam!
+    )
     if (!hasAccess) {
       console.warn(`Access denied: User ${user.id} tried to access business ${requestedBusinessId}`)
       return NextResponse.json(
@@ -129,7 +127,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = createCookieClient()
 
     // Optimized query with database-level filtering (consistent with other endpoints)
     const { data: callerTypeData, error } = await supabase

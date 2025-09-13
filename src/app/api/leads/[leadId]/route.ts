@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken } from '@/lib/auth-utils'
+import { createCookieClient } from '@/lib/supabase/server'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
 import { LeadDetails, Lead, PropertyInfo, Communication, CallWindow } from '@/types/leads'
 import { logger } from '@/lib/logging'
 import { validateRequest, leadIdSchema, businessIdSchema, updateCallerTypeSchema } from '@/lib/validation'
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
   
   try {
     // Check authentication
-    const user = await getAuthenticatedUserFromRequest(request)
+    const user = await getAuthenticatedUserFromRequest()
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -158,12 +158,11 @@ export async function GET(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    // Validate business access permissions using cookie-based auth
+    const hasBusinessAccess = user.accessibleBusinesses?.some(business =>
+      business.business_id === businessIdParam
+    )
 
-    // Validate business access permissions with token
-    const hasBusinessAccess = await validateBusinessAccessWithToken(user.id, businessIdParam, token)
     if (!hasBusinessAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },
@@ -171,7 +170,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = createCookieClient()
 
     // Fetch lead details
     const { data: leadData, error: leadError } = await supabase
@@ -298,7 +297,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
 export async function PATCH(request: NextRequest, context: RouteParams) {
   try {
     // Check authentication
-    const user = await getAuthenticatedUserFromRequest(request)
+    const user = await getAuthenticatedUserFromRequest()
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -335,12 +334,11 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    // Validate business access permissions using cookie-based auth
+    const hasBusinessAccess = user.accessibleBusinesses?.some(business =>
+      business.business_id === businessIdParam
+    )
 
-    // Validate business access permissions with token
-    const hasBusinessAccess = await validateBusinessAccessWithToken(user.id, businessIdParam, token)
     if (!hasBusinessAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },
@@ -363,7 +361,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = createCookieClient()
 
     // First verify the lead exists and belongs to the business
     const { data: leadExists, error: leadCheckError } = await supabase

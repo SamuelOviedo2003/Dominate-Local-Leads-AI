@@ -1,4 +1,4 @@
-import { getAuthenticatedUser } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
 import { NewLeadsClient } from '@/app/(dashboard)/new-leads/client'
 
 export const dynamic = 'force-dynamic'
@@ -15,11 +15,11 @@ interface PermalinkNewLeadsPageProps {
 export default async function PermalinkNewLeadsPage({ 
   params 
 }: PermalinkNewLeadsPageProps) {
-  // Get authenticated user on server side
-  const user = await getAuthenticatedUser()
+  // Get authenticated user on server side using cookie-based auth
+  const user = await getAuthenticatedUserFromRequest()
   
-  // Check if user has access to any businesses using the new profile_businesses system
-  if (!user.accessibleBusinesses || user.accessibleBusinesses.length === 0) {
+  // Check if user exists and has access to any businesses
+  if (!user || !user.accessibleBusinesses || user.accessibleBusinesses.length === 0) {
     return (
       <div className="p-6">
         <div className="max-w-7xl mx-auto">

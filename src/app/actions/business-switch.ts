@@ -1,8 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUser } from '@/lib/auth-utils'
+import { createCookieClient } from '@/lib/supabase/server'
 import { BusinessSwitcherData } from '@/types/auth'
 
 /**
@@ -15,7 +14,7 @@ export async function switchBusiness(businessId: string): Promise<{
   error?: string
 }> {
   try {
-    const supabase = await createClient()
+    const supabase = createCookieClient()
 
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -26,17 +25,24 @@ export async function switchBusiness(businessId: string): Promise<{
       }
     }
 
-    // Get authenticated user with profile and business access via JWT
-    const authenticatedUser = await getAuthenticatedUser()
-    if (!authenticatedUser || authenticatedUser.id !== user.id) {
+    // Get user profile to check role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
       return {
         success: false,
-        error: 'Authentication failed'
+        error: 'Profile not found'
       }
     }
 
+    const effectiveRole = profile.role ?? 1
+
     // Only superadmins (role=0) can switch businesses
-    if (authenticatedUser.role !== 0) {
+    if (effectiveRole !== 0) {
       return {
         success: false,
         error: 'Insufficient permissions - only superadmins can switch businesses'
@@ -58,9 +64,18 @@ export async function switchBusiness(businessId: string): Promise<{
       }
     }
 
-    // Note: We don't store the selected business in the database or session
-    // The frontend will handle storing this in localStorage/context
-    // This server action just validates the switch is allowed
+    // Update user's current business context
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ business_id: parseInt(businessId) })
+      .eq('id', user.id)
+
+    if (updateError) {
+      return {
+        success: false,
+        error: 'Failed to update business context'
+      }
+    }
 
     // Revalidate paths that might show business-specific data
     revalidatePath('/dashboard')
@@ -69,7 +84,14 @@ export async function switchBusiness(businessId: string): Promise<{
 
     return {
       success: true,
-      data: business as BusinessSwitcherData
+      data: {
+        business_id: business.business_id.toString(),
+        company_name: business.company_name,
+        avatar_url: business.avatar_url,
+        city: business.city,
+        state: business.state,
+        permalink: business.permalink
+      }
     }
 
   } catch (error) {
@@ -90,7 +112,7 @@ export async function getAvailableBusinesses(): Promise<{
   error?: string
 }> {
   try {
-    const supabase = await createClient()
+    const supabase = createCookieClient()
 
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -101,17 +123,24 @@ export async function getAvailableBusinesses(): Promise<{
       }
     }
 
-    // Get authenticated user with profile and business access via JWT
-    const authenticatedUser = await getAuthenticatedUser()
-    if (!authenticatedUser || authenticatedUser.id !== user.id) {
+    // Get user profile to check role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
       return {
         success: false,
-        error: 'Authentication failed'
+        error: 'Profile not found'
       }
     }
 
+    const effectiveRole = profile.role ?? 1
+
     // Only superadmins (role=0) can see all businesses
-    if (authenticatedUser.role !== 0) {
+    if (effectiveRole !== 0) {
       return {
         success: false,
         error: 'Insufficient permissions - only superadmins can access all businesses'
@@ -134,7 +163,14 @@ export async function getAvailableBusinesses(): Promise<{
 
     return {
       success: true,
-      data: businesses as BusinessSwitcherData[]
+      data: (businesses || []).map(b => ({
+        business_id: b.business_id.toString(),
+        company_name: b.company_name,
+        avatar_url: b.avatar_url,
+        city: b.city,
+        state: b.state,
+        permalink: b.permalink
+      }))
     }
 
   } catch (error) {
@@ -156,7 +192,7 @@ export async function validateBusinessAccess(businessId: string): Promise<{
   error?: string
 }> {
   try {
-    const supabase = await createClient()
+    const supabase = createCookieClient()
 
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
@@ -167,19 +203,25 @@ export async function validateBusinessAccess(businessId: string): Promise<{
       }
     }
 
-    // Get authenticated user with profile and business access via JWT
-    const authenticatedUser = await getAuthenticatedUser()
-    if (!authenticatedUser || authenticatedUser.id !== user.id) {
+    // Get user profile to check role
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
       return {
         success: false,
-        error: 'Authentication failed'
+        error: 'Profile not found'
       }
     }
 
+    const effectiveRole = profile.role ?? 1
     let canAccess = false
 
     // Superadmins (role=0) can access any business with dashboard=true
-    if (authenticatedUser.role === 0) {
+    if (effectiveRole === 0) {
       const { data: business, error: businessError } = await supabase
         .from('business_clients')
         .select('business_id')
@@ -203,7 +245,7 @@ export async function validateBusinessAccess(businessId: string): Promise<{
     return {
       success: true,
       canAccess,
-      userRole: authenticatedUser.role
+      userRole: effectiveRole
     }
 
   } catch (error) {

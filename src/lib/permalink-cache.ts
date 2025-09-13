@@ -5,7 +5,7 @@
  */
 
 import { createServerClient } from '@supabase/ssr'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createCookieClient } from '@/lib/supabase/server'
 import { cache, CACHE_TTL, CACHE_TAGS } from '@/lib/cache'
 import { cookies } from 'next/headers'
 
@@ -146,8 +146,8 @@ export async function fetchBusinessFromDatabase(permalink: string): Promise<Perm
   try {
     // Fetching business from database for permalink
     
-    // Use regular client with publishable key - business_clients table should be publicly readable for permalinks
-    const supabase = await createClient()
+    // Use cookie client for authenticated access to business_clients table
+    const supabase = createCookieClient()
     
     const { data: business, error } = await supabase
       .from('business_clients')

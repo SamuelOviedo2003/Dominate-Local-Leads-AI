@@ -1,18 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
-import { withAuthenticatedApiDebug } from '@/lib/api-debug-middleware'
+import { NextRequest } from 'next/server'
+import { authenticateRequest } from '@/lib/api-auth'
 
-export const GET = withAuthenticatedApiDebug(
-  async (request: NextRequest, context, user) => {
-    return NextResponse.json({
+export async function GET(request: NextRequest) {
+  try {
+    const { user } = await authenticateRequest(request)
+    
+    return Response.json({
       success: true,
       data: {
-        userId: user.id,
-        currentBusinessId: user.businessId,
-        accessibleBusinesses: user.accessibleBusinesses,
-        role: user.role
+        currentBusinessId: user.currentBusinessId,
+        accessibleBusinesses: user.accessibleBusinesses?.map(b => b.business_id) || [],
+        role: user.profile?.role ?? 1
       }
     })
-  },
-  getAuthenticatedUserFromRequest
-)
+  } catch (error) {
+    return Response.json(
+      { success: false, error: 'Authentication failed' },
+      { status: 401 }
+    )
+  }
+}

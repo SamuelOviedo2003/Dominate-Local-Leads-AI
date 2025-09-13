@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken } from '@/lib/auth-utils'
+import { createCookieClient } from '@/lib/supabase/server'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
 import { SourceDistribution } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUserFromRequest(request)
+    // Check authentication using cookie-based auth
+    const user = await getAuthenticatedUserFromRequest()
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -36,12 +36,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
-    // Validate business access permissions with token
-    const hasAccess = await validateBusinessAccessWithToken(user.id, businessIdParam, token)
+    // Validate business access permissions using cookie-based auth
+    const hasAccess = user.accessibleBusinesses?.some(business =>
+      business.business_id === businessIdParam
+    )
     if (!hasAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },
@@ -49,7 +47,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = createCookieClient()
 
     // Fetch source distribution data
     const { data: sourceData, error } = await supabase

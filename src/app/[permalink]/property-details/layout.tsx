@@ -22,7 +22,14 @@ export default async function PermalinkPropertyDetailsLayout({
   params 
 }: PermalinkPropertyDetailsLayoutProps) {
   const { permalink } = params
-  const { user, availableBusinesses } = await getHeaderData()
+  const headerData = await getHeaderData()
+  const { user, availableBusinesses } = headerData || { user: null, availableBusinesses: [] }
+
+  // If no authenticated user, this should not happen as permalink layout validates authentication
+  if (!user) {
+    console.error('[PROPERTY_DETAILS_LAYOUT] No authenticated user found - this should not happen after permalink layout validation')
+    return null
+  }
 
   // Create Supabase client to resolve the current business from permalink
   const cookieStore = cookies()

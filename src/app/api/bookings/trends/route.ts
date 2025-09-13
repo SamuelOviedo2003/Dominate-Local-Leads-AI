@@ -1,20 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken } from '@/lib/auth-utils'
+import { NextRequest } from 'next/server'
+import { authenticateRequest } from '@/lib/api-auth'
+import { createCookieClient } from '@/lib/supabase/server'
 import { RevenueTrendData } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUserFromRequest(request)
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
+    const { user } = await authenticateRequest(request)
 
     const { searchParams } = new URL(request.url)
     const startDateParam = searchParams.get('startDate')
@@ -22,39 +15,35 @@ export async function GET(request: NextRequest) {
     const timePeriodParam = searchParams.get('timePeriod')
 
     if (!startDateParam || !businessIdParam) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Missing required parameters: startDate and businessId' },
         { status: 400 }
       )
     }
 
-    // Now we know these are strings, not null
     const startDate: string = startDateParam
     const timePeriod: string = timePeriodParam || '30'
 
-    // Convert businessId to number since database expects smallint
     const requestedBusinessId = parseInt(businessIdParam, 10)
     if (isNaN(requestedBusinessId)) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'businessId must be a valid number' },
         { status: 400 }
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
-    // Validate business access permissions with token
-    const hasAccess = await validateBusinessAccessWithToken(user.id, businessIdParam, token)
+    // Validate business access permissions using user's accessible businesses
+    const hasAccess = user.accessibleBusinesses?.some(
+      business => business.business_id === businessIdParam
+    )
     if (!hasAccess) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Access denied - You do not have access to this business data' },
         { status: 403 }
       )
     }
 
-    const supabase = await createClient()
+    const supabase = createCookieClient()
 
     // Fetch leads data for trend analysis
     const { data: leads, error } = await supabase
@@ -66,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Database error:', error)
-      return NextResponse.json(
+      return Response.json(
         { error: 'Failed to fetch leads data' },
         { status: 500 }
       )
@@ -154,14 +143,14 @@ export async function GET(request: NextRequest) {
       processedTrends = weeklyTrends
     }
 
-    return NextResponse.json({
+    return Response.json({
       data: processedTrends,
       success: true
     })
 
   } catch (error) {
     console.error('Unexpected error:', error)
-    return NextResponse.json(
+    return Response.json(
       { error: 'Internal server error' },
       { status: 500 }
     )

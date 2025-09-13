@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createCookieClient } from '@/lib/supabase/server'
 
 /**
  * Server action for updating user password after successful token verification
@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/server'
  * 4. Handles proper error reporting and success redirects
  */
 export async function updatePassword(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createCookieClient()
 
   // Check if user is authenticated (should have session from token verification)
   const { data: { user }, error: userError } = await supabase.auth.getUser()

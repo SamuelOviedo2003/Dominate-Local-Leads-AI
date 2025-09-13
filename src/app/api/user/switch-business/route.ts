@@ -1,69 +1,48 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getAuthenticatedUserFromRequest, validateBusinessAccessWithToken, updateUserBusinessContextWithToken } from '@/lib/auth-utils'
-import { withAuthenticatedApiDebug, logBusinessAccess } from '@/lib/api-debug-middleware'
-import { debugBusiness, extractUserMetadata } from '@/lib/debug'
+import { NextRequest } from 'next/server'
+import { authenticateRequest } from '@/lib/api-auth'
+import { createCookieClient } from '@/lib/supabase/server'
 
-export const POST = withAuthenticatedApiDebug(
-  async (request: NextRequest, context, user) => {
+export async function POST(request: NextRequest) {
+  try {
+    const { user } = await authenticateRequest(request)
     const { businessId } = await request.json()
 
-    if (!businessId) {
-      return NextResponse.json(
-        { success: false, error: 'Business ID required', requestId: context.requestId },
+    // Validate business ID
+    const businessIdInt = parseInt(businessId, 10)
+    if (isNaN(businessIdInt)) {
+      return Response.json(
+        { success: false, error: 'Invalid business ID' },
         { status: 400 }
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
-
-    // Validate business access permissions with token
-    const hasAccess = await validateBusinessAccessWithToken(user.id, businessId, token)
-    
-    // Log business access validation
-    logBusinessAccess(context, businessId, hasAccess, user)
-    
+    // Check if user has access to this business
+    const hasAccess = user.accessibleBusinesses?.some(
+      business => business.business_id === businessId
+    )
     if (!hasAccess) {
-      return NextResponse.json(
-        { success: false, error: 'Access denied to this business', requestId: context.requestId },
+      return Response.json(
+        { success: false, error: 'Access denied to this business' },
         { status: 403 }
       )
     }
 
-    // Log business switch attempt
-    const userMetadata = extractUserMetadata(user, { businessId })
-    debugBusiness('Business switch attempt', { 
-      fromBusinessId: user.businessId,
-      toBusinessId: businessId,
-      requestId: context.requestId 
-    }, userMetadata)
+    // Update user's business context using cookie client
+    const supabase = createCookieClient()
+    const { error } = await supabase
+      .from('profiles')
+      .update({ business_id: businessIdInt })
+      .eq('id', user.id)
 
-    // Atomic update to profiles.business_id with token
-    const success = await updateUserBusinessContextWithToken(user.id, businessId, token)
-
-    if (!success) {
-      debugBusiness('Business switch failed', { 
-        businessId,
-        reason: 'Database update failed',
-        requestId: context.requestId 
-      }, userMetadata)
-      
-      return NextResponse.json(
-        { success: false, error: 'Failed to switch business', requestId: context.requestId },
-        { status: 500 }
-      )
+    if (error) {
+      throw new Error('Failed to update business context')
     }
 
-    debugBusiness('Business switch successful', { 
-      businessId,
-      requestId: context.requestId 
-    }, userMetadata)
-
-    return NextResponse.json({
-      success: true,
-      data: { businessId }
-    })
-  },
-  getAuthenticatedUserFromRequest
-)
+    return Response.json({ success: true })
+  } catch (error) {
+    return Response.json(
+      { success: false, error: error instanceof Error ? error.message : 'Business switch failed' },
+      { status: 400 }
+    )
+  }
+}

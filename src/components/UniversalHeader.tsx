@@ -19,7 +19,7 @@ import {
 } from '@/lib/permalink-utils'
 
 interface UniversalHeaderProps {
-  user: AuthUser
+  user: AuthUser | null
   logoutAction: () => void
   availableBusinesses?: BusinessSwitcherData[]
 }
@@ -58,7 +58,7 @@ export default function UniversalHeader({
   const currentSection = extractCurrentSection(pathname)
   
   // Generate navigation items based on current context
-  const isSuperAdmin = user.profile?.role === 0
+  const isSuperAdmin = user?.profile?.role === 0
   const navigationItems = isUsingPermalink && currentPermalink
     ? generatePermalinkNavigation(currentPermalink, isSuperAdmin)
     : getLegacyNavigationItemsForUser(isSuperAdmin)

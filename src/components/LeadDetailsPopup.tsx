@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { LeadWithClient } from '@/types/leads'
 import { AudioPlayer } from './features/leads/AudioPlayer'
 import { X, Phone, User } from 'lucide-react'
+import { authPatch } from '@/lib/auth-fetch'
 
 interface LeadDetailsPopupProps {
   lead: LeadWithClient | null
@@ -60,19 +61,11 @@ export function LeadDetailsPopup({ lead, isOpen, onClose, businessId }: LeadDeta
     setUpdateError(null)
 
     try {
-      const response = await fetch(`/api/leads/${lead.lead_id}?businessId=${businessId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          caller_type: newCallerType || null
-        })
+      const result = await authPatch(`/api/leads/${lead.lead_id}?businessId=${businessId}`, {
+        caller_type: newCallerType || null
       })
 
-      const result = await response.json()
-
-      if (!response.ok || !result.success) {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to update caller type')
       }
 

@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  IncomingCallsAnalytics, 
-  SourceDistribution, 
-  CallerTypeDistribution, 
-  SankeyData, 
-  IncomingCall, 
-  IncomingCallsTimePeriod, 
-  ApiResponse 
+import {
+  IncomingCallsAnalytics,
+  SourceDistribution,
+  CallerTypeDistribution,
+  SankeyData,
+  IncomingCall,
+  IncomingCallsTimePeriod,
+  ApiResponse
 } from '@/types/leads'
+import { authGet } from '@/lib/auth-fetch'
 
 interface UseIncomingCallsDataProps {
   timePeriod: IncomingCallsTimePeriod
@@ -52,13 +53,7 @@ export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCall
         source
       })
 
-      const response = await fetch(`/api/incoming-calls/source-caller-types?${params}`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch source caller types')
-      }
-
-      const data: ApiResponse<CallerTypeDistribution[]> = await response.json()
+      const data: ApiResponse<CallerTypeDistribution[]> = await authGet(`/api/incoming-calls/source-caller-types?${params}`)
 
       if (data.success) {
         return data.data
@@ -85,29 +80,17 @@ export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCall
         businessId
       })
 
-      // Fetch all incoming calls data in parallel
-      const [sourceRes, callerTypeRes, sankeyRes, recentCallsRes] = await Promise.all([
-        fetch(`/api/incoming-calls/source-distribution?${params}`),
-        fetch(`/api/incoming-calls/caller-type-distribution?${params}`),
-        fetch(`/api/incoming-calls/sankey-data?${params}`),
-        fetch(`/api/incoming-calls/recent-calls?${params}`)
-      ])
-
-      // Check if all requests succeeded
-      if (!sourceRes.ok || !callerTypeRes.ok || !sankeyRes.ok || !recentCallsRes.ok) {
-        throw new Error('Failed to fetch incoming calls data')
-      }
-
+      // Fetch all incoming calls data in parallel with authentication
       const [sourceData, callerTypeData, sankeyApiData, recentCallsData]: [
         ApiResponse<SourceDistribution[]>,
         ApiResponse<CallerTypeDistribution[]>,
         ApiResponse<SankeyData[]>,
         ApiResponse<IncomingCall[]>
       ] = await Promise.all([
-        sourceRes.json(),
-        callerTypeRes.json(),
-        sankeyRes.json(),
-        recentCallsRes.json()
+        authGet(`/api/incoming-calls/source-distribution?${params}`),
+        authGet(`/api/incoming-calls/caller-type-distribution?${params}`),
+        authGet(`/api/incoming-calls/sankey-data?${params}`),
+        authGet(`/api/incoming-calls/recent-calls?${params}`)
       ])
 
       // Update state with fetched data
@@ -167,20 +150,12 @@ export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCall
           businessId
         })
 
-        // Fetch all data in parallel with abort signal
+        // Fetch all data in parallel with abort signal and authentication
         const [sourceRes, callerTypeRes, sankeyRes, recentRes] = await Promise.all([
-          fetch(`/api/incoming-calls/source-distribution?${params}`, {
-            signal: abortController.signal
-          }).then(res => res.json()),
-          fetch(`/api/incoming-calls/caller-type-distribution?${params}`, {
-            signal: abortController.signal
-          }).then(res => res.json()),
-          fetch(`/api/incoming-calls/sankey-data?${params}`, {
-            signal: abortController.signal
-          }).then(res => res.json()),
-          fetch(`/api/incoming-calls/recent-calls?${params}`, {
-            signal: abortController.signal
-          }).then(res => res.json())
+          authGet(`/api/incoming-calls/source-distribution?${params}`),
+          authGet(`/api/incoming-calls/caller-type-distribution?${params}`),
+          authGet(`/api/incoming-calls/sankey-data?${params}`),
+          authGet(`/api/incoming-calls/recent-calls?${params}`)
         ])
 
         // Only update state if request wasn't aborted

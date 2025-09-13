@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, memo, useRef } from 'react'
 import { X, Mic } from 'lucide-react'
 import { IncomingCall } from '@/types/leads'
+import { authGet, authPatch } from '@/lib/auth-fetch'
 
 interface RecentCallsPopupProps {
   callId: string
@@ -213,18 +214,12 @@ const RecentCallsPopup = memo(function RecentCallsPopup({
     setError(null)
     
     try {
-      const response = await fetch(`/api/incoming-calls/${callId}`)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch call details: ${response.statusText}`)
-      }
-      
-      const data = await response.json()
-      
+      const data = await authGet(`/api/incoming-calls/${callId}`)
+
       if (!data.success) {
         throw new Error(data.error || 'Failed to load call details')
       }
-      
+
       setCallData(data.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load call details')
@@ -239,22 +234,10 @@ const RecentCallsPopup = memo(function RecentCallsPopup({
     setIsUpdatingCallerType(true)
     
     try {
-      const response = await fetch(`/api/incoming-calls/${callId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          caller_type: newCallerType || null
-        })
+      const data = await authPatch(`/api/incoming-calls/${callId}`, {
+        caller_type: newCallerType || null
       })
 
-      if (!response.ok) {
-        throw new Error(`Failed to update caller type: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      
       if (!data.success) {
         throw new Error(data.error || 'Failed to update caller type')
       }

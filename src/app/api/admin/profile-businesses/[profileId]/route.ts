@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     // Check authentication and authorization
-    const user = await getAuthenticatedUserFromRequest(request)
+    const user = await getAuthenticatedUserFromRequest()
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Only super admins can access user business assignments
-    if (user.role !== 0) {
+    if (user.profile?.role !== 0) {
       return NextResponse.json(
         { error: 'Forbidden - Only super admins can view user business assignments' },
         { status: 403 }
@@ -43,11 +44,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const supabase = await createClient()
-    const supabaseService = await createClient()
+    // Get token from headers for Supabase client
+    const headersList = headers()
+    const authHeader = headersList.get('authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : headersList.get('x-supabase-token')
 
-    // Validate that the user exists 
-    const { data: targetProfile, error: profileError } = await supabaseService
+    if (!token) {
+      return NextResponse.json(
+        { error: 'No authorization token provided' },
+        { status: 401 }
+      )
+    }
+
+    const supabase = createClient(token)
+
+    // Validate that the user exists
+    const { data: targetProfile, error: profileError } = await supabase
       .from('profiles')
       .select('id, email, full_name, role')
       .eq('id', profileId)

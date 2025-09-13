@@ -1,7 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createCookieClient } from '@/lib/supabase/server'
 
 /**
  * Server action for password reset using Supabase resetPasswordForEmail
@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/server'
  * 5. Uses the new /auth/reset-password endpoint as specified
  */
 export async function forgotPassword(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = createCookieClient()
 
   // Extract and validate email
   const email = formData.get('email') as string

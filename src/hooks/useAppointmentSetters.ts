@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AppointmentSetter, TimePeriod, ApiResponse } from '@/types/leads'
+import { authGet } from '@/lib/auth-fetch'
 
 interface UseAppointmentSettersProps {
   timePeriod: TimePeriod
@@ -39,12 +40,7 @@ export function useAppointmentSetters({ timePeriod, businessId }: UseAppointment
         businessId
       })
 
-      const response = await fetch(`/api/leads/appointment-setters?${params}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch appointment setters')
-      }
-
-      const data: ApiResponse<AppointmentSetter[]> = await response.json()
+      const data: ApiResponse<AppointmentSetter[]> = await authGet(`/api/leads/appointment-setters?${params}`)
       
       if (data.success) {
         setAppointmentSetters(data.data)

@@ -13,27 +13,71 @@ export async function updateSession(request: NextRequest) {
   
   // Add pathname to headers for layout access
   supabaseResponse.headers.set('x-pathname', pathname)
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+  
+  // Check if we should use cookie-based auth (rollback feature flag)
+  const useCookieAuth = process.env.NEXT_PUBLIC_USE_COOKIE_AUTH === 'true'
+  
+  // Create Supabase client with proper auth handling
+  let supabase
+  if (!useCookieAuth) {
+    // For localStorage-based auth, try to get token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    const token = authHeader?.replace('Bearer ', '')
+    
+    if (token) {
+      // Use token-based authentication
+      supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+        {
+          cookies: {
+            getAll() { return [] },
+            setAll() { /* No-op for token auth */ },
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        }
+      )
+    } else {
+      // No token available - create unauthenticated client
+      supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+        {
+          cookies: {
+            getAll() { return [] },
+            setAll() { /* No-op for localStorage auth */ },
+          },
+        }
+      )
     }
-  )
+  } else {
+    // Legacy cookie-based auth for rollback
+    supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            // Legacy cookie management for rollback
+            cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+            supabaseResponse = NextResponse.next({
+              request,
+            })
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            )
+          },
+        },
+      }
+    )
+  }
 
   // Allow certain routes to bypass all validation
   const publicRoutes = [

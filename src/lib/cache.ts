@@ -4,7 +4,6 @@
  */
 
 import { logger } from './logging'
-import { debugCache, extractUserMetadata } from '@/lib/debug'
 
 interface CacheEntry<T> {
   data: T
@@ -44,7 +43,7 @@ class InMemoryCache {
     
     if (!entry) {
       this.stats.misses++
-      debugCache(`Cache MISS: ${key}`, { reason: 'Entry not found' })
+      // Cache miss: entry not found
       return null
     }
     
@@ -55,18 +54,14 @@ class InMemoryCache {
       this.stats.evictions++
       this.stats.size = this.cache.size
       this.stats.misses++
-      debugCache(`Cache MISS: ${key}`, { 
-        reason: 'Entry expired', 
-        age: `${now - entry.timestamp}ms`,
-        ttl: `${entry.ttl}ms`
-      })
+      // Cache miss: entry expired
       return null
     }
     
     this.stats.hits++
     const age = now - entry.timestamp
     logger.debug('Cache hit', { key, age })
-    debugCache(`Cache HIT: ${key}`, { age: `${age}ms`, tags: entry.tags })
+    // Cache hit
     return entry.data
   }
 
@@ -92,11 +87,7 @@ class InMemoryCache {
     this.stats.size = this.cache.size
     
     logger.debug('Cache set', { key, ttl, tags, size: this.cache.size })
-    debugCache(`Cache SET: ${key}`, { 
-      ttl: `${ttl}ms`, 
-      tags, 
-      size: this.cache.size 
-    })
+    // Cache set
   }
 
   /**
@@ -129,12 +120,7 @@ class InMemoryCache {
     
     if (evicted > 0) {
       logger.info('Cache invalidation', { pattern, tags, evicted })
-      debugCache(`Cache INVALIDATE`, { 
-        pattern, 
-        tags, 
-        evicted,
-        remaining: this.cache.size 
-      })
+      // Cache invalidated
     }
     
     return evicted

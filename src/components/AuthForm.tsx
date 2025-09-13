@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useRef } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { InlineLoading } from '@/components/LoadingSystem'
+import { createClient } from '@/lib/supabase/client'
 
 interface AuthFormProps {
   loginAction: (formData: FormData) => void
@@ -14,6 +15,7 @@ type AuthMode = 'login' | 'signup'
 
 export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const error = searchParams.get('error')
   const success = searchParams.get('success')
   const initialMode = searchParams.get('mode') as AuthMode || 'login'
@@ -21,17 +23,145 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [isLoading, setIsLoading] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
-  const handleSubmit = (formData: FormData) => {
-    startTransition(() => {
-      if (authMode === 'login') {
-        loginAction(formData)
-      } else if (authMode === 'signup') {
-        signupAction(formData)
+  const handleClientLogin = async (formData: FormData) => {
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+
+    if (!email || !password) {
+      setAuthError('Email and password are required')
+      return
+    }
+
+    setIsLoading(true)
+    setAuthError(null)
+
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        setAuthError(error.message)
+        return
       }
-    })
+
+      if (data.session) {
+        // Get user's first accessible business for redirect
+        try {
+          const response = await fetch('/api/user/business-context', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${data.session.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            if (result.data?.accessibleBusinesses?.length > 0) {
+              // Fetch business details to get permalink
+              const businessResponse = await fetch('/api/business/accessible', {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${data.session.access_token}`,
+                  'Content-Type': 'application/json'
+                }
+              })
+              
+              if (businessResponse.ok) {
+                const businessResult = await businessResponse.json()
+                const firstBusiness = businessResult.data?.[0]
+                if (firstBusiness?.permalink) {
+                  // Update user's business context to match the business they're being redirected to
+                  try {
+                    await fetch('/api/user/switch-business', {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${data.session.access_token}`,
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({ businessId: firstBusiness.business_id })
+                    })
+                  } catch (switchError) {
+                    console.error('Error updating business context during login:', switchError)
+                  }
+
+                  router.push(`/${firstBusiness.permalink}/dashboard`)
+                  return
+                }
+              }
+            }
+          }
+        } catch (fetchError) {
+          console.error('Error getting business context:', fetchError)
+        }
+
+        // Fallback redirect
+        router.push('/dashboard')
+      }
+    } catch (loginError) {
+      setAuthError('Login failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleClientSignup = async (formData: FormData) => {
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const fullName = formData.get('fullName') as string
+    const confirmPassword = formData.get('confirmPassword') as string
+
+    if (!email || !password || !fullName || !confirmPassword) {
+      setAuthError('All fields are required')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setAuthError('Passwords do not match')
+      return
+    }
+
+    setIsLoading(true)
+    setAuthError(null)
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+        },
+      })
+
+      if (error) {
+        setAuthError(error.message)
+        return
+      }
+
+      router.push('/login?success=Please check your email for confirmation link&mode=signup')
+    } catch (signupError) {
+      setAuthError('Signup failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSubmit = async (formData: FormData) => {
+    if (authMode === 'login') {
+      await handleClientLogin(formData)
+    } else if (authMode === 'signup') {
+      await handleClientSignup(formData)
+    }
   }
 
   const togglePasswordVisibility = () => {
@@ -72,13 +202,13 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
       </div>
 
       <form ref={formRef} action={handleSubmit} className="space-y-6">
-        {error && (
+        {(error || authError) && (
           <div className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-xl text-sm animate-slide-down backdrop-blur-sm relative">
             <div className="flex items-center">
               <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
-              <span>{error}</span>
+              <span>{error || authError}</span>
             </div>
           </div>
         )}
@@ -104,14 +234,14 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
                   name="fullName"
                   type="text"
                   required
-                  disabled={isPending}
+                  disabled={isLoading}
                   onFocus={() => setFocusedField('fullName')}
                   onBlur={() => setFocusedField(null)}
                   className={`peer w-full px-4 py-3 pl-11 bg-white/10 border border-white/20 rounded-xl text-white placeholder-transparent 
                     focus:outline-none focus:ring-2 focus:ring-brand-orange-400/50 focus:border-brand-orange-400/50 focus:bg-white/15
                     backdrop-blur-sm transition-all duration-300 transform
                     ${focusedField === 'fullName' ? 'scale-[1.02] shadow-lg shadow-brand-orange-500/20' : ''}
-                    ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
+                    ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
                     disabled:opacity-50 disabled:cursor-not-allowed`}
                   placeholder="Full Name"
                 />
@@ -145,14 +275,14 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
                 name="email"
                 type="email"
                 required
-                disabled={isPending}
+                disabled={isLoading}
                 onFocus={() => setFocusedField('email')}
                 onBlur={() => setFocusedField(null)}
                 className={`peer w-full px-4 py-3 pl-11 bg-white/10 border border-white/20 rounded-xl text-white placeholder-transparent 
                   focus:outline-none focus:ring-2 focus:ring-brand-orange-400/50 focus:border-brand-orange-400/50 focus:bg-white/15
                   backdrop-blur-sm transition-all duration-300 transform
                   ${focusedField === 'email' ? 'scale-[1.02] shadow-lg shadow-brand-orange-500/20' : ''}
-                  ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
+                  ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
                   disabled:opacity-50 disabled:cursor-not-allowed`}
                 placeholder="Email Address"
               />
@@ -185,14 +315,14 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 required
-                disabled={isPending}
+                disabled={isLoading}
                 onFocus={() => setFocusedField('password')}
                 onBlur={() => setFocusedField(null)}
                 className={`peer w-full px-4 py-3 pl-11 pr-11 bg-white/10 border border-white/20 rounded-xl text-white placeholder-transparent 
                   focus:outline-none focus:ring-2 focus:ring-brand-orange-400/50 focus:border-brand-orange-400/50 focus:bg-white/15
                   backdrop-blur-sm transition-all duration-300 transform
                   ${focusedField === 'password' ? 'scale-[1.02] shadow-lg shadow-brand-orange-500/20' : ''}
-                  ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
+                  ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
                   disabled:opacity-50 disabled:cursor-not-allowed`}
                 placeholder="Password"
               />
@@ -217,7 +347,7 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
               <button
                 type="button"
                 onClick={togglePasswordVisibility}
-                disabled={isPending}
+                disabled={isLoading}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/60 hover:text-white transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed z-10"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
@@ -244,14 +374,14 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
                   name="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
-                  disabled={isPending}
+                  disabled={isLoading}
                   onFocus={() => setFocusedField('confirmPassword')}
                   onBlur={() => setFocusedField(null)}
                   className={`peer w-full px-4 py-3 pl-11 pr-11 bg-white/10 border border-white/20 rounded-xl text-white placeholder-transparent 
                     focus:outline-none focus:ring-2 focus:ring-brand-orange-400/50 focus:border-brand-orange-400/50 focus:bg-white/15
                     backdrop-blur-sm transition-all duration-300 transform
                     ${focusedField === 'confirmPassword' ? 'scale-[1.02] shadow-lg shadow-brand-orange-500/20' : ''}
-                    ${isPending ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
+                    ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
                     disabled:opacity-50 disabled:cursor-not-allowed`}
                   placeholder="Confirm Password"
                 />
@@ -276,7 +406,7 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
                 <button
                   type="button"
                   onClick={toggleConfirmPasswordVisibility}
-                  disabled={isPending}
+                  disabled={isLoading}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/60 hover:text-white transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed z-10"
                   aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                 >
@@ -299,16 +429,16 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isLoading}
           className={`w-full py-4 px-6 bg-gradient-to-r from-brand-orange-500/30 to-brand-orange-600/30 border border-white/30 text-white font-semibold rounded-xl
             backdrop-blur-sm transition-all duration-300 transform
-            ${isPending 
+            ${isLoading 
               ? 'opacity-50 cursor-not-allowed scale-95' 
               : 'hover:from-brand-orange-400/40 hover:to-brand-orange-500/40 hover:scale-[1.02] hover:shadow-lg hover:shadow-brand-orange-500/25 focus:outline-none focus:ring-2 focus:ring-brand-orange-400/50 active:scale-[0.98]'
             }
             relative overflow-hidden group`}
         >
-          {isPending && (
+          {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center">
               <InlineLoading message="" />
             </div>
@@ -317,7 +447,7 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
           {/* Shimmer effect */}
           <div className="absolute inset-0 -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
           
-          <span className={`relative z-10 flex items-center justify-center ${isPending ? 'opacity-0' : 'opacity-100'}`}>
+          <span className={`relative z-10 flex items-center justify-center ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
             {authMode === 'login' ? (
               <>
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -357,7 +487,7 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
               <button
                 type="button"
                 onClick={switchToSignup}
-                disabled={isPending}
+                disabled={isLoading}
                 className="text-brand-orange-400 hover:text-brand-orange-300 font-medium transition-colors duration-300 underline decoration-transparent hover:decoration-current disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Create Account
@@ -369,7 +499,7 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
               <button
                 type="button"
                 onClick={switchToLogin}
-                disabled={isPending}
+                disabled={isLoading}
                 className="text-brand-orange-400 hover:text-brand-orange-300 font-medium transition-colors duration-300 underline decoration-transparent hover:decoration-current disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Back to Sign In

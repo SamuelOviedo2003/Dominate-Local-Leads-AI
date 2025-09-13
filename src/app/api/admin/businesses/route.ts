@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { authenticateRequest } from '@/lib/api-auth'
 import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,24 +11,28 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication and authorization
-    const user = await getAuthenticatedUserFromRequest(request)
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
+    // Check authentication and authorization using JWT tokens
+    const { user } = await authenticateRequest(request)
 
     // Only super admins can access business management
-    if (user.role !== 0) {
+    if (user.profile?.role !== 0) {
       return NextResponse.json(
         { error: 'Forbidden - Only super admins can access business management' },
         { status: 403 }
       )
     }
 
-    const supabase = await createClient()
+    // Create Supabase client with user's JWT token
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Missing or invalid authorization header' },
+        { status: 401 }
+      )
+    }
+
+    const token = authHeader.substring(7)
+    const supabase = createClient(token)
 
     // Fetch all businesses that are enabled for dashboard access
     const { data: businesses, error } = await supabase

@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthenticatedUserFromRequest, getAuthenticatedUser, validateBusinessAccessWithToken, getAvailableBusinessesWithToken } from '@/lib/auth-utils'
+import { createCookieClient } from '@/lib/supabase/server'
 import { BusinessSwitcherData } from '@/types/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
+    // Create Supabase client for cookie-based auth
+    const supabase = createCookieClient()
+    
     // Verify user authentication
-    const user = await getAuthenticatedUserFromRequest(request)
-    if (!user) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
@@ -25,12 +28,46 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get JWT token from Authorization header for consistent auth
-    const authHeader = request.headers.get('authorization')
-    const token = authHeader?.replace('Bearer ', '')
+    // Get user profile to check role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
 
-    // Validate access to the requested business using JWT token
-    const hasAccess = await validateBusinessAccessWithToken(user.id, companyId, token)
+    if (!profile) {
+      return NextResponse.json(
+        { success: false, error: 'Profile not found' },
+        { status: 404 }
+      )
+    }
+
+    const effectiveRole = profile.role ?? 1
+
+    // Validate access to the requested business
+    let hasAccess = false
+    
+    if (effectiveRole === 0) {
+      // Super admin - check business exists and has dashboard=true
+      const { data: business } = await supabase
+        .from('business_clients')
+        .select('business_id')
+        .eq('business_id', companyId)
+        .eq('dashboard', true)
+        .single()
+      
+      hasAccess = !!business
+    } else {
+      // Regular user - check profile_businesses access
+      const { data: access } = await supabase
+        .from('profile_businesses')
+        .select('business_id')
+        .eq('profile_id', user.id)
+        .eq('business_id', parseInt(companyId, 10))
+        .single()
+      
+      hasAccess = !!access
+    }
     
     if (!hasAccess) {
       return NextResponse.json(
@@ -39,31 +76,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user's accessible businesses to find the requested company details
-    const accessibleBusinesses = await getAvailableBusinessesWithToken(user.id, token)
-    const selectedCompany = accessibleBusinesses.find(c => c.id === companyId)
+    // Get the requested company details
+    const { data: selectedCompany } = await supabase
+      .from('business_clients')
+      .select('business_id, company_name, permalink, avatar_url, city, state')
+      .eq('business_id', companyId)
+      .single()
 
     if (!selectedCompany) {
       return NextResponse.json(
-        { success: false, error: 'Business not found in accessible businesses' },
+        { success: false, error: 'Business not found' },
         { status: 404 }
       )
     }
 
-    // In the new system, we don't update the database - business switching is session-based
-    // The frontend will handle updating the session context
+    // Update user's current business context
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ business_id: parseInt(companyId) })
+      .eq('id', user.id)
+
+    if (updateError) {
+      return NextResponse.json(
+        { success: false, error: 'Failed to update business context' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         company: {
-          business_id: selectedCompany.id,
-          company_name: selectedCompany.name,
+          business_id: selectedCompany.business_id,
+          company_name: selectedCompany.company_name,
           permalink: selectedCompany.permalink,
           avatar_url: selectedCompany.avatar_url,
           city: selectedCompany.city,
           state: selectedCompany.state
         },
-        message: `Successfully switched to ${selectedCompany.name}`
+        message: `Successfully switched to ${selectedCompany.company_name}`
       }
     })
 
@@ -78,27 +129,91 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   try {
+    // Create Supabase client for cookie-based auth
+    const supabase = createCookieClient()
+    
     // Verify user authentication
-    const user = await getAuthenticatedUser()
-    if (!user) {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
       )
     }
 
-    // Get accessible businesses for the current user (works for both super admins and regular users)
-    const businessesData = await getAvailableBusinessesWithToken(user.id)
-    
-    // Format to match BusinessSwitcherData format
-    const businesses = businessesData.map(b => ({
-      business_id: b.id,
-      company_name: b.name,
-      permalink: b.permalink,
-      avatar_url: b.avatar_url,
-      city: b.city,
-      state: b.state
-    }))
+    // Get user profile to check role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json(
+        { success: false, error: 'Profile not found' },
+        { status: 404 }
+      )
+    }
+
+    const effectiveRole = profile.role ?? 1
+    let businesses: BusinessSwitcherData[] = []
+
+    if (effectiveRole === 0) {
+      // Super admin - all businesses with dashboard=true
+      const { data: businessData, error } = await supabase
+        .from('business_clients')
+        .select('business_id, company_name, avatar_url, city, state, permalink')
+        .eq('dashboard', true)
+        .order('company_name')
+
+      if (error) {
+        return NextResponse.json(
+          { success: false, error: 'Failed to fetch businesses' },
+          { status: 500 }
+        )
+      }
+
+      businesses = (businessData || []).map(b => ({
+        business_id: b.business_id.toString(),
+        company_name: b.company_name,
+        permalink: b.permalink,
+        avatar_url: b.avatar_url,
+        city: b.city,
+        state: b.state
+      }))
+    } else {
+      // Regular user - businesses from profile_businesses
+      const { data: userBusinesses, error } = await supabase
+        .from('profile_businesses')
+        .select(`
+          business_id,
+          business_clients!inner(
+            business_id,
+            company_name,
+            avatar_url,
+            city,
+            state,
+            permalink
+          )
+        `)
+        .eq('profile_id', user.id)
+      
+      if (error) {
+        return NextResponse.json(
+          { success: false, error: 'Failed to fetch user businesses' },
+          { status: 500 }
+        )
+      }
+
+      businesses = (userBusinesses || []).map((ub: any) => ({
+        business_id: ub.business_clients.business_id.toString(),
+        company_name: ub.business_clients.company_name,
+        avatar_url: ub.business_clients.avatar_url,
+        city: ub.business_clients.city,
+        state: ub.business_clients.state,
+        permalink: ub.business_clients.permalink
+      }))
+    }
 
     if (businesses.length === 0) {
       return NextResponse.json(

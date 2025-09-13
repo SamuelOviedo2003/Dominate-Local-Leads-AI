@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { LeadMetrics, LeadWithClient, TimePeriod, ApiResponse } from '@/types/leads'
+import { authGet } from '@/lib/auth-fetch'
 
 interface UseLeadsDataProps {
   timePeriod: TimePeriod
@@ -58,12 +59,7 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
         businessId
       })
 
-      const metricsRes = await fetch(`/api/leads/metrics?${params}`)
-      if (!metricsRes.ok) {
-        throw new Error('Failed to fetch metrics')
-      }
-
-      const metricsData: ApiResponse<LeadMetrics> = await metricsRes.json()
+      const metricsData: ApiResponse<LeadMetrics> = await authGet(`/api/leads/metrics?${params}`)
       
       if (metricsData.success) {
         setMetrics(metricsData.data)
@@ -93,12 +89,7 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
         businessId
       })
 
-      const leadsRes = await fetch(`/api/leads/recent?${params}`)
-      if (!leadsRes.ok) {
-        throw new Error('Failed to fetch recent leads')
-      }
-
-      const leadsData: ApiResponse<LeadWithClient[]> = await leadsRes.json()
+      const leadsData: ApiResponse<LeadWithClient[]> = await authGet(`/api/leads/recent?${params}`)
       
       if (leadsData.success) {
         setRecentLeads(leadsData.data)

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createCookieClient } from '@/lib/supabase/server'
 import ResetPasswordForm from '@/components/ResetPasswordForm'
 import LoginLogo from '@/components/LoginLogo'
 import { ComponentLoading } from '@/components/LoadingSystem'
@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic'
  * 4. After successful update, redirect to dashboard
  */
 export default async function ResetPasswordPage() {
-  const supabase = await createClient()
+  const supabase = createCookieClient()
   
   // Check if user is already authenticated (they may have clicked the link again)
   const { data: { user } } = await supabase.auth.getUser()

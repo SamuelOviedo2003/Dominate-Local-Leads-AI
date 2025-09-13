@@ -22,7 +22,15 @@ export default async function PermalinkBookingsLayout({
   params 
 }: PermalinkBookingsLayoutProps) {
   const { permalink } = params
-  const { user, availableBusinesses } = await getHeaderData()
+  const headerData = await getHeaderData()
+  const { user, availableBusinesses } = headerData || { user: null, availableBusinesses: [] }
+
+  // If no authenticated user, redirect to login
+  // This should not happen as the permalink layout already validates authentication
+  if (!user) {
+    console.error('[BOOKINGS_LAYOUT] No authenticated user found - this should not happen after permalink layout validation')
+    return null
+  }
 
   // Create Supabase client to resolve the current business from permalink
   const cookieStore = cookies()

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createCookieClient } from '@/lib/supabase/server'
 import ForgotPasswordForm from '@/components/ForgotPasswordForm'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import LoginLogo from '@/components/LoginLogo'
@@ -9,7 +9,7 @@ import { ComponentLoading } from '@/components/LoadingSystem'
 export const dynamic = 'force-dynamic'
 
 export default async function ForgotPasswordPage() {
-  const supabase = await createClient()
+  const supabase = createCookieClient()
   
   const { data: { user } } = await supabase.auth.getUser()
   

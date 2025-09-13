@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-utils'
+import { headers } from 'next/headers'
+import { createCookieClient } from '@/lib/supabase/server'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
 import { AppointmentSetter } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -11,8 +12,8 @@ export async function GET(request: NextRequest) {
     // This functionality will be restored when the database schema is updated
     console.log('Appointment setters endpoint called but functionality is temporarily disabled')
     
-    // Basic authentication check to maintain API security
-    const user = await getAuthenticatedUserFromRequest(request)
+    // Basic authentication check to maintain API security using cookie-based auth
+    const user = await getAuthenticatedUserFromRequest()
     if (!user) {
       return NextResponse.json(
         { error: 'Unauthorized - Please log in' },
@@ -56,7 +57,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    // Get token from headers for Supabase client
+    const headersList = headers()
+    const authHeader = headersList.get('authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : headersList.get('x-supabase-token')
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'No authorization token provided' },
+        { status: 401 }
+      )
+    }
+
+    const supabase = createClient(token)
 
     // Step 1: Get base leads data
     const { data: leads, error: leadsError } = await supabase
