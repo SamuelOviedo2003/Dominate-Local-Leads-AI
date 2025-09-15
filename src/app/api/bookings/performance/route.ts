@@ -55,11 +55,12 @@ export async function GET(request: NextRequest) {
     const { data: leads, error: leadsError } = await supabase
       .from('leads')
       .select(`
-        lead_id, 
-        show, 
-        closed_amount, 
+        lead_id,
+        show,
+        closed_amount,
         created_at,
-        next_step
+        next_step,
+        calls_count
       `)
       .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
@@ -95,6 +96,7 @@ export async function GET(request: NextRequest) {
       shows: number
       closes: number
       totalRevenue: number
+      totalCalls: number
       leadsWorked: Set<string>
     }>()
 
@@ -105,6 +107,7 @@ export async function GET(request: NextRequest) {
           shows: 0,
           closes: 0,
           totalRevenue: 0,
+          totalCalls: 0,
           leadsWorked: new Set()
         })
       }
@@ -120,11 +123,12 @@ export async function GET(request: NextRequest) {
         
         if (salespersonData) {
           salespersonData.leadsWorked.add(lead.lead_id)
-          
+          salespersonData.totalCalls += (lead.calls_count || 0)
+
           if (lead.show) {
             salespersonData.shows++
           }
-          
+
           if (lead.closed_amount !== null && lead.closed_amount > 0) {
             salespersonData.closes++
             salespersonData.totalRevenue += lead.closed_amount
@@ -137,15 +141,14 @@ export async function GET(request: NextRequest) {
     const performance: BookingsPerformance[] = Array.from(salespersonMap.entries())
       .map(([salesperson, data]) => {
         const closeRate = data.shows > 0 ? (data.closes / data.shows) * 100 : 0
-        const averageOrderValue = data.closes > 0 ? data.totalRevenue / data.closes : 0
-        
+
         return {
           salesperson,
           shows: data.shows,
           closes: data.closes,
           totalRevenue: Math.round(data.totalRevenue * 100) / 100,
           closeRate: Math.round(closeRate * 100) / 100,
-          averageOrderValue: Math.round(averageOrderValue * 100) / 100,
+          totalCalls: data.totalCalls,
           leadsWorked: data.leadsWorked.size
         }
       })

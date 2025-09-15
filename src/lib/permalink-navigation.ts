@@ -256,7 +256,12 @@ export function determineTargetPageForBusinessSwitch(pathname: string): string {
     // Redirect from Lead Details to New Leads section in the new business
     return 'new-leads'
   }
-  
+
+  if (pathname.includes('/actions/')) {
+    // Redirect from Actions to New Leads section in the new business
+    return 'new-leads'
+  }
+
   if (pathname.includes('/property-details/')) {
     // Redirect from Property Details to Bookings section in the new business
     return 'bookings'

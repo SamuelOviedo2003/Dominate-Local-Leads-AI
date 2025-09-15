@@ -165,7 +165,7 @@ export interface BookingsMetrics {
   booked: number
   totalRevenue: number
   closeRate: number
-  averageOrderValue: number
+  totalCalls: number
   showsPercentage: number
   closesPercentage: number
 }
@@ -176,7 +176,7 @@ export interface BookingsPerformance {
   closes: number
   totalRevenue: number
   closeRate: number
-  averageOrderValue: number
+  totalCalls: number
   leadsWorked: number
 }
 
@@ -198,6 +198,20 @@ export interface BookingsAnalytics {
 export type SalesmanMetrics = BookingsMetrics
 export type SalesmanPerformance = BookingsPerformance
 export type SalesmanAnalytics = BookingsAnalytics
+
+// Actions Types
+export interface AIRecapAction {
+  ai_recap_action_id: number
+  created_at: string
+  updated_at: string
+  account_id: string
+  lead_id: number
+  business_id: number
+  assigned_id: string | null
+  recap_action: string
+  action_response: string | null
+  action_done: boolean
+}
 
 // Dashboard Types
 export interface DashboardMetrics {

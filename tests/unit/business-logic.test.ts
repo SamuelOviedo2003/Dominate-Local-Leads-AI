@@ -174,12 +174,11 @@ test.describe('Revenue Calculations', () => {
     expect(totalRevenue).toBe(35500);
   });
 
-  test('should calculate average order value correctly', async () => {
-    const closes = [15000, 8500, 12000];
-    const averageOrderValue = closes.reduce((sum, amount) => sum + amount, 0) / closes.length;
-    
-    expect(averageOrderValue).toBe(11833.333333333334);
-    expect(Math.round(averageOrderValue)).toBe(11833);
+  test('should calculate total calls correctly', async () => {
+    const leadCallsCounts = [2, 1, 3, 0, 4];
+    const totalCalls = leadCallsCounts.reduce((sum, calls) => sum + calls, 0);
+
+    expect(totalCalls).toBe(10);
   });
 
   test('should calculate close rate correctly', async () => {

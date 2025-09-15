@@ -9,7 +9,7 @@ interface LeadsTableProps {
   leads: LeadWithClient[] | null
   isLoading: boolean
   error: string | null
-  navigationTarget?: 'lead-details' | 'property-details'
+  navigationTarget?: 'lead-details' | 'property-details' | 'actions'
   usePriorityColors?: boolean
   title?: string
 }

@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     // Fetch leads data for bookings metrics
     const { data: leads, error } = await supabase
       .from('leads')
-      .select('lead_id, show, closed_amount, start_time, created_at')
+      .select('lead_id, show, closed_amount, start_time, created_at, calls_count')
       .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
       .order('created_at', { ascending: false })
@@ -64,10 +64,12 @@ export async function GET(request: NextRequest) {
     const totalRevenue = leads.reduce((sum, lead) => {
       return sum + (lead.closed_amount || 0)
     }, 0)
-    
+    const totalCalls = leads.reduce((sum, lead) => {
+      return sum + (lead.calls_count || 0)
+    }, 0)
+
     // Calculate percentages with proper error handling for division by zero
     const closeRate = shows > 0 ? (closes / shows) * 100 : 0
-    const averageOrderValue = closes > 0 ? totalRevenue / closes : 0
     const showsPercentage = booked > 0 ? (shows / booked) * 100 : 0
     const closesPercentage = shows > 0 ? (closes / shows) * 100 : 0
 
@@ -77,7 +79,7 @@ export async function GET(request: NextRequest) {
       booked,
       totalRevenue: Math.round(totalRevenue * 100) / 100,
       closeRate: Math.round(closeRate * 100) / 100,
-      averageOrderValue: Math.round(averageOrderValue * 100) / 100,
+      totalCalls,
       showsPercentage: Math.round(showsPercentage * 100) / 100,
       closesPercentage: Math.round(closesPercentage * 100) / 100
     }

@@ -1,13 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { TimePeriod } from '@/types/leads'
 import { useLeadsData } from '@/hooks/useLeadsData'
-import { 
-  LeadMetrics,
-  LeadsTable, 
-  TimePeriodFilter 
-} from '@/components/features/leads'
+import { LeadsTable } from '@/components/features/leads'
 import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface NewLeadsClientProps {
@@ -16,12 +10,10 @@ interface NewLeadsClientProps {
 }
 
 export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('30')
-  
   // Get the effective business ID (user's own or selected company for superadmin)
   const { currentBusinessId } = useBusinessContext()
   const effectiveBusinessId = currentBusinessId || ''
-  
+
   const {
     metrics,
     recentLeads,
@@ -33,7 +25,7 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
     recentLeadsError,
     refetch
   } = useLeadsData({
-    timePeriod,
+    timePeriod: '30',
     businessId: effectiveBusinessId
   })
 
@@ -45,12 +37,6 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           <div>
             {/* Empty header content as requested */}
           </div>
-          
-          {/* Time Period Filter */}
-          <TimePeriodFilter 
-            selectedPeriod={timePeriod}
-            onPeriodChange={setTimePeriod}
-          />
         </div>
 
         {/* Error State */}
@@ -70,14 +56,6 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           </div>
         )}
 
-        {/* Lead Metrics - Individual Loading State */}
-        <div className="mb-8">
-          <LeadMetrics 
-            metrics={metrics}
-            isLoading={isMetricsLoading}
-            error={metricsError}
-          />
-        </div>
 
         {/* New Leads Table (Stage 1) */}
         <div className="mb-8">
@@ -91,12 +69,13 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
         </div>
 
         {/* Follow Up Table (Stage 2) */}
-        <LeadsTable 
+        <LeadsTable
           leads={recentLeads ? recentLeads.filter(lead => lead.stage === 2) : null}
           isLoading={isRecentLeadsLoading}
           error={recentLeadsError}
           usePriorityColors={true}
           title="Follow Up"
+          navigationTarget="actions"
         />
       </div>
     </div>
