@@ -139,6 +139,7 @@ export interface PropertyInfo {
   house_url: string | null
   full_address: string
   duration_seconds: number | null
+  roof_age?: string | null
 }
 
 export interface CallWindow {
