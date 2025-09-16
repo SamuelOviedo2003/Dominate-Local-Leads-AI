@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { BusinessSwitcherData } from '@/types/auth'
 import { createClient } from '@/lib/supabase/client'
 import { authGet, authPost } from '@/lib/auth-fetch'
+import { determineTargetPageForBusinessSwitch } from '@/lib/permalink-navigation'
 
 interface BusinessContextType {
   currentBusinessId: string | null
@@ -61,16 +62,28 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
       const businesses = businessResult.data || []
       setAvailableBusinesses(businesses)
 
-      // Select appropriate business
+      // Select appropriate business with enhanced persistence logic
       let selectedBusiness = null
+
+      // First priority: Use the stored business ID from user profile (persistence)
       if (data.currentBusinessId) {
         selectedBusiness = businesses.find((b: BusinessSwitcherData) =>
           b.business_id === data.currentBusinessId
         )
       }
+
+      // Fallback: If stored business not found/accessible, use first available business
       if (!selectedBusiness && businesses.length > 0) {
         selectedBusiness = businesses[0]
+        // Update the user's profile to persist this selection
         setCurrentBusinessId(selectedBusiness.business_id)
+
+        // Also update the database to persist across sessions
+        try {
+          await authPost('/api/user/switch-business', { businessId: selectedBusiness.business_id })
+        } catch (error) {
+          console.warn('Failed to persist business selection:', error)
+        }
       }
 
       setSelectedCompanyState(selectedBusiness)
@@ -105,10 +118,14 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
 
   const setSelectedCompany = async (company: BusinessSwitcherData) => {
     const result = await switchBusiness(company.business_id)
-    
+
     if (result.success && company.permalink) {
-      // Navigate to new business URL
-      window.location.href = `/${company.permalink}/dashboard`
+      // Determine target section based on current page
+      const currentPath = window.location.pathname
+      const targetSection = determineTargetPageForBusinessSwitch(currentPath)
+
+      // Navigate to new business URL while preserving appropriate section
+      window.location.href = `/${company.permalink}/${targetSection}`
     } else if (!result.success) {
       console.error('Business switch failed:', result.error)
     }

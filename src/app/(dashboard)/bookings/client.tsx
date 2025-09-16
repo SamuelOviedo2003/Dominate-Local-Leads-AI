@@ -2,6 +2,7 @@
 
 import { useBookingsData } from '@/hooks/useBookingsData'
 import { LeadsTable } from '@/components/features/leads/LeadsTable'
+import { BookingsMetrics } from '@/components/features/metrics'
 import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface BookingsClientProps {
@@ -57,6 +58,12 @@ export function BookingsClient({ businessId, userRole }: BookingsClientProps) {
           </div>
         )}
 
+        {/* Bookings Metrics - First Row */}
+        <BookingsMetrics
+          metrics={metrics}
+          isLoading={isMetricsLoading}
+          error={metricsError}
+        />
 
         {/* Bookings Leads Table */}
         <LeadsTable 

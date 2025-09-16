@@ -2,6 +2,7 @@
 
 import { useLeadsData } from '@/hooks/useLeadsData'
 import { LeadsTable } from '@/components/features/leads'
+import { LeadsMetrics } from '@/components/features/metrics'
 import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface NewLeadsClientProps {
@@ -56,6 +57,12 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           </div>
         )}
 
+        {/* Leads Metrics - First Row */}
+        <LeadsMetrics
+          metrics={metrics}
+          isLoading={isMetricsLoading}
+          error={metricsError}
+        />
 
         {/* New Leads Table (Stage 1) */}
         <div className="mb-8">
