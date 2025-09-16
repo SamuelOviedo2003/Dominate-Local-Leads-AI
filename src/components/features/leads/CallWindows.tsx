@@ -13,16 +13,47 @@ interface CallWindowsProps {
   isLoading?: boolean
   error?: string | null
   businessTimezone?: string // IANA timezone identifier
+  workingHours?: boolean // Working hours indicator from lead data
 }
 
-const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, businessTimezone = 'UTC' }: CallWindowsProps) => {
+const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, businessTimezone = 'UTC', workingHours }: CallWindowsProps) => {
+  // ALL HOOKS MUST BE DECLARED FIRST - React Rules of Hooks requirement
+
+  // Determine working hours status display
+  const getWorkingHoursStatus = useCallback(() => {
+    // According to requirements: true if working_hours is true or null, false otherwise
+    if (workingHours === true || workingHours === null || workingHours === undefined) {
+      return { isWorkingHours: true, label: 'Working Hours', color: 'text-green-600 bg-green-50' }
+    } else {
+      return { isWorkingHours: false, label: 'Non-Working Hours', color: 'text-orange-600 bg-orange-50' }
+    }
+  }, [workingHours])
+
+  const workingHoursStatus = getWorkingHoursStatus()
+
+  const formatTime = useCallback((dateString: string) => {
+    logger.debug('Formatting call window time', { dateString, businessTimezone })
+    const formatted = formatCallWindowTime(dateString, businessTimezone)
+    logger.debug('Call window time formatted', { input: dateString, output: formatted, timezone: businessTimezone })
+    return formatted
+  }, [businessTimezone])
+
+  // Sort call windows by call number - only show actual calls, no placeholders
+  const sortedCallWindows = useMemo(() => {
+    if (!callWindows) return []
+
+    return [...callWindows].sort((a, b) => a.callNumber - b.callNumber)
+  }, [callWindows])
+
   // Debug logging
   logger.debug('CallWindows component received props', {
     businessTimezone,
     callWindowsCount: callWindows?.length || 0,
-    callWindowsData: callWindows?.map(cw => ({ 
-      callNumber: cw.callNumber, 
-      calledAt: cw.calledAt 
+    workingHours,
+    workingHoursStatus,
+    callWindowsData: callWindows?.map(cw => ({
+      callNumber: cw.callNumber,
+      calledAt: cw.calledAt
     }))
   })
 
@@ -35,7 +66,12 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
             <PhoneCall className="w-6 h-6 text-blue-600" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
+          <div className="flex-1 flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
+            <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
+              {workingHoursStatus.label}
+            </div>
+          </div>
         </div>
         <div className="flex items-center justify-center flex-1">
           <LoadingSystem size="md" message="Loading call response data..." />
@@ -53,7 +89,12 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
             <PhoneCall className="w-6 h-6 text-blue-600" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
+          <div className="flex-1 flex items-center gap-3">
+            <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
+            <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
+              {workingHoursStatus.label}
+            </div>
+          </div>
         </div>
         <div className="text-center flex-1 flex items-center justify-center">
           <div>
@@ -67,31 +108,22 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
       </div>
     )
   }
-  const formatTime = useCallback((dateString: string) => {
-    logger.debug('Formatting call window time', { dateString, businessTimezone })
-    const formatted = formatCallWindowTime(dateString, businessTimezone)
-    logger.debug('Call window time formatted', { input: dateString, output: formatted, timezone: businessTimezone })
-    return formatted
-  }, [businessTimezone])
-
-
-  // Sort call windows by call number - only show actual calls, no placeholders
-  const sortedCallWindows = useMemo(() => {
-    if (!callWindows) return []
-    
-    return [...callWindows].sort((a, b) => a.callNumber - b.callNumber)
-  }, [callWindows])
 
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 h-full flex flex-col w-full">
-      {/* Header with Phone Icon */}
+      {/* Header with Phone Icon and Working Hours Indicator */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative">
           <PhoneCall className="w-6 h-6 text-blue-600" />
           <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
+        <div className="flex-1 flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
+          <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
+            {workingHoursStatus.label}
+          </div>
+        </div>
       </div>
 
       {/* Call Performance Cards - Single Column Layout */}

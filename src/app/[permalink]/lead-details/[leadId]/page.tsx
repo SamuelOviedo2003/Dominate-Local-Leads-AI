@@ -115,11 +115,12 @@ const LeadDetailsPage = () => {
           
           {/* Right section - Call Windows (25-30% width) */}
           <div className="lg:flex-1 lg:max-w-[320px] h-[540px]">
-            <CallWindows 
+            <CallWindows
               callWindows={leadDetails?.callWindows || null}
               isLoading={isCallWindowsLoading}
               error={callWindowsError}
               businessTimezone={leadDetails?.businessTimezone}
+              workingHours={leadDetails?.lead?.working_hours}
             />
           </div>
         </div>

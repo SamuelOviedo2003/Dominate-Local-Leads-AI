@@ -7,7 +7,8 @@ export interface Lead {
   email: string
   phone: string
   service: string
-  source?: string | null // Replaced how_soon with source
+  source?: string | null // Lead source information
+  how_soon?: string | null // How soon the customer needs the service
   score: number
   status: string
   contacted: boolean
@@ -19,6 +20,7 @@ export interface Lead {
   next_step?: string
   stage: 1 | 2 | 3 // 1 = New Leads (stage 1), 2 = New Leads (stage 2), 3 = Bookings
   communications_count: number // New field to track number of communications
+  calls_count?: number // Number of calls made for this lead
   call_now_status?: 1 | 2 | 3 | null // Call priority: 1 = High (red), 2 = Medium (yellow), 3 = Normal (default)
   summary?: string | null // Summary field for lead information
   score_summary?: string | null // Score-based summary field

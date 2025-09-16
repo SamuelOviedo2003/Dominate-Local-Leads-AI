@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, memo, useCallback } from 'react'
+import { Sun, Moon } from 'lucide-react'
 import { LeadWithClient } from '@/types/leads'
 import { usePermalinkNavigation, usePermalinkUrl } from '@/lib/permalink-navigation'
 
@@ -19,10 +20,32 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
   const buildUrl = usePermalinkUrl()
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
 
-  const getScoreColor = useCallback((score: number) => {
-    if (score <= 33) return 'bg-red-500'
-    if (score <= 66) return 'bg-yellow-500'
-    return 'bg-green-500'
+  // Removed getScoreColor function - no longer needed for calls count circle
+
+  const getWorkingHoursIcon = useCallback((workingHours: boolean | null | undefined) => {
+    // If working_hours is false, show moon icon
+    // If working_hours is true or null, show sun icon
+    if (workingHours === false) {
+      return <Moon className="w-3 h-3 text-blue-100" />
+    } else {
+      return <Sun className="w-3 h-3 text-yellow-100" />
+    }
+  }, [])
+
+  const getHowSoonTagStyle = useCallback((howSoon: string | null | undefined) => {
+    if (!howSoon) return ''
+
+    const lowerHowSoon = howSoon.toLowerCase()
+
+    if (lowerHowSoon.includes('asap') || lowerHowSoon.includes('immediately') || lowerHowSoon.includes('urgent')) {
+      return 'bg-red-100 text-red-800 border-red-200'
+    } else if (lowerHowSoon.includes('week') || lowerHowSoon.includes('7') || lowerHowSoon.includes('soon')) {
+      return 'bg-orange-100 text-orange-800 border-orange-200'
+    } else if (lowerHowSoon.includes('month') || lowerHowSoon.includes('30')) {
+      return 'bg-blue-100 text-blue-800 border-blue-200'
+    } else {
+      return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
   }, [])
 
   const getRowBackground = useCallback((priority: 1 | 2 | 3 | null | undefined) => {
@@ -64,10 +87,10 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleString('en-US', { 
-      month: 'short', 
+    return date.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
       day: 'numeric',
-      year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
@@ -147,9 +170,6 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                   Source
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Communications Count
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -176,7 +196,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                         navigatingId === lead.lead_id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
                       }`}
                     >
-                    {/* Lead Name with Score Circle */}
+                    {/* Lead Name with Calls Count Circle */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {navigatingId === lead.lead_id ? (
@@ -184,18 +204,24 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                             <div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
                           </div>
                         ) : (
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3 ${
-                            getScoreColor(lead.score)
-                          }`}>
-                            {Math.round(lead.score)}
+                          <div className="relative h-8 w-8 rounded-full flex items-center justify-center bg-gray-500 text-white text-sm font-medium mr-3">
+                            {lead.calls_count || 0}
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
+                              {getWorkingHoursIcon(lead.working_hours)}
+                            </div>
                           </div>
                         )}
                         <div>
                           <div className="text-sm font-medium text-gray-900">
                             {lead.first_name} {lead.last_name}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {lead.service || ''}
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{lead.service || ''}</span>
+                            {lead.how_soon && (
+                              <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full border ${getHowSoonTagStyle(lead.how_soon)}`}>
+                                {lead.how_soon}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -208,14 +234,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                         {formatSourceDisplay(lead.source)}
                       </span>
                     </td>
-                    
-                    {/* Communications Count Column */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-900 font-medium">
-                        {lead.communications_count || 0}
-                      </span>
-                    </td>
-                    
+
                     {/* Date Column */}
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDateTime(lead.created_at)}
