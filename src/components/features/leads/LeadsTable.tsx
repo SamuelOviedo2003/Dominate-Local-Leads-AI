@@ -22,13 +22,19 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
 
   // Removed getScoreColor function - no longer needed for calls count circle
 
+  const truncateService = useCallback((service: string | null | undefined, maxLength: number = 25) => {
+    if (!service) return ''
+    if (service.length <= maxLength) return service
+    return service.substring(0, maxLength) + '...'
+  }, [])
+
   const getWorkingHoursIcon = useCallback((workingHours: boolean | null | undefined) => {
     // If working_hours is false, show moon icon
     // If working_hours is true or null, show sun icon
     if (workingHours === false) {
-      return <Moon className="w-3 h-3 text-blue-100" />
+      return <Moon className="w-3 h-3 text-blue-300" />
     } else {
-      return <Sun className="w-3 h-3 text-yellow-100" />
+      return <Sun className="w-3 h-3 text-yellow-400" />
     }
   }, [])
 
@@ -204,9 +210,9 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                             <div className="w-6 h-6 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin" />
                           </div>
                         ) : (
-                          <div className="relative h-8 w-8 rounded-full flex items-center justify-center bg-gray-500 text-white text-sm font-medium mr-3">
+                          <div className="relative h-8 w-8 rounded-full flex items-center justify-center bg-gray-400 text-white text-sm font-medium mr-3">
                             {lead.calls_count || 0}
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-600 rounded-full flex items-center justify-center">
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-gray-500 rounded-full flex items-center justify-center">
                               {getWorkingHoursIcon(lead.working_hours)}
                             </div>
                           </div>
@@ -216,7 +222,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                             {lead.first_name} {lead.last_name}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>{lead.service || ''}</span>
+                            <span>{truncateService(lead.service)}</span>
                             {lead.how_soon && (
                               <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full border ${getHowSoonTagStyle(lead.how_soon)}`}>
                                 {lead.how_soon}
