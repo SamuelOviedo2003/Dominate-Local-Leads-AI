@@ -1,10 +1,10 @@
 'use client'
 
+import React, { useMemo, useCallback, memo, useState } from 'react'
 import { Communication } from '@/types/leads'
 import { AudioPlayer } from './AudioPlayer'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { CallWindowIcon } from '@/components/ui/CallWindowIcon'
-import { useMemo, useCallback, memo, useState } from 'react'
 import { useChatWebhook } from '@/hooks/useChatWebhook'
 
 interface CommunicationsHistoryProps {

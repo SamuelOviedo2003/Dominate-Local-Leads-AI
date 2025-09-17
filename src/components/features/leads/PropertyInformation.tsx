@@ -1,7 +1,7 @@
 'use client'
 
+import React, { useMemo, useCallback, memo } from 'react'
 import { PropertyInfo } from '@/types/leads'
-import { useMemo, useCallback, memo } from 'react'
 import { Home, MapPin, DollarSign, Clock, Route } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import ImageWithFallback from '@/components/ImageWithFallback'
@@ -222,3 +222,6 @@ const PropertyInformationComponent = ({ property, isLoading = false, error = nul
 
 // Memoize the component to prevent unnecessary re-renders
 export const PropertyInformation = memo(PropertyInformationComponent)
+
+// Also provide a default export for better compatibility
+export default PropertyInformation

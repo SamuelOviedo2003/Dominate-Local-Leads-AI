@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, memo } from 'react'
+import React, { useState, useEffect, useCallback, memo } from 'react'
 import { CheckSquare, Square, Clock, AlertCircle } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { AIRecapAction } from '@/types/leads'
