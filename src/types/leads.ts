@@ -18,6 +18,11 @@ export interface Lead {
   created_at: string
   working_hours?: boolean
   next_step?: string
+  payment_type?: string | null
+  roof_age?: string | null
+  homeowner?: boolean | null
+  email_valid?: boolean | null
+  language?: string | null
   stage: 1 | 2 | 3 // 1 = New Leads (stage 1), 2 = New Leads (stage 2), 3 = Bookings
   communications_count: number // New field to track number of communications
   calls_count?: number // Number of calls made for this lead
@@ -157,6 +162,7 @@ export interface LeadDetails {
   communications: Communication[]
   callWindows: CallWindow[]
   businessTimezone: string // IANA timezone identifier (e.g., 'America/New_York')
+  dialpadPhone: string | null // Business dialpad phone number for calling integration
 }
 
 export type MessageType = 'email' | 'sms' | 'call' | 'voicemail'

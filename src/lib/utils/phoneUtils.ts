@@ -82,8 +82,53 @@ export function createDialpadUrl(phone: string | null | undefined): string | nul
 }
 
 /**
+ * Creates a business-specific Dialpad URL with custom data for lead tracking
+ *
+ * @param phone - The lead's phone number to call
+ * @param dialpadPhone - The business dialpad phone number (fromNumber)
+ * @param leadId - The lead ID for custom tracking data
+ * @returns Business Dialpad URL string or null if phone number is invalid
+ *
+ * @example
+ * createBusinessDialpadUrl("(555) 123-4567", "+1234567890", "123")
+ * // Returns "dialpad://+15551234567?fromNumber=+1234567890&customData=lead_id%3D123"
+ */
+export function createBusinessDialpadUrl(
+  phone: string | null | undefined,
+  dialpadPhone: string | null | undefined,
+  leadId: string | number
+): string | null {
+  const formattedPhone = formatPhoneForDialpad(phone)
+
+  if (!formattedPhone) {
+    return null
+  }
+
+  // Build the URL with the specific format requested
+  let url = `dialpad://${formattedPhone}`
+
+  // Add fromNumber if dialpadPhone is provided
+  if (dialpadPhone) {
+    const formattedDialpadPhone = formatPhoneForDialpad(dialpadPhone)
+    if (formattedDialpadPhone) {
+      url += `?fromNumber=${formattedDialpadPhone}`
+    }
+  }
+
+  // Add customData with lead_id (URL encoded)
+  const customData = `lead_id%3D${leadId}` // URL encoded "lead_id=123"
+  if (url.includes('?')) {
+    url += `&customData=${customData}`
+  } else {
+    url += `?customData=${customData}`
+  }
+
+  return url
+}
+
+/**
  * Validates if a phone number can be used for Dialpad calling
- * 
+ *
  * @param phone - The phone number to validate
  * @returns true if the phone number is valid for Dialpad, false otherwise
  */

@@ -1,9 +1,10 @@
 'use client'
 
+import React from 'react'
 import { Lead, PropertyInfo } from '@/types/leads'
 import { useMemo, useCallback, memo } from 'react'
 import { LoadingSystem } from '@/components/LoadingSystem'
-import { createDialpadUrl, isValidDialpadPhone } from '@/lib/utils/phoneUtils'
+import { createDialpadUrl, isValidDialpadPhone, createBusinessDialpadUrl } from '@/lib/utils/phoneUtils'
 
 interface LeadInformationProps {
   lead?: Lead | null
@@ -166,124 +167,130 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
 
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 h-full flex flex-col overflow-hidden backdrop-blur-sm">
-      {/* Modern Header Section with Gradient Background */}
-      <div className="relative bg-gradient-to-br from-brand-slate-50 via-white to-brand-slate-50 p-6 border-b border-gray-100">
-        {/* Subtle decorative element */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-brand-orange-100/20 to-transparent rounded-bl-full"></div>
-        
-        {/* Lead Name and Source Icon */}
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 h-full flex flex-col overflow-hidden">
+      {/* Header Section - Following Reference Image Layout */}
+      <div className="p-4 border-b border-gray-100">
+        {/* Top Row: Source Icon + Source Name + Lead Name + Homeowner Status + Received Date */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
-            {/* Source indicator circle */}
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md ${sourceIconConfig.bgColor}`}>
-              {sourceIconConfig.icon}
+            {/* Source Icon */}
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center ${sourceIconConfig.bgColor}`}>
+              {React.cloneElement(sourceIconConfig.icon as React.ReactElement, {
+                className: "w-4 h-4 text-white"
+              })}
             </div>
 
-            <div>
-              <h1 className="text-xl font-bold text-brand-slate-900 break-words">
-                {lead.first_name} {lead.last_name}
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs font-medium text-brand-slate-500 bg-brand-slate-100 px-2 py-1 rounded-full">
-                  {sourceIconConfig.label}
-                </span>
-              </div>
-            </div>
+            {/* Source Name */}
+            <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
+              {sourceIconConfig.label}
+            </span>
+
+            {/* Lead Name */}
+            <span className="text-lg font-bold text-gray-900">
+              {lead.first_name} {lead.last_name}
+            </span>
+
+            {/* Homeowner Status Tag */}
+            {lead.homeowner !== null && lead.homeowner !== undefined && (
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                lead.homeowner
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-gray-100 text-gray-800'
+              }`}>
+                {lead.homeowner ? 'Homeowner' : 'Not Homeowner'}
+              </span>
+            )}
+          </div>
+
+          {/* Received Date */}
+          <div className="hidden sm:block">
+            <p className="text-sm text-gray-500">
+              <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+              })}
+            </p>
           </div>
         </div>
-      </div>
 
-      {/* Content Section - Two Column Layout */}
-      <div className="flex-1 p-5">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
-          {/* Left Column - Contact Information */}
-          <div className="space-y-3">
-            {/* Email Card */}
-            <div className="group bg-gradient-to-r from-white to-brand-slate-50/50 rounded-lg p-3 border border-brand-slate-200/50 hover:border-brand-orange-300 transition-all duration-200 hover:shadow-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                  <div className="w-7 h-7 bg-brand-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3.5 h-3.5 text-brand-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-brand-slate-500 uppercase tracking-wide">Email</div>
-                    <div className="text-brand-slate-900 font-medium text-xs truncate">{lead.email}</div>
-                  </div>
-                </div>
-                <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+        {/* Second Row: Contact Details */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          {/* Phone Number with Verification Status */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">{lead.phone}</span>
+            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
+              Verified
+            </span>
+          </div>
+
+          {/* Email with Validation Icon */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">{lead.email}</span>
+            {lead.email_valid !== null && lead.email_valid !== undefined && (
+              <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                lead.email_valid ? 'bg-green-100' : 'bg-red-100'
+              }`}>
+                {lead.email_valid ? (
                   <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Phone Card */}
-            <div className="group bg-gradient-to-r from-white to-brand-slate-50/50 rounded-lg p-3 border border-brand-slate-200/50 hover:border-brand-orange-300 transition-all duration-200 hover:shadow-md">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                  <div className="w-7 h-7 bg-brand-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3.5 h-3.5 text-brand-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-semibold text-brand-slate-500 uppercase tracking-wide">Phone</div>
-                    <div className="text-brand-slate-900 font-medium text-xs">{lead.phone}</div>
-                  </div>
-                </div>
-                {isValidDialpadPhone(lead.phone) && (
-                  <a 
-                    href={createDialpadUrl(lead.phone) || '#'}
-                    className="w-8 h-8 bg-green-100 hover:bg-green-200 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-200"
-                    title="Call with Dialpad"
-                  >
-                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                    </svg>
-                  </a>
+                ) : (
+                  <svg className="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
                 )}
               </div>
-            </div>
-
-          </div>
-
-          {/* Right Column - Property & Lead Information */}
-          <div className="space-y-3">
-            {/* Conditionally render Roof Age only if value exists */}
-            {property?.roof_age && (
-              <InfoCard
-                icon={
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                  </svg>
-                }
-                title="Roof Age"
-                value={property.roof_age}
-              />
             )}
-
-            <InfoCard
-              icon={
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                </svg>
-              }
-              title="Created"
-              value={new Date(lead.created_at).toLocaleDateString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              })}
-            />
           </div>
+        </div>
+
+        {/* Mobile: Show received date */}
+        <div className="sm:hidden mt-2">
+          <p className="text-sm text-gray-500">
+            <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleDateString('en-US', {
+              month: '2-digit',
+              day: '2-digit',
+              year: 'numeric'
+            })}
+          </p>
+        </div>
+      </div>
+
+      {/* Lead Attributes Section - 4 Column Grid */}
+      <div className="p-4 flex-1">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 auto-rows-min">
+          {/* Service */}
+          {lead.service && (
+            <div className="rounded-lg bg-gray-50 p-3">
+              <span className="text-xs text-gray-500">Service</span>
+              <p className="font-medium text-gray-900 text-sm">{lead.service}</p>
+            </div>
+          )}
+
+          {/* How Soon */}
+          {lead.how_soon && (
+            <div className="rounded-lg bg-gray-50 p-3">
+              <span className="text-xs text-gray-500">How Soon</span>
+              <p className="font-medium text-gray-900 text-sm">{lead.how_soon}</p>
+            </div>
+          )}
+
+          {/* Payment Type */}
+          {lead.payment_type && (
+            <div className="rounded-lg bg-gray-50 p-3">
+              <span className="text-xs text-gray-500">Payment</span>
+              <p className="font-medium text-gray-900 text-sm">{lead.payment_type}</p>
+            </div>
+          )}
+
+          {/* Roof Age - only if not null */}
+          {lead.roof_age && (
+            <div className="rounded-lg bg-gray-50 p-3">
+              <span className="text-xs text-gray-500">Roof Age</span>
+              <p className="font-medium text-gray-900 text-sm">{lead.roof_age}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

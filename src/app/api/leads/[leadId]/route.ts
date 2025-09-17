@@ -190,19 +190,21 @@ export async function GET(request: NextRequest, context: RouteParams) {
 
     const lead: Lead = leadData
 
-    // Fetch business timezone information
+    // Fetch business timezone and dialpad phone information
     const { data: businessData, error: businessError } = await supabase
       .from('business_clients')
-      .select('time_zone')
+      .select('time_zone, dialpad_phone')
       .eq('business_id', requestedBusinessId)
       .single()
 
     let businessTimezone = 'UTC' // Default fallback
+    let dialpadPhone: string | null = null
     if (businessData && !businessError) {
       businessTimezone = businessData.time_zone || 'UTC'
-      logger.dbDebug('Business timezone fetch', 'business_clients', { businessId: requestedBusinessId, timezone: businessTimezone })
+      dialpadPhone = businessData.dialpad_phone || null
+      logger.dbDebug('Business data fetch', 'business_clients', { businessId: requestedBusinessId, timezone: businessTimezone, dialpadPhone: dialpadPhone })
     } else {
-      logger.warn('Business timezone fetch failed, using fallback', { businessId: requestedBusinessId, error: businessError, fallback: businessTimezone })
+      logger.warn('Business data fetch failed, using fallback', { businessId: requestedBusinessId, error: businessError, fallback: businessTimezone })
     }
 
     // Fetch property information using account_id from lead
@@ -266,7 +268,8 @@ export async function GET(request: NextRequest, context: RouteParams) {
       property,
       communications,
       callWindows,
-      businessTimezone
+      businessTimezone,
+      dialpadPhone
     }
 
     logger.apiDebug('/api/leads/[leadId]', 'GET', {
