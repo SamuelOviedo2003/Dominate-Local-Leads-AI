@@ -58,7 +58,7 @@ export function BookingsClient({ businessId, userRole }: BookingsClientProps) {
           leads={recentLeads}
           isLoading={isRecentLoading}
           error={recentError}
-          navigationTarget="lead-details"
+          navigationTarget="property-details"
         />
       </div>
     </div>
