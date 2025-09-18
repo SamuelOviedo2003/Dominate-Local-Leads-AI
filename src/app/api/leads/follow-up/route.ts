@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    logger.debug('Recent leads API call started')
+    logger.debug('Follow up leads API call started')
 
     // Get authenticated user using the proper auth method
     const { user } = await authenticateRequest(request)
@@ -42,11 +42,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    logger.debug('Recent leads query params', { businessId: businessIdParam, userId: user.id })
+    logger.debug('Follow up leads query params', { businessId: businessIdParam, userId: user.id })
 
     const supabase = createCookieClient()
 
-    // Fetch recent leads - all leads for the business, ordered by creation date
+    // Fetch follow up leads - leads that have ai_recap_purposes data
     const { data: leads, error } = await supabase
       .from('leads')
       .select(`
@@ -62,18 +62,19 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('business_id', requestedBusinessId)
+      .not('ai_recap_purposes', 'is', null)
       .order('created_at', { ascending: false })
       .limit(100)
 
     if (error) {
       console.error('Database error:', error)
       return Response.json(
-        { error: 'Failed to fetch recent leads data' },
+        { error: 'Failed to fetch follow up leads data' },
         { status: 500 }
       )
     }
 
-    logger.debug('Recent leads fetched successfully', {
+    logger.debug('Follow up leads fetched successfully', {
       count: leads?.length || 0,
       businessId: businessIdParam
     })

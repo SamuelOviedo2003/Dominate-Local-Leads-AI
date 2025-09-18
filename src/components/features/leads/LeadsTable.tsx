@@ -187,14 +187,10 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
               {leads.map((lead) => {
                 const rowBackground = getRowBackground(lead.call_now_status)
                 const leadUrl = buildUrl(`/${navigationTarget}/${lead.lead_id}`)
-                
+
                 return (
-                  <Link 
-                    key={lead.lead_id}
-                    href={leadUrl}
-                    className="contents"
-                  >
-                    <tr 
+                    <tr
+                      key={lead.lead_id}
                       onClick={(e) => handleRowClick(e, lead.lead_id)}
                       className={`cursor-pointer transition-all duration-200 ${
                         rowBackground
@@ -251,7 +247,6 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                       {lead.next_step || 'Not set'}
                     </td>
                     </tr>
-                  </Link>
                 )
               })}
             </tbody>

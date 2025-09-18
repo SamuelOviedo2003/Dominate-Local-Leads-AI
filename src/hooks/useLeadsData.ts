@@ -83,9 +83,7 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
     setRecentLeadsError(null)
 
     try {
-      const startDate = getStartDate(timePeriod)
       const params = new URLSearchParams({
-        startDate,
         businessId
       })
 

@@ -1,7 +1,7 @@
 'use client'
 
-import { useBookingsData } from '@/hooks/useBookingsData'
-import { LeadsTable } from '@/components/features/leads/LeadsTable'
+import { useFollowUpAndRecentLeads } from '@/hooks/useFollowUpAndRecentLeads'
+import { RecentLeadsTable } from '@/components/features/leads/RecentLeadsTable'
 import { BookingsMetrics } from '@/components/features/metrics'
 import { useBusinessContext } from '@/contexts/BusinessContext'
 
@@ -15,18 +15,13 @@ export function BookingsClient({ businessId, userRole }: BookingsClientProps) {
   const { currentBusinessId } = useBusinessContext()
   const effectiveBusinessId = currentBusinessId || ''
 
+  // Use dedicated hook only for Recent Leads table
   const {
-    metrics,
-    bookingsLeads,
-    isLoading,
-    isMetricsLoading,
-    isBookingsLeadsLoading,
-    error,
-    metricsError,
-    bookingsLeadsError,
-    refetch
-  } = useBookingsData({
-    timePeriod: '30',
+    recentLeads,
+    isRecentLoading,
+    recentError,
+    refetchRecent
+  } = useFollowUpAndRecentLeads({
     businessId: effectiveBusinessId
   })
 
@@ -42,14 +37,14 @@ export function BookingsClient({ businessId, userRole }: BookingsClientProps) {
         </div>
 
         {/* Error State */}
-        {error && (
+        {recentError && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-center">
               <div className="text-red-600 text-sm">
-                {error}
+                {recentError}
               </div>
               <button
-                onClick={refetch}
+                onClick={refetchRecent}
                 className="ml-4 text-red-600 hover:text-red-800 text-sm font-medium"
               >
                 Try Again
@@ -58,19 +53,12 @@ export function BookingsClient({ businessId, userRole }: BookingsClientProps) {
           </div>
         )}
 
-        {/* Bookings Metrics - First Row */}
-        <BookingsMetrics
-          metrics={metrics}
-          isLoading={isMetricsLoading}
-          error={metricsError}
-        />
-
-        {/* Bookings Leads Table */}
-        <LeadsTable 
-          leads={bookingsLeads}
-          isLoading={isBookingsLeadsLoading}
-          error={bookingsLeadsError}
-          navigationTarget="property-details"
+        {/* Recent Leads Table - Only Table */}
+        <RecentLeadsTable
+          leads={recentLeads}
+          isLoading={isRecentLoading}
+          error={recentError}
+          navigationTarget="lead-details"
         />
       </div>
     </div>

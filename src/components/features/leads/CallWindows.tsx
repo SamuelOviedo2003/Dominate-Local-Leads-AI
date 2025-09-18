@@ -25,7 +25,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
     if (workingHours === true || workingHours === null || workingHours === undefined) {
       return { isWorkingHours: true, label: 'Working Hours', color: 'text-green-600 bg-green-50' }
     } else {
-      return { isWorkingHours: false, label: 'Non-Working Hours', color: 'text-orange-600 bg-orange-50' }
+      return { isWorkingHours: false, label: 'After Hours', color: 'text-orange-600 bg-orange-50' }
     }
   }, [workingHours])
 

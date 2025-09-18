@@ -9,7 +9,6 @@ export interface Lead {
   service: string
   source?: string | null // Lead source information
   how_soon?: string | null // How soon the customer needs the service
-  score: number
   status: string
   contacted: boolean
   start_time: string | null
@@ -30,6 +29,7 @@ export interface Lead {
   summary?: string | null // Summary field for lead information
   score_summary?: string | null // Score-based summary field
   caller_type?: 'Client' | 'Sales person' | 'Other' | 'Looking for job' | null // Type of caller classification
+  ai_recap_purposes?: string | null // Text field for purposes from AI recap
 }
 
 export interface Client {
