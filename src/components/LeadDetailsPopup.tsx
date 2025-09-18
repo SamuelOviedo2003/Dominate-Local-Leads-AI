@@ -241,10 +241,6 @@ export function LeadDetailsPopup({ lead, isOpen, onClose, businessId }: LeadDeta
                   <span className="ml-2 text-gray-900">{lead.source || 'Unknown'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Score:</span>
-                  <span className="ml-2 text-gray-900">{lead.score}</span>
-                </div>
-                <div>
                   <span className="text-gray-500">Phone:</span>
                   <span className="ml-2 text-gray-900">{lead.phone}</span>
                 </div>
