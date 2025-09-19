@@ -2,8 +2,7 @@ import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUserForAPI } from '@/lib/auth-helpers'
-import { login } from './actions'
-import { signup } from './signup-actions'
+// Note: Login and signup are now handled client-side in AuthForm
 import AuthForm from '@/components/AuthForm'
 import ImageWithFallback from '@/components/ImageWithFallback'
 import LoginLogo from '@/components/LoginLogo'
@@ -50,7 +49,7 @@ export default async function LoginPage() {
                 <ComponentLoading message="Loading authentication form..." />
               </div>
             }>
-              <AuthForm loginAction={login} signupAction={signup} />
+              <AuthForm />
             </Suspense>
           </div>
         </div>

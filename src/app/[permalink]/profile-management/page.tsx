@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers'
-import ProfileManagementClient from '@/app/(dashboard)/profile-management/client'
+import ProfileManagementClientOptimized from '@/app/(dashboard)/profile-management/client-optimized'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,12 +34,9 @@ export default async function PermalinkProfileManagementPage({
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Profile Management</h1>
-        <p className="mt-2 text-gray-600">
-          Manage user access to businesses and assign permissions.
-        </p>
       </div>
       
-      <ProfileManagementClient />
+      <ProfileManagementClientOptimized />
     </div>
   )
 }

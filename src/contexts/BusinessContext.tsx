@@ -48,7 +48,13 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
 
       const isAuthenticated = await checkAuth()
       if (!isAuthenticated) {
-        throw new Error('User is not authenticated')
+        console.warn('User is not authenticated, clearing business context')
+        // Clear context when not authenticated
+        setCurrentBusinessId(null)
+        setAvailableBusinesses([])
+        setSelectedCompanyState(null)
+        setUserRole(1)
+        return
       }
 
       const result = await authGet('/api/user/business-context')
@@ -89,6 +95,11 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
       setSelectedCompanyState(selectedBusiness)
     } catch (error) {
       console.error('Failed to refresh business context:', error)
+      // Clear context on error to ensure loading state resolves
+      setCurrentBusinessId(null)
+      setAvailableBusinesses([])
+      setSelectedCompanyState(null)
+      setUserRole(1)
     } finally {
       setIsLoading(false)
     }

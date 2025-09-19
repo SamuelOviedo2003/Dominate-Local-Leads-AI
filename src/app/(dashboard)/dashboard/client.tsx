@@ -20,11 +20,11 @@ interface DashboardClientProps {
 
 export function DashboardClient({ userRole, accessibleBusinesses }: DashboardClientProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('30')
-  
+
   // Get the effective business ID (user's own or selected company for superadmin)
-  const { currentBusinessId } = useBusinessContext()
+  const { currentBusinessId, isLoading: businessContextLoading } = useBusinessContext()
   const effectiveBusinessId = currentBusinessId || ''
-  
+
   // TEMPORARILY DISABLED: Appointment setters functionality commented out due to missing time_speed column
   /*
   const {
@@ -48,8 +48,8 @@ export function DashboardClient({ userRole, accessibleBusinesses }: DashboardCli
     businessId: effectiveBusinessId
   })
 
-  // Simplified loading and error handling for dashboard-only data
-  const isLoading = dashboardLoading
+  // Coordinated loading state that accounts for both business context and data loading
+  const isLoading = businessContextLoading || dashboardLoading || !effectiveBusinessId
   const error = dashboardError
   const refetch = refetchDashboard
 
@@ -60,7 +60,6 @@ export function DashboardClient({ userRole, accessibleBusinesses }: DashboardCli
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Monitor your platform performance and lead metrics</p>
           </div>
           
           {/* Time Period Filter */}
@@ -102,13 +101,13 @@ export function DashboardClient({ userRole, accessibleBusinesses }: DashboardCli
               </div>
             </div>
           ) : platformSpendMetrics ? (
-            <PlatformSpendCard 
+            <PlatformSpendCard
               platformSpendMetrics={platformSpendMetrics}
               timePeriod={timePeriod}
             />
           ) : (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-              <div className="text-gray-500 text-center">No platform spend data available</div>
+              <div className="text-gray-500 text-center">No platform spend data available for the selected period</div>
             </div>
           )}
         </div>

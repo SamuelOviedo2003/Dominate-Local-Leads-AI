@@ -1,5 +1,5 @@
 import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
-import { IncomingCallsClient } from './client'
+import { IncomingCallsClientOptimized } from './client-optimized'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +25,7 @@ export default async function IncomingCallsPage() {
   const businessId = user.accessibleBusinesses[0]!.business_id
 
   return (
-    <IncomingCallsClient 
+    <IncomingCallsClientOptimized
       businessId={businessId}
       userRole={user.profile?.role}
     />

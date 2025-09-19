@@ -27,13 +27,13 @@ interface UseLeadsDataReturn {
 export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): UseLeadsDataReturn {
   const [metrics, setMetrics] = useState<LeadMetrics | null>(null)
   const [recentLeads, setRecentLeads] = useState<LeadWithClient[] | null>(null)
-  
+
   // Overall loading state (true when any component is loading)
-  const [isLoading, setIsLoading] = useState(false)
-  
-  // Individual component loading states
-  const [isMetricsLoading, setIsMetricsLoading] = useState(false)
-  const [isRecentLeadsLoading, setIsRecentLeadsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // Start with true to prevent flash
+
+  // Individual component loading states - start with true to prevent flash of empty content
+  const [isMetricsLoading, setIsMetricsLoading] = useState(true)
+  const [isRecentLeadsLoading, setIsRecentLeadsLoading] = useState(true)
   
   // Individual component errors
   const [error, setError] = useState<string | null>(null)
@@ -47,7 +47,10 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
   }
 
   const fetchMetrics = async () => {
-    if (!businessId) return
+    if (!businessId) {
+      setIsMetricsLoading(false)
+      return
+    }
 
     setIsMetricsLoading(true)
     setMetricsError(null)
@@ -77,7 +80,10 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
 
 
   const fetchRecentLeads = async () => {
-    if (!businessId) return
+    if (!businessId) {
+      setIsRecentLeadsLoading(false)
+      return
+    }
 
     setIsRecentLeadsLoading(true)
     setRecentLeadsError(null)

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { LeadWithClient } from '@/types/leads'
 import { logger } from '@/lib/logging'
+import { authGet } from '@/lib/auth-fetch'
 
 interface UseFollowUpAndRecentLeadsParams {
   businessId: string
@@ -31,6 +32,7 @@ export function useFollowUpAndRecentLeads({
 
   const fetchFollowUpLeads = useCallback(async () => {
     if (!businessId) {
+      setIsFollowUpLoading(false)
       logger.warn('No business ID provided for follow up leads fetch')
       return
     }
@@ -41,21 +43,7 @@ export function useFollowUpAndRecentLeads({
     try {
       logger.debug('Fetching follow up leads', { businessId })
 
-      const response = await fetch(
-        `/api/leads/follow-up?businessId=${businessId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error(`Follow up leads fetch failed: ${response.status}`)
-      }
-
-      const data = await response.json()
+      const data = await authGet(`/api/leads/follow-up?businessId=${businessId}`)
 
       if (data.success) {
         setFollowUpLeads(data.data || [])
@@ -75,6 +63,7 @@ export function useFollowUpAndRecentLeads({
 
   const fetchRecentLeads = useCallback(async () => {
     if (!businessId) {
+      setIsRecentLoading(false)
       logger.warn('No business ID provided for recent leads fetch')
       return
     }
@@ -85,21 +74,7 @@ export function useFollowUpAndRecentLeads({
     try {
       logger.debug('Fetching recent leads', { businessId })
 
-      const response = await fetch(
-        `/api/leads/recent?businessId=${businessId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error(`Recent leads fetch failed: ${response.status}`)
-      }
-
-      const data = await response.json()
+      const data = await authGet(`/api/leads/recent?businessId=${businessId}`)
 
       if (data.success) {
         setRecentLeads(data.data || [])

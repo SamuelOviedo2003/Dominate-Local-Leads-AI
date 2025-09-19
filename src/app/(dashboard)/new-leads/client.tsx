@@ -12,7 +12,7 @@ interface NewLeadsClientProps {
 
 export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
   // Get the effective business ID (user's own or selected company for superadmin)
-  const { currentBusinessId } = useBusinessContext()
+  const { currentBusinessId, isLoading: businessContextLoading } = useBusinessContext()
   const effectiveBusinessId = currentBusinessId || ''
 
   const {
@@ -29,6 +29,10 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
     timePeriod: '30',
     businessId: effectiveBusinessId
   })
+
+  // Coordinated loading states to prevent flash of empty content
+  const isMetricsLoadingCoordinated = businessContextLoading || isMetricsLoading || !effectiveBusinessId
+  const isRecentLeadsLoadingCoordinated = businessContextLoading || isRecentLeadsLoading || !effectiveBusinessId
 
   return (
     <div className="p-6">
@@ -60,15 +64,15 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
         {/* Leads Metrics - First Row */}
         <LeadsMetrics
           metrics={metrics}
-          isLoading={isMetricsLoading}
+          isLoading={isMetricsLoadingCoordinated}
           error={metricsError}
         />
 
         {/* New Leads Table (Stage 1) */}
         <div className="mb-8">
-          <LeadsTable 
+          <LeadsTable
             leads={recentLeads ? recentLeads.filter(lead => lead.stage === 1) : null}
-            isLoading={isRecentLeadsLoading}
+            isLoading={isRecentLeadsLoadingCoordinated}
             error={recentLeadsError}
             usePriorityColors={true}
             title="New Leads"
@@ -78,7 +82,7 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
         {/* Follow Up Table (Stage 2) */}
         <LeadsTable
           leads={recentLeads ? recentLeads.filter(lead => lead.stage === 2) : null}
-          isLoading={isRecentLeadsLoading}
+          isLoading={isRecentLeadsLoadingCoordinated}
           error={recentLeadsError}
           usePriorityColors={true}
           title="Follow Up"

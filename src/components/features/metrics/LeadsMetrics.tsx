@@ -37,7 +37,7 @@ export function LeadsMetrics({ metrics, isLoading = false, error = null }: Leads
   if (!metrics) {
     return (
       <div className="mb-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
-        <div className="text-gray-500 text-center">No metrics data available</div>
+        <div className="text-gray-500 text-center">No metrics data available for the selected period</div>
       </div>
     )
   }

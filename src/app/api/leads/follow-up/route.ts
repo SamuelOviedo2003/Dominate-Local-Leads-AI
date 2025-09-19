@@ -32,10 +32,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate business access permissions using user's accessible businesses
+    logger.debug('Business access validation', {
+      businessIdParam,
+      accessibleBusinesses: user.accessibleBusinesses?.map(b => b.business_id),
+      userId: user.id
+    })
+
     const hasAccess = user.accessibleBusinesses?.some(
       business => business.business_id === businessIdParam
     )
     if (!hasAccess) {
+      logger.warn('Business access denied', {
+        businessIdParam,
+        accessibleBusinesses: user.accessibleBusinesses?.map(b => b.business_id),
+        userId: user.id
+      })
       return Response.json(
         { error: 'Access denied - You do not have access to this business data' },
         { status: 403 }

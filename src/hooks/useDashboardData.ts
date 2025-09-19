@@ -18,7 +18,7 @@ interface UseDashboardDataReturn {
 
 export function useDashboardData({ timePeriod, businessId }: UseDashboardDataProps): UseDashboardDataReturn {
   const [platformSpendMetrics, setPlatformSpendMetrics] = useState<EnhancedDashboardMetrics | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // Start with true to prevent flash
   const [error, setError] = useState<string | null>(null)
 
   const getStartDate = (period: TimePeriod): string => {
@@ -28,7 +28,10 @@ export function useDashboardData({ timePeriod, businessId }: UseDashboardDataPro
   }
 
   const fetchData = async () => {
-    if (!businessId) return
+    if (!businessId) {
+      setIsLoading(false)
+      return
+    }
 
     setIsLoading(true)
     setError(null)

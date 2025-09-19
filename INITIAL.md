@@ -13,6 +13,8 @@
 - [FB Analysis](#fb-analysis)
 - [Settings](#settings)
 - [Loading System](#loading-system)
+- [Enhanced Session Management & Business Switching](#enhanced-session-management--business-switching)
+- [Metrics Components Architecture](#metrics-components-architecture)
 - [Session Security Architecture](#session-security-architecture)
 - [Session Debugging & Observability System](#session-debugging--observability-system)
 - [Database Schema](#database-schema)
@@ -238,6 +240,22 @@ WHERE avatar_url IS NOT NULL;
 - **Requirement**: Must include loading states and error handling specific to Dashboard context
 - **Requirement**: Must operate independently from New Leads section data
 
+#### Session Management and Business Switching (Latest Implementation)
+- **Requirement**: Must implement intelligent company switching behavior that preserves current section context
+- **Requirement**: Must redirect to New Leads section when switching from lead-specific pages (Lead Details, Property Details, Actions)
+- **Requirement**: Must maintain current section (Dashboard, New Leads, Bookings, Incoming Calls) for non-lead-specific pages
+- **Requirement**: Must persist last selected company across session expiration and long inactivity periods
+- **Requirement**: Must automatically update database with business selection changes for session recovery
+- **Requirement**: Must use `determineTargetPageForBusinessSwitch()` for intelligent routing decisions
+
+#### Metrics Distribution (Latest Implementation - Reversed from Phase 7)
+- **CHANGED**: Metrics have been distributed back to their respective sections for better UX
+- **Requirement**: Dashboard must show only Platform Spend metrics and maintain time period filtering
+- **Requirement**: Dashboard must remove all lead and booking metrics to eliminate duplication
+- **Requirement**: Must use simplified data fetching with only `useDashboardData` hook
+- **Requirement**: Must maintain responsive design and error handling for Platform Spend only
+- **Requirement**: Must maintain responsive grid layout (2 columns on mobile, 3 columns on larger screens)
+
 #### SQL Queries Required
 ```sql
 -- Platform advertising spend (Enhanced with platform breakdown)
@@ -260,6 +278,12 @@ LEFT JOIN leads_calls lc ON l.lead_id = lc.lead_id
 WHERE l.created_at >= $startDate
 AND l.business_id = $businessId
 AND lc.assigned IS NOT NULL;
+
+-- Consolidated metrics for Phase 7 Dashboard (Total Calls metric)
+SELECT SUM(calls_count) as total_calls
+FROM leads
+WHERE created_at >= $startDate
+AND business_id = $businessId;
 ```
 
 ### UI Requirements
@@ -279,14 +303,15 @@ AND lc.assigned IS NOT NULL;
 
 ### Functional Requirements
 
-#### Lead Metrics Component (Enhanced)
-- **Requirement**: Must display total leads count for selected time period
-- **Requirement**: Must show contacted leads count and percentage with "Contacts" label (plural)
-- **Requirement**: Must show booked leads count and percentage
-- **Requirement**: Must calculate contact rate (contacted/total) with "% of leads" description
-- **Requirement**: Must calculate booking rate (booked/contacted) with "% of contacts" description
-- **Requirement**: Must display overall booking rate with "of leads" text in blue color theme
-- **Requirement**: Must use blue color styling for lead-related metric badges
+#### Lead Metrics Component (Latest Implementation - Returned from Dashboard)
+- **CHANGED**: Lead metrics have been moved back from Dashboard to New Leads section for better UX
+- **REQUIREMENT**: Must display lead metrics in first row with exact order: Leads, Contacts, Booked, Booking Rate
+- **REQUIREMENT**: Must use reusable `LeadsMetrics` component with consistent styling and behavior
+- **REQUIREMENT**: Must maintain all original styling including icons, colors, badges, and responsive grid layout
+- **REQUIREMENT**: Must implement proper loading states, error handling, and data formatting
+- **REQUIREMENT**: Must maintain LeadsTable component for lead data display below metrics
+- **REQUIREMENT**: Must support Actions navigation target for Follow Up table integration
+- **REQUIREMENT**: Must use `useLeadsData` hook for metrics data with 30-day default period
 
 #### SQL Queries Required
 ```sql
@@ -334,22 +359,42 @@ AND assigned IS NOT NULL;
 -- Avg Response Speed: AVG(time_speed) WHERE working_hours = true
 ```
 
-#### Recent Leads Table
+#### Recent Leads Table (Enhanced)
 - **Requirement**: Must display leads in table format with clickable rows
-- **Requirement**: Must show columns: Lead Name (with score circle), How Soon, Service, Date, Notes, Status
+- **UPDATED**: Must show columns: Lead Name (with calls count circle and working hours icon), Source, Date, Next Step
+- **REMOVED**: Communications Count column completely eliminated from table layout
+- **UPDATED**: Lead Name cell must display calls count in gray circle instead of score
+- **UPDATED**: Calls count circle must include working hours icon at bottom-right corner:
+  - Sun icon (☀️) for working_hours = true or null (yellow tint)
+  - Moon icon (🌙) for working_hours = false (blue tint)
+- **NEW**: how_soon attribute must display as colored tag next to service field:
+  - Red: ASAP, immediately, urgent keywords
+  - Orange: week, 7 days, soon keywords
+  - Blue: month, 30 days keywords
+  - Gray: default/other values
+- **UPDATED**: Date format must display as "Tue Sep 16, 6:05PM" (weekday, short month, day, time)
 - **Requirement**: Must navigate to Lead Details on row click
 - **Requirement**: Must use individual component loading states independent from Lead Metrics
 - **Requirement**: Must show purple loading spinner during table data fetching
 
 #### SQL Queries Required
 ```sql
--- Fetch recent leads with property data
+-- Fetch recent leads with enhanced data including calls_count, working_hours, and how_soon
 SELECT l.*, c.full_address, c.house_value, c.house_url, c.distance_meters, c.duration_seconds
 FROM leads l
 LEFT JOIN clients c ON l.account_id = c.account_id
 WHERE l.created_at >= $startDate
 AND l.business_id = $businessId
 ORDER BY l.created_at DESC;
+
+-- Required fields from leads table:
+-- - calls_count (number): Display in circle instead of score
+-- - working_hours (boolean): Determines sun/moon icon (true/null = sun, false = moon)
+-- - how_soon (string): Display as colored priority tag next to service
+-- - source (string): Display as colored source badge
+-- - service (string): Primary service field with how_soon tag
+-- - created_at (timestamp): Format as "Tue Sep 16, 6:05PM"
+-- - next_step (string): Display in Next Step column
 ```
 
 ### UI Requirements
@@ -358,8 +403,17 @@ ORDER BY l.created_at DESC;
 - **Requirement**: Must show individual component loading states (metrics and table load independently)
 - **Requirement**: Must use CardSkeleton with individual metric cards during loading (4 cards in grid)
 - **Requirement**: Must match Salesman loading pattern exactly with purple spinners
-- **Requirement**: Score must display as color-coded circle (Red: 0-33%, Yellow: 34-66%, Green: 67-100%)
-- **Requirement**: How Soon must use color coding (Red: ASAP, Orange: week, Blue: month, Gray: default)
+- **UPDATED**: Calls count must display in neutral gray circle (bg-gray-500) with white text
+- **UPDATED**: Working hours icon must be positioned at bottom-right of calls count circle:
+  - Sun icon (Lucide React): text-yellow-100 for working hours true/null
+  - Moon icon (Lucide React): text-blue-100 for working hours false
+  - Icon container: 4x4 darker gray circle (bg-gray-600) with 3x3 icon
+- **UPDATED**: how_soon tags must use priority-based color coding with rounded-full styling:
+  - Red: bg-red-100 text-red-800 border-red-200 (urgent keywords)
+  - Orange: bg-orange-100 text-orange-800 border-orange-200 (week keywords)
+  - Blue: bg-blue-100 text-blue-800 border-blue-200 (month keywords)
+  - Gray: bg-gray-100 text-gray-800 border-gray-200 (default)
+- **UPDATED**: Date format must exclude year and include weekday for current year dates
 
 #### Component Loading Architecture
 - **Requirement**: Lead Metrics component must load independently with `isMetricsLoading` state
@@ -373,12 +427,17 @@ ORDER BY l.created_at DESC;
 
 ### Functional Requirements
 
-#### Lead Information Display
-- **Requirement**: Must display complete lead profile including name, email, phone
-- **Requirement**: Must show email validation status (✓/✗)
-- **Requirement**: Must display service details, urgency, and metadata
-- **Requirement**: Must show property information with image
-- **Requirement**: Must display lead score with color coding
+#### Lead Information Display (Updated Implementation)
+- **Requirement**: Must display essential lead contact information: name, email, phone, created date
+- **UPDATED**: Must display source-based visual indicators instead of score-based metrics
+- **UPDATED**: Must show company/source symbols in circular display (Facebook icon for Facebook Ads, Google icon for Google Ads, etc.)
+- **REMOVED**: Score circle and score-based tags (low priority, strong lead, etc.) completely eliminated
+- **REMOVED**: Summary section completely removed from lead information display
+- **REMOVED**: Service Needed, Lead Source, and Next Step elements removed for cleaner interface
+- **UPDATED**: Must display roof age conditionally (only show if not null)
+- **UPDATED**: Created date must display in format "Tue Sep 16, 6:05PM" (weekday, short month, day, time)
+- **Requirement**: Must show property information with image fallback
+- **Requirement**: Must maintain responsive design and glass morphism styling
 
 #### Call Windows System (Simplified)
 - **Requirement**: Must display simplified call window tracking with streamlined business logic
@@ -398,14 +457,20 @@ ORDER BY l.created_at DESC;
 
 #### SQL Queries Required
 ```sql
--- Fetch lead details
-SELECT *
+-- Fetch lead details (updated for source-based display)
+SELECT lead_id, account_id, business_id, first_name, last_name, email, phone,
+       source, created_at, service, how_soon, next_step
 FROM leads
 WHERE lead_id = $leadId
 AND business_id = $businessId;
 
--- Fetch property information
-SELECT house_value, distance_meters, house_url, full_address, duration_seconds
+-- Fetch business data including dialpad phone for Call Now integration
+SELECT time_zone, dialpad_phone
+FROM business_clients
+WHERE business_id = $businessId;
+
+-- Fetch property information (updated with conditional roof_age)
+SELECT house_value, distance_meters, house_url, full_address, duration_seconds, roof_age
 FROM clients
 WHERE account_id = $accountId; -- From lead.account_id
 
@@ -430,6 +495,18 @@ ORDER BY call_window ASC;
 - **Requirement**: Must show message type with color-coded badges
 - **Requirement**: Must allow seeking within audio recordings
 
+#### Dialpad Call Now Integration
+- **Requirement**: Must provide Call Now button positioned to the right of "Back to New Leads" button
+- **Requirement**: Must use blue gradient design matching provided UI specifications with phone icon
+- **Requirement**: Must create Dialpad URLs in format: `dialpad://{{phone}}?fromNumber={{dialpad_phone}}&customData=lead_id%3D{{lead_id}}`
+- **Requirement**: Must fetch `dialpad_phone` from `business_clients` table via enhanced lead details API
+- **Requirement**: Must use lead's `phone` field and current `lead_id` for URL generation
+- **Requirement**: Must validate phone numbers before showing Call Now button
+- **Requirement**: Must include hover effects, scaling animations, and responsive design
+- **Requirement**: Must show loading placeholder during data fetch
+- **Requirement**: Must handle cases where dialpad_phone is null gracefully
+- **Requirement**: Must use `createBusinessDialpadUrl()` utility function for URL generation
+
 #### Functional Chat Integration
 - **Requirement**: Must provide functional chat interface for real-time lead communication
 - **Requirement**: Must integrate with n8n automation platform via webhook for message processing
@@ -444,6 +521,14 @@ ORDER BY call_window ASC;
 - **Requirement**: Must support keyboard shortcuts (Enter to send, Shift+Enter for new lines)
 - **Requirement**: Must validate and clear input after successful message send
 - **Requirement**: Must use controlled input components with proper state management
+
+#### Dialpad Integration Technical Implementation
+- **Component**: `/src/components/CallNowButton.tsx` - Reusable Call Now button component
+- **Utility**: `/src/lib/utils/phoneUtils.ts` - Enhanced with `createBusinessDialpadUrl()` function
+- **API Enhancement**: `/src/app/api/leads/[leadId]/route.ts` - Updated to fetch dialpad_phone from business_clients
+- **Type Definition**: `/src/types/leads.ts` - LeadDetails interface includes dialpadPhone field
+- **Phone Validation**: Uses `isValidDialpadPhone()` for number validation before showing button
+- **URL Format**: `dialpad://{{phone}}?fromNumber={{dialpad_phone}}&customData=lead_id%3D{{lead_id}}`
 
 #### Chat Interface Technical Implementation
 - **File**: `/src/hooks/useChatWebhook.ts` - Custom hook for webhook functionality
@@ -463,11 +548,14 @@ ORDER BY created_at ASC;
 ```
 
 ### UI Requirements
-- **Requirement**: Must use two-column layout (lead info left, property/score right)
+- **Requirement**: Must use two-column layout (lead info left, property info right)
+- **UPDATED**: Must display source-based circular icon instead of score display
+- **UPDATED**: Must implement dynamic source icon configuration with fallbacks for unknown sources
+- **UPDATED**: Source icons must include: Facebook (blue), Google (multicolor), Website (gray), Referral (green)
 - **Requirement**: Must display property image or fallback to `/images/noIMAGE.png`
-- **Requirement**: Must show score below property image with color background
 - **Requirement**: Must include back navigation to New Leads
 - **Requirement**: Communications must expand vertically (no internal scroll)
+- **UPDATED**: Must maintain clean, minimal interface with removed clutter elements
 
 #### Call Windows UI Requirements (Modern Vertical Design)
 - **Requirement**: Must display call items in single vertical column layout with compact spacing
@@ -507,6 +595,89 @@ ORDER BY created_at ASC;
 - SMS/Text: Green background
 - Call/Phone: Purple background
 - Voicemail: Orange background
+
+---
+
+## Unified Detail Pages Design System
+
+### Functional Requirements
+
+#### Consistent Layout Pattern
+- **Requirement**: All detail pages (Lead Details, Actions, Property Details) must follow a unified design pattern
+- **Requirement**: Must maintain consistent header layout with back navigation and Call Now button
+- **Requirement**: Must use identical spacing, margins, and responsive grid patterns
+- **Requirement**: Must provide seamless user experience across all detail views
+
+#### Header Standardization
+- **Requirement**: Must include back navigation button (left-aligned) with consistent styling
+- **Requirement**: Must include Call Now button (right-aligned) using Dialpad integration
+- **Requirement**: Call Now button must use business dialpad_phone and lead tracking data
+- **Requirement**: Must handle loading states with animated placeholder for Call Now button
+
+#### Layout Structure Requirements
+- **Requirement**: Must use full-width Lead Information section at the top
+- **Requirement**: Must implement two-column grid layout below Lead Information
+- **Requirement**: Left column must always contain Communications History
+- **Requirement**: Right column must contain page-specific component:
+  - Lead Details: Call Windows component
+  - Actions: Actions Checklist component
+  - Property Details: Property Information component
+
+#### Call Now Integration
+- **Requirement**: Must integrate with Dialpad using custom URL format: `dialpad://{phone}?fromNumber={dialpad_phone}&customData=lead_id%3D{lead_id}`
+- **Requirement**: Must validate phone numbers before showing Call Now button
+- **Requirement**: Must handle invalid phone numbers gracefully (hide button)
+- **Requirement**: Must fetch dialpad_phone from business_clients table
+- **Requirement**: Must pass lead_id for call tracking and analytics
+
+#### Component Export Standards
+- **Requirement**: All components must use consistent React import patterns: `import React, { hooks } from 'react'`
+- **Requirement**: All components must export as named exports only for consistency
+- **Requirement**: Must avoid default exports to prevent import resolution conflicts
+- **Requirement**: All JSX-using components must explicitly import React namespace
+
+#### Error Handling Requirements
+- **Requirement**: Must handle "Lead not found" errors with graceful redirects
+- **Requirement**: Must use useEffect for navigation to comply with React hooks rules
+- **Requirement**: Must provide loading states during data fetching
+- **Requirement**: Must handle undefined component imports with proper error boundaries
+
+#### SQL Queries for Unified Pages
+```sql
+-- Enhanced lead details query with dialpad integration
+SELECT
+  l.lead_id, l.account_id, l.business_id, l.first_name, l.last_name,
+  l.email, l.phone, l.source, l.created_at, l.service, l.how_soon,
+  l.payment_type, l.roof_age, l.homeowner, l.email_valid,
+  bc.time_zone, bc.dialpad_phone
+FROM leads l
+INNER JOIN business_clients bc ON l.business_id = bc.business_id
+WHERE l.lead_id = $leadId AND l.business_id = $businessId;
+
+-- Communications query for all detail pages
+SELECT communication_id, created_at, message_type, summary, recording_url,
+       call_window, lead_id, ai_recap_outcome, ai_recap_recap_purposes
+FROM communications
+WHERE account_id = $accountId AND business_id = $businessId
+ORDER BY created_at DESC;
+
+-- Actions query for Actions page
+SELECT ai_recap_action_id, created_at, updated_at, recap_action,
+       action_response, action_done
+FROM ai_recap_actions
+WHERE account_id = $accountId AND business_id = $businessId
+ORDER BY created_at DESC;
+```
+
+#### Implementation Files
+- **Lead Details**: `src/app/[permalink]/lead-details/[leadId]/page.tsx`
+- **Actions Page**: `src/app/[permalink]/actions/[leadId]/page.tsx`
+- **Property Details**: `src/app/[permalink]/property-details/[leadId]/page.tsx`
+- **Call Now Component**: `src/components/CallNowButton.tsx`
+- **Lead Information**: `src/components/features/leads/LeadInformation.tsx`
+- **Communications**: `src/components/features/leads/CommunicationsHistory.tsx`
+- **Actions Component**: `src/components/features/leads/ActionsChecklist.tsx`
+- **Property Component**: `src/components/features/leads/PropertyInformation.tsx`
 
 ---
 
@@ -651,22 +822,138 @@ AND business_id = $businessId;
 
 ---
 
+## Actions (Phase 7 - Follow Up to Actions Page)
+
+### Functional Requirements
+
+#### Actions Page Navigation Integration
+- **Requirement**: Must integrate with Follow Up table to provide seamless navigation to Actions pages
+- **Requirement**: Must use permalink-based routing structure: `/[permalink]/actions/[leadId]`
+- **Requirement**: Must maintain consistent layout with other lead detail pages (lead-details, property-details)
+- **Requirement**: Must include proper BusinessContextProvider integration for multi-tenant access control
+
+#### Actions Checklist Management
+- **Requirement**: Must display comprehensive action checklist for individual leads
+- **Requirement**: Must fetch actions from `ai_recap_actions` table filtered by lead_id and business_id
+- **Requirement**: Must show actions in two organized sections: incomplete (pending) and completed
+- **Requirement**: Must provide real-time toggle functionality for action completion status
+- **Requirement**: Must implement optimistic updates with loading states during action modifications
+- **Requirement**: Must support optional action_response field for additional notes/responses
+
+#### Actions Data Structure
+- **Requirement**: Must use AIRecapAction interface with comprehensive field support:
+```typescript
+export interface AIRecapAction {
+  ai_recap_action_id: number
+  created_at: string
+  updated_at: string
+  account_id: string
+  lead_id: number
+  business_id: number
+  assigned_id: string | null
+  recap_action: string
+  action_response: string | null
+  action_done: boolean
+}
+```
+
+#### SQL Queries Required
+```sql
+-- Fetch actions for specific lead with business filtering
+SELECT ai_recap_action_id, created_at, updated_at, account_id, lead_id,
+       business_id, assigned_id, recap_action, action_response, action_done
+FROM ai_recap_actions
+WHERE lead_id = $leadId AND business_id = $businessId
+ORDER BY created_at ASC;
+
+-- Update action completion status
+UPDATE ai_recap_actions
+SET action_done = $actionDone,
+    action_response = $actionResponse,
+    updated_at = NOW()
+WHERE ai_recap_action_id = $actionId
+AND business_id = $businessId;
+```
+
+#### API Endpoints Required
+- **Endpoint**: `/api/actions` (GET) - Fetch actions with lead_id and business_id filtering
+- **Endpoint**: `/api/actions/[actionId]` (PATCH) - Update action completion status with authentication
+- **Authentication**: Must use JWT-based authentication with business context validation
+- **Access Control**: Must validate user access to business and lead before allowing modifications
+
+### UI Requirements
+
+#### Layout Structure
+- **Requirement**: Must use three-column layout: LeadInformation (left), ActionsChecklist (center), CommunicationsHistory (right)
+- **Requirement**: Must follow same design patterns as lead-details and property-details pages
+- **Requirement**: Must include proper spacing, shadows, and glass morphism styling consistent with application theme
+- **Requirement**: Must provide responsive design that adapts to different screen sizes
+
+#### ActionsChecklist Component Requirements
+- **Requirement**: Must display actions grouped by completion status (pending vs completed)
+- **Requirement**: Must show pending actions at top with incomplete action count in section header
+- **Requirement**: Must show completed actions below with completed action count
+- **Requirement**: Must provide toggle checkboxes for each action with smooth transitions
+- **Requirement**: Must implement loading states (skeleton loaders) during data fetching
+- **Requirement**: Must show individual action loading states during toggle operations
+- **Requirement**: Must display action descriptions clearly with proper typography
+- **Requirement**: Must handle empty states gracefully (no actions available)
+- **Requirement**: Must use consistent color coding (purple theme) with other application components
+
+#### Navigation Integration
+- **Requirement**: Must update LeadsTable component to support Actions navigation target
+- **Requirement**: Must use `navigationTarget="actions"` for Follow Up table configuration
+- **Requirement**: Must maintain existing navigation patterns while adding Actions capability
+- **Requirement**: Must ensure proper back navigation and breadcrumb support
+
+#### Error Handling and Loading States
+- **Requirement**: Must implement comprehensive error handling for all API operations
+- **Requirement**: Must show user-friendly error messages for network failures or unauthorized access
+- **Requirement**: Must provide retry mechanisms for failed operations
+- **Requirement**: Must use skeleton loading states during initial data fetch
+- **Requirement**: Must show individual action loading indicators during status updates
+
+---
+
 ## Bookings (formerly Salesman)
 
 ### Functional Requirements
 
-#### Booking Metrics (Enhanced)
-- **Requirement**: Must display booked count (total bookings/appointments)
-- **Requirement**: Must display shows count (leads where show = true) with percentage of booked
-- **Requirement**: Must display closes count (leads with closed_amount) with percentage of shows
-- **Requirement**: Must calculate total revenue
-- **Requirement**: Must calculate close rate (closes/shows percentage)
-- **Requirement**: Must calculate average order value
-- **Requirement**: Must display revenue trends over time with line chart visualization
-- **Requirement**: Must show performance comparison across time periods
-- **Requirement**: Must display percentage badges with color-coded themes:
-  - Shows percentage badge: Purple theme (matching Booked icon color)
-  - Closes percentage badge: Blue theme (matching Shows icon color)
+#### Complete Bookings View (Latest Implementation - September 2024)
+- **RESTORED**: BookingsMetrics component fully restored for comprehensive booking analytics
+- **ENHANCED**: Complete booking management interface with dual-component architecture
+- **REQUIREMENT**: Must display BookingsMetrics component in first row with comprehensive booking analytics
+- **REQUIREMENT**: Must display Recent Leads table below metrics for lead management
+- **REQUIREMENT**: Must use `useBookingsData` hook for complete data fetching (metrics + leads)
+- **REQUIREMENT**: Must include time period filtering (7/15/30/60/90 days) with TimePeriodFilter component
+- **REQUIREMENT**: Must support proper error handling and loading states for both metrics and table components
+- **REQUIREMENT**: Must display AI recap purpose tags in Next Step column
+- **REQUIREMENT**: Must support proper array-like string parsing for `ai_recap_purposes` field
+
+#### Navigation Target Requirements (Fixed - September 2024)
+- **REQUIREMENT**: New Leads table elements must redirect to lead-details pages
+- **REQUIREMENT**: Follow Up table elements must redirect to actions pages
+- **REQUIREMENT**: Recent Leads table elements (in Bookings) must redirect to property-details pages
+- **IMPLEMENTATION**: Uses `navigationTarget` prop in table components for consistent routing behavior
+- **FIXED**: Corrected Bookings Recent Leads navigation from incorrect lead-details to proper property-details target
+
+#### AI Recap Purpose Tags Implementation
+- **Data Format**: `ai_recap_purposes` field contains array-like strings (e.g., `'["Appointment", "Meeting"]'`)
+- **REQUIREMENT**: Must parse JSON array strings using `JSON.parse()` with fallback to manual parsing
+- **REQUIREMENT**: Must handle both double and single quote formats
+- **REQUIREMENT**: Must remove brackets and quotes to display clean tag values
+- **REQUIREMENT**: Must split multiple values and display as separate tags
+- **REQUIREMENT**: Must maintain color coding based on purpose content (urgent=red, follow-up=blue, quotes=green, info=yellow)
+- **REQUIREMENT**: Must handle malformed data gracefully with fallback parsing
+- **Example**: Input `'["Follow-up", "Quote"]'` → Output: Two tags showing "Follow-up" and "Quote"
+
+#### Technical Implementation Details
+- **HTML Structure**: Must use proper table structure without `<Link>` components as direct children of `<tbody>`
+- **Navigation**: Table row clicks handled via `onClick` handlers for proper hydration
+- **Authentication**: API routes use `authenticateRequest` from `@/lib/api-auth` with `createCookieClient`
+- **Business Access**: Proper validation using `user.accessibleBusinesses` array
+- **Data Transformation**: Consistent `LeadWithClient` structure with client relationship handling
+- **Time Period Removal**: All time period filtering removed to display all available leads
 
 #### Individual Salesman Performance Tracking
 - **Requirement**: Must display individual salesman performance metrics in table format
@@ -763,28 +1050,128 @@ ORDER BY date ASC;
 
 ### Functional Requirements
 
-#### Profile Management
-- **Requirement**: Must allow editing user profile information
-- **Requirement**: Must support avatar upload
-- **Requirement**: Must display read-only system fields (Telegram ID, GHL ID)
-- **Requirement**: Must provide account deletion functionality
+#### Profile Management System (Role-Based)
+
+**For Super Admins (role = 0):**
+- **Requirement**: Must display comprehensive Profile Management interface
+- **Requirement**: Must show all users in the system except other Super Admins
+- **Requirement**: Must include current Super Admin's own profile with role protection
+- **Requirement**: Must provide role modification capabilities (promote/demote users)
+- **Requirement**: Must enable business assignment management via `profile_businesses` table
+- **Requirement**: Must prevent Super Admins from downgrading their own role
+- **Requirement**: Must show user lists with role badges and business assignment counts
+- **Requirement**: Must provide dual-panel UI (user list + business assignments)
+
+**For Regular Users (role != 0 or null):**
+- **Requirement**: Must redirect to dashboard (no access to Profile Management)
+- **Requirement**: Must only see their own profile in other contexts
+- **Requirement**: Must be limited to their assigned businesses
+
+#### Role Management Features
+- **Requirement**: Must allow promotion of Regular Users to Super Admin (role = 0)
+- **Requirement**: Must allow demotion of Super Admins to Regular Users (role = 1)
+- **Requirement**: Must show "Protected" status for current Super Admin's own profile
+- **Requirement**: Must provide visual indicators (Shield/User/Lock icons) for role actions
+- **Requirement**: Must validate role changes and prevent unauthorized modifications
+
+#### Business Assignment Management
+- **Requirement**: Must display all businesses with dashboard access enabled
+- **Requirement**: Must show current assignment status for each user-business combination
+- **Requirement**: Must provide Add/Remove business access functionality
+- **Requirement**: Must handle Super Admin business access automatically (all businesses)
+- **Requirement**: Must prevent business assignment modifications for Super Admins
+- **Requirement**: Must validate business access before assignments
 
 #### SQL Queries Required
 ```sql
--- Update profile information
-UPDATE profiles 
-SET full_name = $fullName, avatar_url = $avatarUrl
+-- Fetch all users except other Super Admins (for current Super Admin view)
+SELECT id, email, full_name, role, business_id, created_at, updated_at
+FROM profiles
+WHERE id = $currentUserId OR role IS NULL OR role != 0
+ORDER BY full_name;
+
+-- Update user role (role modification)
+UPDATE profiles
+SET role = $newRole
 WHERE id = $userId;
 
--- Delete profile (for account deletion)
-DELETE FROM profiles WHERE id = $userId;
+-- Assign business to user
+INSERT INTO profile_businesses (profile_id, business_id)
+VALUES ($profileId, $businessId);
+
+-- Remove business assignment
+DELETE FROM profile_businesses
+WHERE profile_id = $profileId AND business_id = $businessId;
+
+-- Fetch user's assigned businesses
+SELECT pb.business_id, bc.company_name, bc.avatar_url
+FROM profile_businesses pb
+INNER JOIN business_clients bc ON pb.business_id = bc.business_id
+WHERE pb.profile_id = $profileId;
+
+-- Fetch all available businesses for assignment
+SELECT business_id, company_name, avatar_url, city, state
+FROM business_clients
+WHERE dashboard = true
+ORDER BY company_name;
 ```
 
+#### Authentication & Authorization
+- **Requirement**: Must use JWT-only authentication for all Profile Management operations
+- **Requirement**: Must validate Super Admin role (role = 0) for all management functions
+- **Requirement**: Must use `authenticateRequest()` for API authorization
+- **Requirement**: Must include Authorization headers in all client-side requests
+- **Requirement**: Must handle authentication errors gracefully with user feedback
+
 ### UI Requirements
-- **Requirement**: Must use vertical menu with Settings and General sections
-- **Requirement**: Must show form validation errors
-- **Requirement**: Must require typing "DELETE" for account deletion confirmation
-- **Requirement**: Must show loading states during save operations
+- **Requirement**: Must use two-column layout (Users list + Business assignments)
+- **Requirement**: Must show role badges with appropriate colors (Purple: Super Admin, Blue: Regular User)
+- **Requirement**: Must provide role modification buttons with context-aware icons and labels
+- **Requirement**: Must display business assignment counts for each user
+- **Requirement**: Must show "Protected" button with lock icon for current Super Admin
+- **Requirement**: Must provide loading states for all operations (role changes, business assignments)
+- **Requirement**: Must show success/error messages for all operations
+- **Requirement**: Must prevent clicking on disabled/protected elements
+- **Requirement**: Must use consistent styling with rest of application (glass morphism, purple theme)
+
+### UI Cleanup Implementation (September 2024)
+
+#### Section Label Removal
+- **COMPLETED**: Removed unnecessary descriptive labels from all application sections for cleaner UI
+- **Dashboard**: Removed "Monitor your platform performance and lead metrics" descriptive text
+- **Bookings**: Removed "Track appointment shows, closes, and revenue metrics" descriptive text
+- **Incoming Calls**: Removed "Analyze call sources, caller types, and call flow patterns" descriptive text
+- **Profile Management**: Removed "Manage user access to businesses and assign permissions." descriptive text (both permalink and dashboard routes)
+- **RESULT**: Cleaner, more professional interface with reduced visual clutter while maintaining full functionality
+
+#### Enhanced Bookings Functionality
+- **RESTORED**: Complete BookingsMetrics component with comprehensive booking analytics
+- **ENHANCED**: Dual-component architecture using `useBookingsData` hook for unified data management
+- **FEATURES**: Time period filtering, error handling, loading states, and responsive design
+- **INTEGRATION**: Seamless integration with existing RecentLeadsTable for complete booking management experience
+
+### Database Schema Integration
+```sql
+-- profiles table structure (existing)
+profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id),
+  email text,
+  full_name text,
+  role smallint, -- 0 = Super Admin, 1+ = Regular User, NULL = Regular User
+  business_id smallint, -- Current business context
+  avatar_url text,
+  created_at timestamp,
+  updated_at timestamp
+);
+
+-- profile_businesses table structure (existing)
+profile_businesses (
+  profile_id uuid REFERENCES profiles(id),
+  business_id smallint REFERENCES business_clients(business_id),
+  created_at timestamp,
+  PRIMARY KEY (profile_id, business_id)
+);
+```
 
 ---
 
@@ -834,6 +1221,56 @@ DELETE FROM profiles WHERE id = $userId;
 - **Requirement**: Must respect prefers-reduced-motion settings
 - **Requirement**: Must maintain backward compatibility with existing component usage
 - **Requirement**: Consistent spacing and layout across all loading implementations
+
+---
+
+## Enhanced Session Management & Business Switching
+
+### Overview
+
+The system implements intelligent session management with enhanced business switching capabilities, ensuring optimal user experience while maintaining proper context preservation and session persistence.
+
+### Business Switching Context Preservation
+
+#### Smart Section Routing
+- **Requirement**: When switching from Company X to Company Z, the system must intelligently determine the appropriate target section
+- **Requirement**: Must preserve current section (New Leads, Dashboard, Bookings, Incoming Calls) for general navigation pages
+- **Requirement**: Must redirect to safe fallback sections for lead-specific pages that may not exist in the target company:
+  - Lead Details → New Leads section (since lead IDs are company-specific)
+  - Property Details → Bookings section (since property data is company-specific)
+  - Actions → New Leads section (since actions are lead-specific)
+
+#### Implementation Requirements
+- **Requirement**: Must use `determineTargetPageForBusinessSwitch(pathname)` function for routing decisions
+- **Requirement**: Must integrate with BusinessContext `setSelectedCompany` function
+- **Requirement**: Must use `window.location.pathname` to detect current route context
+- **Requirement**: Must implement graceful fallbacks to prevent 404 errors during business switching
+
+### Session Persistence & Recovery
+
+#### Last Company Memory
+- **Requirement**: Must persist the user's last selected company across session expiration and long inactivity periods
+- **Requirement**: Must automatically restore the last used company instead of defaulting to first available business
+- **Requirement**: Must update database (`profiles.business_id`) whenever business selection changes
+- **Requirement**: Must implement automatic fallback persistence when stored business becomes inaccessible
+
+#### Implementation Details
+- **Requirement**: Must prioritize `data.currentBusinessId` from user profile over default selection
+- **Requirement**: Must automatically call `/api/user/switch-business` when fallback business selection occurs
+- **Requirement**: Must implement proper error handling for persistence failures with user notification
+- **Requirement**: Must maintain backward compatibility with existing session management
+
+### Technical Architecture
+
+#### File Modifications Required
+- `src/contexts/BusinessContext.tsx`: Enhanced `setSelectedCompany` and `refreshContext` functions
+- `src/lib/permalink-navigation.ts`: `determineTargetPageForBusinessSwitch` utility function
+- Integration with existing authentication and business access validation
+
+#### API Endpoints Used
+- `/api/user/switch-business`: For updating user's current business context
+- `/api/user/business-context`: For retrieving user's stored business preference
+- Database updates to `profiles.business_id` for session persistence
 
 ---
 
@@ -1150,7 +1587,13 @@ A comprehensive debugging system designed to identify and resolve user data mixi
 
 #### leads
 - **Purpose**: Store lead information and status
-- **Key Fields**: lead_id, account_id, business_id, first_name, last_name, email, phone, service, how_soon, score, status, contacted, start_time, show, closed_amount
+- **Key Fields**: lead_id, account_id, business_id, first_name, last_name, email, phone, service, source, how_soon, score, status, contacted, start_time, show, closed_amount, working_hours, calls_count, communications_count, next_step
+- **Enhanced Fields for New Leads Table**:
+  - calls_count (integer): Number of calls made to this lead (replaces score display in UI)
+  - working_hours (boolean): Indicates if calls were made during working hours (affects icon display)
+  - how_soon (text): Priority/urgency level (displayed as colored tags)
+  - source (text): Lead source information (displayed as colored badges)
+  - next_step (text): Next action to take with this lead
 
 #### clients
 - **Purpose**: Store property and location data
@@ -1161,8 +1604,9 @@ A comprehensive debugging system designed to identify and resolve user data mixi
 - **Key Fields**: communication_id, account_id, message_type, summary, recording_url, created_at
 
 #### business_clients
-- **Purpose**: Store business configuration
-- **Key Fields**: business_id, company_name, avatar_url, time_zone
+- **Purpose**: Store business configuration and Dialpad integration settings
+- **Key Fields**: business_id, company_name, avatar_url, time_zone, dialpad_phone
+- **Enhanced Features**: Dialpad phone number storage for Call Now button integration
 
 #### profiles
 - **Purpose**: Store user profiles
@@ -1188,6 +1632,62 @@ A comprehensive debugging system designed to identify and resolve user data mixi
 - **Key Fields**: platform, spend, created_at, business_id
 - **Usage**: Dashboard platform spend metrics with platform breakdown and cost tracking
 - **Enhanced Features**: Platform name normalization, aggregated spend calculation, multi-platform support
+
+---
+
+## Metrics Components Architecture
+
+### Overview
+
+The system implements distributed metrics components that provide consistent styling and behavior across different sections while maintaining optimal user experience and performance.
+
+### Component Distribution Strategy
+
+#### Rationale for Section-Specific Metrics
+- **UX Improvement**: Users working in specific sections (New Leads, Bookings) benefit from having relevant metrics immediately visible
+- **Performance Optimization**: Reduces dashboard complexity and loading overhead by distributing data fetching
+- **Context Relevance**: Metrics are displayed where they are most actionable and relevant to user workflow
+- **Elimination of Duplication**: Prevents metric redundancy across multiple pages
+
+#### Implementation Architecture
+
+##### Reusable Metrics Components
+- **Component**: `LeadsMetrics` - Displays New Leads section metrics
+  - Location: `src/components/features/metrics/LeadsMetrics.tsx`
+  - Props: `metrics`, `isLoading`, `error`
+  - Styling: Maintains exact original styling with icons, colors, badges, responsive grid
+
+- **Component**: `BookingsMetrics` - Displays Bookings section metrics
+  - Location: `src/components/features/metrics/BookingsMetrics.tsx`
+  - Props: `metrics`, `isLoading`, `error`
+  - Styling: Maintains exact original styling with icons, colors, badges, responsive grid
+
+##### Component Integration Requirements
+- **Requirement**: Must maintain identical styling and behavior from original Dashboard implementation
+- **Requirement**: Must preserve all loading states, error handling, and data formatting
+- **Requirement**: Must use responsive grid layouts (4 columns for New Leads, 5 columns for Bookings)
+- **Requirement**: Must maintain all original icons and color schemes
+- **Requirement**: Must preserve percentage calculations and badge displays
+
+### Section-Specific Requirements
+
+#### New Leads Section Metrics
+- **Order**: Leads, Contacts, Booked, Booking Rate (exact order required)
+- **Grid**: 4 columns responsive layout (1 col mobile, 2 cols md, 4 cols lg)
+- **Data Source**: `useLeadsData` hook with 30-day default period
+- **Position**: First row, above lead tables
+
+#### Bookings Section Metrics
+- **Order**: Shows, Total Calls, Closes, Total Revenue, Close Rate (exact order required)
+- **Grid**: 5 columns responsive layout (1 col mobile, 2 cols md, 5 cols lg)
+- **Data Source**: `useBookingsData` hook with 30-day default period
+- **Position**: First row, above bookings table
+
+#### Dashboard Simplification
+- **Requirement**: Must display only Platform Spend metrics
+- **Requirement**: Must remove all lead and booking metrics to eliminate duplication
+- **Requirement**: Must maintain TimePeriodFilter functionality for Platform Spend
+- **Requirement**: Must use simplified data fetching with only `useDashboardData` hook
 
 ---
 

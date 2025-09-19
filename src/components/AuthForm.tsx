@@ -6,14 +6,9 @@ import Link from 'next/link'
 import { InlineLoading } from '@/components/LoadingSystem'
 import { createClient } from '@/lib/supabase/client'
 
-interface AuthFormProps {
-  loginAction: (formData: FormData) => void
-  signupAction: (formData: FormData) => void
-}
-
 type AuthMode = 'login' | 'signup'
 
-export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
+export default function AuthForm() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const error = searchParams.get('error')
@@ -201,7 +196,11 @@ export default function AuthForm({ loginAction, signupAction }: AuthFormProps) {
         </p>
       </div>
 
-      <form ref={formRef} action={handleSubmit} className="space-y-6">
+      <form ref={formRef} onSubmit={async (e) => {
+        e.preventDefault()
+        const formData = new FormData(e.currentTarget)
+        await handleSubmit(formData)
+      }} className="space-y-6">
         {(error || authError) && (
           <div className="bg-red-500/20 border border-red-500/50 text-red-100 px-4 py-3 rounded-xl text-sm animate-slide-down backdrop-blur-sm relative">
             <div className="flex items-center">
