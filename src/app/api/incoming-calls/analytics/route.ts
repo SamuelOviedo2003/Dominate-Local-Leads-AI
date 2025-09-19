@@ -135,8 +135,12 @@ export async function GET(request: NextRequest) {
 
     const sankeyData: SankeyData[] = Array.from(sankeyMap.entries())
       .map(([flow, count]) => {
-        const [source, target] = flow.split('->')
-        return { source, target, value: count }
+        const [source, caller_type] = flow.split('->')
+        return {
+          source: source || 'Unknown',
+          caller_type: caller_type || 'Unknown',
+          value: count
+        }
       })
       .sort((a, b) => b.value - a.value)
 
