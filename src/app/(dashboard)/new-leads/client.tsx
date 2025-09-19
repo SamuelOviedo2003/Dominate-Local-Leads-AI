@@ -68,26 +68,67 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           error={metricsError}
         />
 
-        {/* New Leads Table (Stage 1) */}
-        <div className="mb-8">
-          <LeadsTable
-            leads={recentLeads ? recentLeads.filter(lead => lead.stage === 1) : null}
-            isLoading={isRecentLeadsLoadingCoordinated}
-            error={recentLeadsError}
-            usePriorityColors={true}
-            title="New Leads"
-          />
-        </div>
+        {/* Call now Table (Stage 1 AND call_now_status in [1,2]) */}
+        {(() => {
+          const callNowLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 1 && (lead.call_now_status === 1 || lead.call_now_status === 2)) : null
+          const hasCallNowLeads = callNowLeads && callNowLeads.length > 0
+
+          if (isRecentLeadsLoadingCoordinated || hasCallNowLeads) {
+            return (
+              <div className="mb-8">
+                <LeadsTable
+                  leads={callNowLeads}
+                  isLoading={isRecentLeadsLoadingCoordinated}
+                  error={recentLeadsError}
+                  usePriorityColors={true}
+                  title="Call now"
+                />
+              </div>
+            )
+          }
+          return null
+        })()}
 
         {/* Follow Up Table (Stage 2) */}
-        <LeadsTable
-          leads={recentLeads ? recentLeads.filter(lead => lead.stage === 2) : null}
-          isLoading={isRecentLeadsLoadingCoordinated}
-          error={recentLeadsError}
-          usePriorityColors={true}
-          title="Follow Up"
-          navigationTarget="actions"
-        />
+        {(() => {
+          const followUpLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 2) : null
+          const hasFollowUpLeads = followUpLeads && followUpLeads.length > 0
+
+          if (isRecentLeadsLoadingCoordinated || hasFollowUpLeads) {
+            return (
+              <div className="mb-8">
+                <LeadsTable
+                  leads={followUpLeads}
+                  isLoading={isRecentLeadsLoadingCoordinated}
+                  error={recentLeadsError}
+                  usePriorityColors={true}
+                  title="Follow Up"
+                  navigationTarget="actions"
+                />
+              </div>
+            )
+          }
+          return null
+        })()}
+
+        {/* Waiting to call Table (Stage 1 AND call_now_status = 3) */}
+        {(() => {
+          const waitingToCallLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 1 && lead.call_now_status === 3) : null
+          const hasWaitingToCallLeads = waitingToCallLeads && waitingToCallLeads.length > 0
+
+          if (isRecentLeadsLoadingCoordinated || hasWaitingToCallLeads) {
+            return (
+              <LeadsTable
+                leads={waitingToCallLeads}
+                isLoading={isRecentLeadsLoadingCoordinated}
+                error={recentLeadsError}
+                usePriorityColors={true}
+                title="Waiting to call"
+              />
+            )
+          }
+          return null
+        })()}
       </div>
     </div>
   )
