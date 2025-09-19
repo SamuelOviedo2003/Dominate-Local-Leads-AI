@@ -84,7 +84,12 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
           medalTier,
           responseTime: responseTimeMinutes !== null ? formatResponseTime(responseTimeMinutes) : undefined,
           calledAt,
-          calledOut
+          calledOut,
+          // Use actual database values
+          active: window.active ?? true, // Use database value or default to true
+          window_start_at: window.window_start_at, // Use actual database value
+          window_end_at: window.window_end_at, // Use actual database value
+          status_name: window.status_name || (medalTier ? medalTier : (calledAt ? 'done on time' : 'missed'))
         }
         
         logger.businessLogic('Call 1 with working_hours=true', result)
@@ -97,7 +102,12 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
           callNumber: callNumber as 1,
           status,
           calledAt,
-          calledOut
+          calledOut,
+          // Use actual database values
+          active: window.active ?? true, // Use database value or default to true
+          window_start_at: window.window_start_at, // Use actual database value
+          window_end_at: window.window_end_at, // Use actual database value
+          status_name: window.status_name || (calledAt ? 'done on time' : 'missed')
         }
         
         logger.businessLogic('Call 1 with working_hours=false', result)
@@ -111,7 +121,12 @@ function processCallWindows(rawData: any[], leadId: string, workingHours: boolea
         callNumber,
         status,
         calledAt,
-        calledOut: null // Only relevant for Call 1
+        calledOut: null, // Only relevant for Call 1
+        // Use actual database values
+        active: window.active ?? true, // Use database value or default to true
+        window_start_at: window.window_start_at, // Use actual database value
+        window_end_at: window.window_end_at, // Use actual database value
+        status_name: window.status_name || (calledAt ? 'done on time' : 'missed')
       }
     }
   })
@@ -237,7 +252,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
     
     const { data: rawCallWindowsData, error: callWindowsError } = await supabase
       .from('call_windows')
-      .select('call_window, window_start_at, window_end_at, created_at, called_at, called_out, business_id, account_id')
+      .select('call_window, window_start_at, window_end_at, created_at, called_at, called_out, business_id, account_id, active, status_name')
       .eq('account_id', lead.account_id)
       .order('call_window', { ascending: true })
     

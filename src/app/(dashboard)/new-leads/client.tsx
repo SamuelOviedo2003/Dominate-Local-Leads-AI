@@ -80,7 +80,6 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
                   leads={callNowLeads}
                   isLoading={isRecentLeadsLoadingCoordinated}
                   error={recentLeadsError}
-                  usePriorityColors={true}
                   title="Call now"
                 />
               </div>
@@ -101,7 +100,6 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
                   leads={followUpLeads}
                   isLoading={isRecentLeadsLoadingCoordinated}
                   error={recentLeadsError}
-                  usePriorityColors={true}
                   title="Follow Up"
                   navigationTarget="actions"
                 />
@@ -122,7 +120,6 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
                 leads={waitingToCallLeads}
                 isLoading={isRecentLeadsLoadingCoordinated}
                 error={recentLeadsError}
-                usePriorityColors={true}
                 title="Waiting to call"
               />
             )

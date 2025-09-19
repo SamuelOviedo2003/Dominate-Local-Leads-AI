@@ -168,10 +168,10 @@ const LeadDetailsPageOptimized = () => {
           />
         </div>
 
-        {/* Bottom Section: Communications and Call Windows - Two Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Communications History */}
-          <div className="w-full">
+        {/* Bottom Section: Communications and Call Windows - Adjusted for better balance */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Left Column - Communications History (60% width) */}
+          <div className="lg:col-span-3 w-full">
             <CommunicationsHistory
               communications={leadDetails?.communications || null}
               isLoading={false} // No individual loading since we have unified loading
@@ -181,8 +181,8 @@ const LeadDetailsPageOptimized = () => {
             />
           </div>
 
-          {/* Right Column - Call Windows */}
-          <div className="w-full">
+          {/* Right Column - Call Windows (40% width) */}
+          <div className="lg:col-span-2 w-full">
             <CallWindows
               callWindows={leadDetails?.callWindows || null}
               isLoading={false} // No individual loading since we have unified loading

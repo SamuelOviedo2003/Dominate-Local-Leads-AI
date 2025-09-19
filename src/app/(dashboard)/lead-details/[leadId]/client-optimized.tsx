@@ -146,8 +146,8 @@ const LeadDetailsPageOptimized = () => {
             />
           </div>
 
-          {/* Right section - Call Windows (25-30% width) */}
-          <div className="lg:flex-1 lg:max-w-[320px] h-[540px]">
+          {/* Right section - Call Windows (reduced by 25% for better balance) */}
+          <div className="lg:flex-1 lg:max-w-[240px] h-[540px]">
             <CallWindows
               callWindows={leadDetails?.callWindows || null}
               isLoading={false} // No individual loading since we have unified loading

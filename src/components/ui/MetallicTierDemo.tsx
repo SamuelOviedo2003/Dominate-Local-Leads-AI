@@ -17,21 +17,33 @@ const MetallicTierDemo = () => {
       medalTier: 'gold',
       responseTime: '< 1 min',
       calledAt: '2025-08-27T10:00:30Z',
-      calledOut: null
+      calledOut: null,
+      active: true,
+      window_start_at: '2025-08-27T10:00:00Z',
+      window_end_at: '2025-08-27T10:30:00Z',
+      status_name: 'gold'
     },
     {
       callNumber: 2,
       medalTier: 'silver',
       responseTime: '1.5 min',
       calledAt: '2025-08-27T10:01:30Z',
-      calledOut: null
+      calledOut: null,
+      active: true,
+      window_start_at: '2025-08-27T11:00:00Z',
+      window_end_at: '2025-08-27T11:30:00Z',
+      status_name: 'silver'
     },
     {
       callNumber: 3,
       medalTier: 'bronze',
       responseTime: '3.2 min',
       calledAt: '2025-08-27T10:03:12Z',
-      calledOut: null
+      calledOut: null,
+      active: true,
+      window_start_at: '2025-08-27T12:00:00Z',
+      window_end_at: '2025-08-27T12:30:00Z',
+      status_name: 'bronze'
     },
     {
       callNumber: 4,
@@ -39,7 +51,11 @@ const MetallicTierDemo = () => {
       responseTime: undefined,
       calledAt: '2025-08-27T10:06:00Z',
       status: 'called',
-      calledOut: null
+      calledOut: null,
+      active: true,
+      window_start_at: '2025-08-27T13:00:00Z',
+      window_end_at: '2025-08-27T13:30:00Z',
+      status_name: 'done on time'
     },
     {
       callNumber: 5,
@@ -47,7 +63,11 @@ const MetallicTierDemo = () => {
       responseTime: undefined,
       calledAt: null,
       status: 'No call',
-      calledOut: null
+      calledOut: null,
+      active: true,
+      window_start_at: '2025-08-27T14:00:00Z',
+      window_end_at: '2025-08-27T14:30:00Z',
+      status_name: 'missed'
     },
     {
       callNumber: 1,
@@ -55,7 +75,11 @@ const MetallicTierDemo = () => {
       responseTime: undefined,
       calledAt: null,
       status: undefined,
-      calledOut: '2025-09-01T17:34:12.635+00:00'
+      calledOut: '2025-09-01T17:34:12.635+00:00',
+      active: true,
+      window_start_at: '2025-08-27T15:00:00Z',
+      window_end_at: '2025-08-27T15:30:00Z',
+      status_name: 'due'
     }
   ]
 

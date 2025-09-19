@@ -149,6 +149,11 @@ export interface PropertyInfo {
 
 export interface CallWindow {
   callNumber: number // Call number (1-6)
+  active: boolean // Whether this call window should be displayed
+  window_start_at: string | null // Start time of the call window
+  window_end_at: string | null // End time of the call window
+  status_name: string // Status name that determines the tag text and color
+  // Legacy fields (kept for backward compatibility during transition)
   medalTier?: 'diamond' | 'gold' | 'silver' | 'bronze' | null // For Call 1 only
   responseTime?: string // For Call 1 only - human-readable format
   status?: 'No call' | 'called' // For calls 2-6
