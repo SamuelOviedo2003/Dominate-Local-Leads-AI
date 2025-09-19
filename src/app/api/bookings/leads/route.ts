@@ -41,8 +41,7 @@ export async function GET(request: NextRequest) {
 
     const supabase = createCookieClient()
 
-    // Fetch leads with clients data - get all leads for bookings analysis
-    // (Bookings metrics work with all leads regardless of stage)
+    // Fetch leads with clients data - only show stage 3 leads (bookings) from all time periods
     const { data: leadsData, error: leadsError } = await supabase
       .from('leads')
       .select(`
@@ -55,8 +54,8 @@ export async function GET(request: NextRequest) {
           duration_seconds
         )
       `)
-      .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
+      .eq('stage', 3)
       .order('created_at', { ascending: false })
 
     if (leadsError) {

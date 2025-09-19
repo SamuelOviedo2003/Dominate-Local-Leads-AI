@@ -91,7 +91,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
 
   const formatSourceDisplay = (source: string | null | undefined) => {
     if (!source) return 'Unknown'
-    
+
     switch (source.toLowerCase()) {
       case 'facebook':
       case 'facebook ads':
@@ -107,6 +107,53 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
         return source.charAt(0).toUpperCase() + source.slice(1)
     }
   }
+
+  // Helper function to parse purposes from array-like string
+  const parsePurposes = useCallback((purposesText: string | null | undefined): string[] => {
+    if (!purposesText) return []
+
+    // Handle array-like strings: ["Appointment", "Meeting"] or ['Appointment', 'Meeting']
+    if (purposesText.startsWith('[') && purposesText.endsWith(']')) {
+      try {
+        // Parse as JSON array
+        const parsed = JSON.parse(purposesText)
+        if (Array.isArray(parsed)) {
+          return parsed.map(item => String(item).trim()).filter(item => item.length > 0)
+        }
+      } catch (error) {
+        // If JSON parsing fails, try manual extraction
+        return purposesText
+          .slice(1, -1) // Remove brackets
+          .split(',') // Split by comma
+          .map(item => item.trim().replace(/^["']|["']$/g, '')) // Remove quotes and trim
+          .filter(item => item.length > 0)
+      }
+    }
+
+    // Fallback: split by common delimiters for non-array strings
+    return purposesText
+      .split(/[,;|\n]/)
+      .map(purpose => purpose.trim())
+      .filter(purpose => purpose.length > 0)
+  }, [])
+
+  // Helper function to get purpose tag styling (same as RecentLeadsTable)
+  const getPurposeTagStyle = useCallback((purpose: string) => {
+    const lowerPurpose = purpose.toLowerCase()
+
+    // Color coding based on purpose priority/urgency
+    if (lowerPurpose.includes('urgent') || lowerPurpose.includes('immediate') || lowerPurpose.includes('asap')) {
+      return 'bg-red-100 text-red-800 border-red-200'
+    } else if (lowerPurpose.includes('follow') || lowerPurpose.includes('callback') || lowerPurpose.includes('schedule')) {
+      return 'bg-blue-100 text-blue-800 border-blue-200'
+    } else if (lowerPurpose.includes('quote') || lowerPurpose.includes('estimate') || lowerPurpose.includes('proposal')) {
+      return 'bg-green-100 text-green-800 border-green-200'
+    } else if (lowerPurpose.includes('info') || lowerPurpose.includes('question') || lowerPurpose.includes('inquiry')) {
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+    } else {
+      return 'bg-gray-100 text-gray-800 border-gray-200'
+    }
+  }, [])
 
 
   const handleRowClick = (e: React.MouseEvent, leadId: string) => {
@@ -228,9 +275,25 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                       {formatDateTime(lead.created_at)}
                     </td>
                     
-                    {/* Next Step Column */}
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {lead.next_step || 'Not set'}
+                    {/* Next Step Column with AI Recap Purpose Tags */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-900">
+                          {lead.next_step || 'Not set'}
+                        </span>
+                        {lead.ai_recap_purposes && (
+                          <div className="flex flex-wrap gap-1">
+                            {parsePurposes(lead.ai_recap_purposes).map((purpose, index) => (
+                              <span
+                                key={index}
+                                className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full border ${getPurposeTagStyle(purpose)}`}
+                              >
+                                {purpose}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     </tr>
                 )
