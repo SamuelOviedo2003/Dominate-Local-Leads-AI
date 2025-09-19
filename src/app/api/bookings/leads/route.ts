@@ -10,12 +10,11 @@ export async function GET(request: NextRequest) {
     const { user } = await authenticateRequest(request)
 
     const { searchParams } = new URL(request.url)
-    const startDate = searchParams.get('startDate')
     const businessIdParam = searchParams.get('businessId')
 
-    if (!startDate || !businessIdParam) {
+    if (!businessIdParam) {
       return Response.json(
-        { error: 'Missing required parameters: startDate and businessId' },
+        { error: 'Missing required parameter: businessId' },
         { status: 400 }
       )
     }

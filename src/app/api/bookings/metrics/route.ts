@@ -10,12 +10,11 @@ export async function GET(request: NextRequest) {
     const { user } = await authenticateRequest(request)
 
     const { searchParams } = new URL(request.url)
-    const startDate = searchParams.get('startDate')
     const businessIdParam = searchParams.get('businessId')
 
-    if (!startDate || !businessIdParam) {
+    if (!businessIdParam) {
       return Response.json(
-        { error: 'Missing required parameters: startDate and businessId' },
+        { error: 'Missing required parameter: businessId' },
         { status: 400 }
       )
     }
@@ -41,11 +40,10 @@ export async function GET(request: NextRequest) {
 
     const supabase = createCookieClient()
 
-    // Fetch leads data for bookings metrics
+    // Fetch leads data for bookings metrics (all time)
     const { data: leads, error } = await supabase
       .from('leads')
       .select('lead_id, show, closed_amount, start_time, created_at, calls_count')
-      .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
       .order('created_at', { ascending: false })
 

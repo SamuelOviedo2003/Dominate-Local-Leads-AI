@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { BookingsMetrics, LeadWithClient, TimePeriod, ApiResponse } from '@/types/leads'
+import { BookingsMetrics, LeadWithClient, ApiResponse } from '@/types/leads'
 import { authGet } from '@/lib/auth-fetch'
 
 interface UseBookingsDataProps {
-  timePeriod: TimePeriod
   businessId: string
 }
 
@@ -24,7 +23,7 @@ interface UseBookingsDataReturn {
   refetch: () => void
 }
 
-export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps): UseBookingsDataReturn {
+export function useBookingsData({ businessId }: UseBookingsDataProps): UseBookingsDataReturn {
   const [metrics, setMetrics] = useState<BookingsMetrics | null>(null)
   const [bookingsLeads, setBookingsLeads] = useState<LeadWithClient[] | null>(null)
   
@@ -40,12 +39,6 @@ export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps
   const [metricsError, setMetricsError] = useState<string | null>(null)
   const [bookingsLeadsError, setBookingsLeadsError] = useState<string | null>(null)
 
-  const getStartDate = (period: TimePeriod): string => {
-    const date = new Date()
-    date.setDate(date.getDate() - parseInt(period))
-    return date.toISOString()
-  }
-
   const fetchMetrics = async () => {
     if (!businessId) return
 
@@ -53,15 +46,12 @@ export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps
     setMetricsError(null)
 
     try {
-      const startDate = getStartDate(timePeriod)
       const metricsParams = new URLSearchParams({
-        startDate,
-        businessId: businessId.toString(),
-        timePeriod
+        businessId: businessId.toString()
       })
 
       const metricsData: ApiResponse<BookingsMetrics> = await authGet(`/api/bookings/metrics?${metricsParams}`)
-      
+
       if (metricsData.success) {
         setMetrics(metricsData.data)
       } else {
@@ -83,14 +73,12 @@ export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps
     setBookingsLeadsError(null)
 
     try {
-      const startDate = getStartDate(timePeriod)
       const baseParams = new URLSearchParams({
-        startDate,
         businessId: businessId.toString()
       })
 
       const leadsData: ApiResponse<LeadWithClient[]> = await authGet(`/api/bookings/leads?${baseParams}`)
-      
+
       if (leadsData.success) {
         setBookingsLeads(leadsData.data)
       } else {
@@ -141,7 +129,7 @@ export function useBookingsData({ timePeriod, businessId }: UseBookingsDataProps
 
   useEffect(() => {
     fetchData()
-  }, [timePeriod, businessId])
+  }, [businessId])
 
   return {
     metrics,
