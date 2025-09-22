@@ -6,6 +6,7 @@ import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { CallWindows } from '@/components/features/leads/CallWindows'
 import { CallNowButton } from '@/components/CallNowButton'
+import { LeadStageDropdown } from '@/components/LeadStageDropdown'
 import { useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useLeadDetailsDataOptimized } from '@/hooks/useLeadDetailsDataOptimized'
 import { ComponentLoading } from '@/components/LoadingSystem'
@@ -115,7 +116,7 @@ const LeadDetailsPageOptimized = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header with Back Navigation and Call Now Button */}
+        {/* Header with Back Navigation, Stage Dropdown, and Call Now Button */}
         <div className="mb-6 flex items-center justify-between">
           <button
             onClick={handleGoBack}
@@ -127,11 +128,19 @@ const LeadDetailsPageOptimized = () => {
             Back to New Leads
           </button>
 
-          <CallNowButton
-            phone={leadDetails?.lead?.phone}
-            dialpadPhone={leadDetails?.dialpadPhone}
-            leadId={leadId}
-          />
+          <div className="flex items-center gap-4">
+            {leadDetails?.lead && (
+              <LeadStageDropdown
+                leadId={leadId}
+                currentStage={leadDetails.lead.stage}
+              />
+            )}
+            <CallNowButton
+              phone={leadDetails?.lead?.phone}
+              dialpadPhone={leadDetails?.dialpadPhone}
+              leadId={leadId}
+            />
+          </div>
         </div>
 
         {/* Top Section: Lead Info + Call Windows */}
