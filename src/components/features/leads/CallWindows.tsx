@@ -4,7 +4,7 @@ import { CallWindow } from '@/types/leads'
 import { useMemo, useCallback, memo } from 'react'
 import { Clock, Phone, Headphones, PhoneCall } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
-import { formatCallWindowTime } from '@/lib/utils/dateFormat'
+import { formatTimeOnly } from '@/lib/utils/dateFormat'
 import { logger } from '@/lib/logging'
 
 interface CallWindowsProps {
@@ -30,16 +30,16 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
 
   const workingHoursStatus = getWorkingHoursStatus()
 
-  // Format time range for display
+  // Format time range for display (time only, no date)
   const formatTimeRange = useCallback((startTime: string | null, endTime: string | null) => {
     if (!startTime || !endTime) return 'Time TBD'
 
-    const start = formatCallWindowTime(startTime, businessTimezone)
-    const end = formatCallWindowTime(endTime, businessTimezone)
+    const start = formatTimeOnly(startTime, businessTimezone)
+    const end = formatTimeOnly(endTime, businessTimezone)
     return `${start} - ${end}`
   }, [businessTimezone])
 
-  // Get status tag configuration
+  // Get status tag configuration - simplified without medal system
   const getStatusConfig = useCallback((statusName: string) => {
     const status = statusName.toLowerCase().trim()
 
@@ -52,14 +52,6 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
         return { text: 'DUE', bgColor: 'bg-yellow-500', textColor: 'text-white' }
       case 'missed':
         return { text: 'MISSED', bgColor: 'bg-red-500', textColor: 'text-white' }
-      case 'diamond':
-        return { text: 'DIAMOND', bgColor: 'bg-blue-500', textColor: 'text-white' }
-      case 'gold':
-        return { text: 'GOLD', bgColor: 'bg-yellow-400', textColor: 'text-black' }
-      case 'silver':
-        return { text: 'SILVER', bgColor: 'bg-gray-400', textColor: 'text-white' }
-      case 'bronze':
-        return { text: 'BRONZE', bgColor: 'bg-amber-600', textColor: 'text-white' }
       default:
         return { text: statusName.toUpperCase(), bgColor: 'bg-gray-500', textColor: 'text-white' }
     }
@@ -161,8 +153,30 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
       {/* Active Call Windows - New Simplified Design */}
       <div className="flex-1 space-y-3">
         {activeCallWindows.map((window) => {
-          const statusConfig = getStatusConfig(window.status_name)
           const timeRange = formatTimeRange(window.window_start_at, window.window_end_at)
+          const hasStatus = window.status_name && window.status_name.trim() !== ''
+          const statusConfig = hasStatus ? getStatusConfig(window.status_name) : null
+
+          // Check conditions for showing called_at time
+          const shouldShowCalledAt =
+            window.active === true &&
+            window.callNumber === 1 &&
+            workingHours === true &&
+            window.calledAt
+
+          const calledAtTime = shouldShowCalledAt ? formatTimeOnly(window.calledAt!, businessTimezone) : null
+
+          // Debug logging for called_at feature
+          if (window.callNumber === 1) {
+            logger.debug('Call Window 1 called_at logic', {
+              active: window.active,
+              callNumber: window.callNumber,
+              workingHours,
+              hasCalledAt: !!window.calledAt,
+              shouldShow: shouldShowCalledAt,
+              calledAtTime
+            })
+          }
 
           return (
             <div
@@ -179,13 +193,21 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
                 </p>
               </div>
 
-              {/* Right Side - Status Tag */}
-              <div className="flex items-center gap-2">
-                <span
-                  className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig.bgColor} ${statusConfig.textColor}`}
-                >
-                  {statusConfig.text}
-                </span>
+              {/* Right Side - Status Tag and called_at time (always on right) */}
+              <div className="flex flex-col items-end gap-1">
+                {hasStatus && statusConfig && (
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig.bgColor} ${statusConfig.textColor}`}
+                  >
+                    {statusConfig.text}
+                  </span>
+                )}
+                {/* Show called_at time on right side - below status tag if it exists, or just on right if no status */}
+                {calledAtTime && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                    Called at {calledAtTime}
+                  </p>
+                )}
               </div>
             </div>
           )

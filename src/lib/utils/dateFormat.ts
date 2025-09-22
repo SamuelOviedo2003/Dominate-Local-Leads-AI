@@ -104,6 +104,52 @@ export function shouldIncludeYear(dateString: string): boolean {
 }
 
 /**
+ * Format a time string to show only time (no date) with timezone support
+ * @param dateString - ISO 8601 date string
+ * @param timezone - IANA timezone identifier (e.g., 'America/New_York')
+ * @param use24Hour - Whether to use 24-hour format (default: false for 12-hour with AM/PM)
+ * @returns Formatted time string in "2:30 PM" format
+ */
+export function formatTimeOnly(
+  dateString: string,
+  timezone: string = 'UTC',
+  use24Hour: boolean = false
+): string {
+  logger.debug('formatTimeOnly called', { dateString, timezone, use24Hour })
+
+  if (!dateString) {
+    logger.debug('Empty dateString provided', { dateString })
+    return 'Invalid time'
+  }
+
+  try {
+    const date = new Date(dateString)
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid time'
+    }
+
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      timeZone: timezone,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: !use24Hour
+    }
+
+    const formatter = new Intl.DateTimeFormat('en-US', formatOptions)
+    const formatted = formatter.format(date)
+
+    logger.debug('Successfully formatted time', { input: dateString, output: formatted, timezone })
+    return formatted
+
+  } catch (error) {
+    logger.error('Time formatting failed', { dateString, timezone, error })
+    return 'Invalid time'
+  }
+}
+
+/**
  * Format multiple timestamps with timezone support
  * Useful for bulk formatting operations
  */
@@ -111,7 +157,7 @@ export function formatMultipleCallTimes(
   timestamps: (string | null)[],
   timezone: string = 'UTC'
 ): (string | null)[] {
-  return timestamps.map(timestamp => 
+  return timestamps.map(timestamp =>
     timestamp ? formatCallWindowTime(timestamp, timezone) : null
   )
 }

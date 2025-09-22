@@ -45,14 +45,7 @@ export const LazyRevenueChart = lazy(() =>
   })
 )
 
-// Lazy load demo/preview components (not essential for core functionality)
-export const LazyMetallicTierDemo = lazy(() => 
-  import('./ui/MetallicTierDemo')
-)
-
-export const LazyPremiumMetallicDemo = lazy(() => 
-  import('./ui/PremiumMetallicDemo')
-)
+// Demo components removed - no longer needed
 
 /**
  * Higher-order component for adding suspense boundaries
@@ -179,11 +172,6 @@ export const preloadComponents = {
   leadDetails: () => {
     LazyCommunicationsHistory
     LazyCallWindows
-  },
-  
-  demo: () => {
-    LazyMetallicTierDemo
-    LazyPremiumMetallicDemo
   }
 }
 

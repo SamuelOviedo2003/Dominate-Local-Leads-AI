@@ -152,11 +152,7 @@ export interface CallWindow {
   active: boolean // Whether this call window should be displayed
   window_start_at: string | null // Start time of the call window
   window_end_at: string | null // End time of the call window
-  status_name: string // Status name that determines the tag text and color
-  // Legacy fields (kept for backward compatibility during transition)
-  medalTier?: 'diamond' | 'gold' | 'silver' | 'bronze' | null // For Call 1 only
-  responseTime?: string // For Call 1 only - human-readable format
-  status?: 'No call' | 'called' // For calls 2-6
+  status_name: string // Status name that determines the tag text and color (empty string if no status)
   calledAt: string | null // Exact timestamp when call was made
   calledOut: string | null // Called out value for Call 1 when called_at is null
 }

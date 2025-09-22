@@ -13,125 +13,32 @@ interface RouteParams {
 }
 
 /**
- * Format response time in minutes to minutes:seconds format for accuracy
- */
-function formatResponseTime(minutes: number): string {
-  if (minutes >= 60) {
-    // Keep existing hour format for times over 60 minutes
-    const hours = Math.floor(minutes / 60)
-    const remainingMinutes = Math.floor(minutes % 60)
-    if (remainingMinutes === 0) {
-      return `${hours}h`
-    }
-    return `${hours}h ${remainingMinutes}m`
-  } else {
-    // Convert to minutes:seconds format for times under 60 minutes
-    const wholeMinutes = Math.floor(minutes)
-    const seconds = Math.round((minutes - wholeMinutes) * 60)
-    return `${wholeMinutes}:${seconds.toString().padStart(2, '0')}`
-  }
-}
-
-/**
  * Process call windows with simplified structure
- * Only returns actual scheduled/made calls, filters out empty placeholders
+ * Only returns active call windows as specified in requirements
  */
-function processCallWindows(rawData: any[], leadId: string, workingHours: boolean = true): CallWindow[] {
-  // Filter out unscheduled call windows (ones without created_at or that are just placeholders)
-  const actualCalls = rawData.filter(window => 
-    window.created_at && 
-    window.call_window && 
-    window.call_window >= 1 && 
+function processCallWindows(rawData: any[]): CallWindow[] {
+  // Filter only active call windows
+  const activeWindows = rawData.filter(window =>
+    window.active === true &&
+    window.call_window &&
+    window.call_window >= 1 &&
     window.call_window <= 6
   )
-  
+
   // Sort by call_window number (1-6) to ensure proper ordering
-  const sortedData = actualCalls.sort((a, b) => (a.call_window || 0) - (b.call_window || 0))
-  
-  const processedWindows: CallWindow[] = sortedData.map(window => {
-    const callNumber = window.call_window
-    const calledAt = window.called_at
-    const calledOut = window.called_out
-    
-    if (callNumber === 1) {
-      // Special processing for Call 1 - conditional logic based on working_hours
-      if (workingHours) {
-        // working_hours = true: Keep existing functionality (response time and medals)
-        let responseTimeMinutes: number | null = null
-        let medalTier: 'diamond' | 'gold' | 'silver' | 'bronze' | null = null
-        
-        if (window.created_at && window.called_at) {
-          const createdTime = new Date(window.created_at).getTime()
-          const calledTime = new Date(window.called_at).getTime()
-          const diffMs = calledTime - createdTime
-          responseTimeMinutes = Math.max(0, diffMs / (1000 * 60)) // Convert to minutes, ensure non-negative
-          
-          // Determine medal tier based on response time
-          if (responseTimeMinutes < 1) {
-            medalTier = 'diamond' // < 1 minute = Diamond
-          } else if (responseTimeMinutes < 2) {
-            medalTier = 'gold' // 1-2 minutes = Gold  
-          } else if (responseTimeMinutes < 5) {
-            medalTier = 'silver' // 2-5 minutes = Silver
-          } else if (responseTimeMinutes < 10) {
-            medalTier = 'bronze' // 5-10 minutes = Bronze
-          }
-          // >= 10 minutes = No medal (null)
-        }
-        
-        const result = {
-          callNumber: callNumber as 1,
-          medalTier,
-          responseTime: responseTimeMinutes !== null ? formatResponseTime(responseTimeMinutes) : undefined,
-          calledAt,
-          calledOut,
-          // Use actual database values
-          active: window.active ?? true, // Use database value or default to true
-          window_start_at: window.window_start_at, // Use actual database value
-          window_end_at: window.window_end_at, // Use actual database value
-          status_name: window.status_name || (medalTier ? medalTier : (calledAt ? 'done on time' : 'missed'))
-        }
-        
-        logger.businessLogic('Call 1 with working_hours=true', result)
-        return result
-      } else {
-        // working_hours = false: Record just the time when the call was made (like other calls)
-        const status: 'called' | 'No call' = calledAt ? 'called' : 'No call'
-        
-        const result = {
-          callNumber: callNumber as 1,
-          status,
-          calledAt,
-          calledOut,
-          // Use actual database values
-          active: window.active ?? true, // Use database value or default to true
-          window_start_at: window.window_start_at, // Use actual database value
-          window_end_at: window.window_end_at, // Use actual database value
-          status_name: window.status_name || (calledAt ? 'done on time' : 'missed')
-        }
-        
-        logger.businessLogic('Call 1 with working_hours=false', result)
-        return result
-      }
-    } else {
-      // Processing for Calls 2-6 - show call status and time
-      const status: 'called' | 'No call' = calledAt ? 'called' : 'No call'
-      
-      return {
-        callNumber,
-        status,
-        calledAt,
-        calledOut: null, // Only relevant for Call 1
-        // Use actual database values
-        active: window.active ?? true, // Use database value or default to true
-        window_start_at: window.window_start_at, // Use actual database value
-        window_end_at: window.window_end_at, // Use actual database value
-        status_name: window.status_name || (calledAt ? 'done on time' : 'missed')
-      }
-    }
-  })
-  
-  
+  const sortedData = activeWindows.sort((a, b) => (a.call_window || 0) - (b.call_window || 0))
+
+  // Simplified processing - only required fields
+  const processedWindows: CallWindow[] = sortedData.map(window => ({
+    callNumber: window.call_window,
+    active: window.active,
+    window_start_at: window.window_start_at,
+    window_end_at: window.window_end_at,
+    status_name: window.status_name || '', // Use empty string if no status
+    calledAt: window.called_at,
+    calledOut: window.called_out
+  }))
+
   return processedWindows
 }
 
@@ -271,8 +178,8 @@ export async function GET(request: NextRequest, context: RouteParams) {
       // Continue with empty call windows rather than failing the entire request
       callWindows = []
     } else if (rawCallWindowsData) {
-      // Apply business logic to process call windows with working_hours context
-      callWindows = processCallWindows(rawCallWindowsData, lead.lead_id, lead.working_hours)
+      // Process only active call windows as specified in requirements
+      callWindows = processCallWindows(rawCallWindowsData)
     } else {
       callWindows = []
     }
