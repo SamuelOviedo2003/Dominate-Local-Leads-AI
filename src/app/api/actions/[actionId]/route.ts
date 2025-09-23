@@ -17,9 +17,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { action
     }
 
     const body = await request.json()
-    const { action_done, action_response } = body
+    const { action_done, action_response, recap_action } = body
 
-    if (typeof action_done !== 'boolean') {
+    // Validate action_done if provided
+    if (action_done !== undefined && typeof action_done !== 'boolean') {
       return Response.json(
         { error: 'action_done must be a boolean value' },
         { status: 400 }
@@ -55,13 +56,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { action
 
     // Update the action
     const updateData: any = {
-      action_done,
       updated_at: new Date().toISOString()
     }
 
-    // Only update action_response if it's provided
+    // Only update fields if they're provided
+    if (action_done !== undefined) {
+      updateData.action_done = action_done
+    }
     if (action_response !== undefined) {
       updateData.action_response = action_response
+    }
+    if (recap_action !== undefined) {
+      updateData.recap_action = recap_action
     }
 
     const { data: updatedAction, error: updateError } = await supabase

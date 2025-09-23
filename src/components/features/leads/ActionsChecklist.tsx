@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, memo } from 'react'
-import { CheckSquare, Square, Clock, AlertCircle } from 'lucide-react'
+import { CheckSquare, Square, Clock, AlertCircle, Edit3, X } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { AIRecapAction } from '@/types/leads'
 import { authGet, authPatch } from '@/lib/auth-fetch'
@@ -16,6 +16,9 @@ const ActionsChecklistComponent = ({ leadId, businessId }: ActionsChecklistProps
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updatingActions, setUpdatingActions] = useState<Set<number>>(new Set())
+  const [editingAction, setEditingAction] = useState<AIRecapAction | null>(null)
+  const [editText, setEditText] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
 
   const fetchActions = useCallback(async () => {
     if (!leadId || !businessId) return
@@ -74,6 +77,47 @@ const ActionsChecklistComponent = ({ leadId, businessId }: ActionsChecklistProps
       })
     }
   }, [])
+
+  const handleEditAction = useCallback((action: AIRecapAction) => {
+    setEditingAction(action)
+    setEditText(action.recap_action)
+  }, [])
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingAction(null)
+    setEditText('')
+  }, [])
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingAction || !editText.trim()) return
+
+    setIsSaving(true)
+
+    try {
+      const response = await authPatch(`/api/actions/${editingAction.ai_recap_action_id}`, {
+        recap_action: editText.trim()
+      })
+
+      if (response.success) {
+        setActions(prevActions =>
+          prevActions.map(action =>
+            action.ai_recap_action_id === editingAction.ai_recap_action_id
+              ? { ...action, recap_action: editText.trim(), updated_at: new Date().toISOString() }
+              : action
+          )
+        )
+        setEditingAction(null)
+        setEditText('')
+      } else {
+        throw new Error(response.error || 'Failed to update action text')
+      }
+    } catch (err) {
+      console.error('Error updating action text:', err)
+      // You could add a toast notification here
+    } finally {
+      setIsSaving(false)
+    }
+  }, [editingAction, editText])
 
   useEffect(() => {
     fetchActions()
@@ -162,9 +206,18 @@ const ActionsChecklistComponent = ({ leadId, businessId }: ActionsChecklistProps
                       )}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-800 leading-relaxed">
-                        {action.recap_action}
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm text-gray-800 leading-relaxed flex-1">
+                          {action.recap_action}
+                        </p>
+                        <button
+                          onClick={() => handleEditAction(action)}
+                          className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                          title="Edit action"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      </div>
                       {action.action_response && (
                         <p className="text-xs text-gray-600 mt-1 italic">
                           Response: {action.action_response}
@@ -202,9 +255,18 @@ const ActionsChecklistComponent = ({ leadId, businessId }: ActionsChecklistProps
                       )}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-600 leading-relaxed line-through">
-                        {action.recap_action}
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm text-gray-600 leading-relaxed line-through flex-1">
+                          {action.recap_action}
+                        </p>
+                        <button
+                          onClick={() => handleEditAction(action)}
+                          className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                          title="Edit action"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      </div>
                       {action.action_response && (
                         <p className="text-xs text-gray-500 mt-1 italic">
                           Response: {action.action_response}
@@ -216,6 +278,55 @@ const ActionsChecklistComponent = ({ leadId, businessId }: ActionsChecklistProps
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Edit Action Modal */}
+      {editingAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Action</h3>
+              <button
+                onClick={handleCancelEdit}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="edit-action-text" className="block text-sm font-medium text-gray-700 mb-2">
+                Action Text
+              </label>
+              <textarea
+                id="edit-action-text"
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                rows={3}
+                placeholder="Enter action text..."
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCancelEdit}
+                disabled={isSaving}
+                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={isSaving || !editText.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSaving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

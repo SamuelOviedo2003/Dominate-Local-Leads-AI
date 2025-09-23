@@ -223,31 +223,27 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
 
         {/* Second Row: Contact Details */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          {/* Phone Number with Verification Status */}
+          {/* Phone Number with Verification Checkmark */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">{lead.phone}</span>
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-green-100 text-green-800">
-              Verified
-            </span>
+            <div className="w-4 h-4 rounded-full flex items-center justify-center bg-green-100">
+              <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
           </div>
 
-          {/* Email with Validation Icon */}
+          {/* Email with Verification Text Status */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">{lead.email}</span>
             {lead.email_valid !== null && lead.email_valid !== undefined && (
-              <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                lead.email_valid ? 'bg-green-100' : 'bg-red-100'
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                lead.email_valid
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
               }`}>
-                {lead.email_valid ? (
-                  <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  <svg className="w-3 h-3 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
+                {lead.email_valid ? 'Verified' : 'Bounced'}
+              </span>
             )}
           </div>
         </div>

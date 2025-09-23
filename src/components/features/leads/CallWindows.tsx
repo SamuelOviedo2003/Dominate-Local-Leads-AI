@@ -157,26 +157,23 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           const hasStatus = window.status_name && window.status_name.trim() !== ''
           const statusConfig = hasStatus ? getStatusConfig(window.status_name) : null
 
-          // Check conditions for showing called_at time
+          // Check conditions for showing called_at time (applies to any call)
           const shouldShowCalledAt =
             window.active === true &&
-            window.callNumber === 1 &&
             workingHours === true &&
             window.calledAt
 
           const calledAtTime = shouldShowCalledAt ? formatTimeOnly(window.calledAt!, businessTimezone) : null
 
           // Debug logging for called_at feature
-          if (window.callNumber === 1) {
-            logger.debug('Call Window 1 called_at logic', {
-              active: window.active,
-              callNumber: window.callNumber,
-              workingHours,
-              hasCalledAt: !!window.calledAt,
-              shouldShow: shouldShowCalledAt,
-              calledAtTime
-            })
-          }
+          logger.debug('Call Window called_at logic', {
+            active: window.active,
+            callNumber: window.callNumber,
+            workingHours,
+            hasCalledAt: !!window.calledAt,
+            shouldShow: shouldShowCalledAt,
+            calledAtTime
+          })
 
           return (
             <div

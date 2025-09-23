@@ -86,31 +86,33 @@ export function DashboardClient({ userRole, accessibleBusinesses }: DashboardCli
           </div>
         )}
 
-        {/* Platform Spend Card */}
-        <div className="mb-8">
-          {isLoading ? (
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center justify-center py-8">
-                <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
+        {/* Platform Spend Cards */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow-sm border p-6">
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
+                </div>
               </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="text-red-600 text-sm">
+              Error loading metrics: {error}
             </div>
-          ) : error ? (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="text-red-600 text-sm">
-                Error loading metrics: {error}
-              </div>
-            </div>
-          ) : platformSpendMetrics ? (
-            <PlatformSpendCard
-              platformSpendMetrics={platformSpendMetrics}
-              timePeriod={timePeriod}
-            />
-          ) : (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-              <div className="text-gray-500 text-center">No platform spend data available for the selected period</div>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : platformSpendMetrics ? (
+          <PlatformSpendCard
+            platformSpendMetrics={platformSpendMetrics}
+            timePeriod={timePeriod}
+          />
+        ) : (
+          <div className="mb-8 bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <div className="text-gray-500 text-center">No platform spend data available for the selected period</div>
+          </div>
+        )}
 
         {/* Note: Individual metrics have been moved to their respective sections */}
         {/* New Leads metrics are now in the New Leads section */}
