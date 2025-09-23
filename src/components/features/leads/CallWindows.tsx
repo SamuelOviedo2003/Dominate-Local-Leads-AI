@@ -6,6 +6,7 @@ import { Clock, Phone, Headphones, PhoneCall } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { formatTimeOnly } from '@/lib/utils/dateFormat'
 import { logger } from '@/lib/logging'
+import { CallWindowTimer } from './CallWindowTimer'
 
 interface CallWindowsProps {
   callWindows?: CallWindow[] | null
@@ -95,6 +96,10 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
             <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
               {workingHoursStatus.label}
             </div>
+            <CallWindowTimer
+              callWindows={callWindows}
+              businessTimezone={businessTimezone}
+            />
           </div>
         </div>
         <div className="flex items-center justify-center flex-1">
@@ -118,6 +123,10 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
             <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
               {workingHoursStatus.label}
             </div>
+            <CallWindowTimer
+              callWindows={callWindows}
+              businessTimezone={businessTimezone}
+            />
           </div>
         </div>
         <div className="text-center flex-1 flex items-center justify-center">
@@ -136,7 +145,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
 
   return (
     <div className="bg-white dark:bg-[#1C2833] rounded-lg shadow-sm p-4 h-full flex flex-col w-full">
-      {/* Header with Phone Icon and Working Hours Indicator */}
+      {/* Header with Phone Icon, Working Hours Indicator, and Timer */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative">
           <PhoneCall className="w-6 h-6 text-blue-600" />
@@ -147,6 +156,10 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
             {workingHoursStatus.label}
           </div>
+          <CallWindowTimer
+            callWindows={callWindows}
+            businessTimezone={businessTimezone}
+          />
         </div>
       </div>
 
