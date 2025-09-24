@@ -61,14 +61,17 @@ export default async function PermalinkNewLeadsLayout({
 
   return (
     <DynamicThemeProvider>
-      <BusinessContextProvider>
+      <BusinessContextProvider
+        initialUser={user}
+        currentBusiness={currentBusiness || undefined}
+      >
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <UniversalHeader 
-            user={user} 
+          <UniversalHeader
+            user={user}
             logoutAction={logout}
             availableBusinesses={availableBusinesses}
           />
-          
+
           <main className="flex-1">
             {children}
           </main>

@@ -35,6 +35,7 @@ export default function AuthForm() {
     setAuthError(null)
 
     try {
+      // Step 1: Authenticate with Supabase
       const supabase = createClient()
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -47,60 +48,33 @@ export default function AuthForm() {
       }
 
       if (data.session) {
-        // Get user's first accessible business for redirect
-        try {
-          const response = await fetch('/api/user/business-context', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${data.session.access_token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-          
-          if (response.ok) {
-            const result = await response.json()
-            if (result.data?.accessibleBusinesses?.length > 0) {
-              // Fetch business details to get permalink
-              const businessResponse = await fetch('/api/business/accessible', {
-                method: 'GET',
-                headers: {
-                  'Authorization': `Bearer ${data.session.access_token}`,
-                  'Content-Type': 'application/json'
-                }
-              })
-              
-              if (businessResponse.ok) {
-                const businessResult = await businessResponse.json()
-                const firstBusiness = businessResult.data?.[0]
-                if (firstBusiness?.permalink) {
-                  // Update user's business context to match the business they're being redirected to
-                  try {
-                    await fetch('/api/user/switch-business', {
-                      method: 'POST',
-                      headers: {
-                        'Authorization': `Bearer ${data.session.access_token}`,
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({ businessId: firstBusiness.business_id })
-                    })
-                  } catch (switchError) {
-                    console.error('Error updating business context during login:', switchError)
-                  }
+        console.log('[AUTH_FORM] Authentication successful, calling post-login endpoint')
 
-                  router.push(`/${firstBusiness.permalink}/dashboard`)
-                  return
-                }
-              }
-            }
+        // Step 2: Use consolidated post-login endpoint (replaces 3 separate API calls)
+        const response = await fetch('/api/auth/post-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
           }
-        } catch (fetchError) {
-          console.error('Error getting business context:', fetchError)
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          setAuthError(errorData.error || 'Login setup failed. Please try again.')
+          return
         }
 
-        // Fallback redirect
-        router.push('/dashboard')
+        const result = await response.json()
+
+        if (result.success && result.redirectUrl) {
+          console.log('[AUTH_FORM] Post-login setup complete, redirecting to:', result.redirectUrl)
+          router.push(result.redirectUrl)
+        } else {
+          setAuthError('Login setup failed. Please try again.')
+        }
       }
     } catch (loginError) {
+      console.error('[AUTH_FORM] Login error:', loginError)
       setAuthError('Login failed. Please try again.')
     } finally {
       setIsLoading(false)

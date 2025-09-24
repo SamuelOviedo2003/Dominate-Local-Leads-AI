@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { BusinessSwitcherData } from '@/types/auth'
+import { BusinessSwitcherData, AuthUser } from '@/types/auth'
 import { createClient } from '@/lib/supabase/client'
 import { authGet, authPost } from '@/lib/auth-fetch'
 import { determineTargetPageForBusinessSwitch } from '@/lib/permalink-navigation'
@@ -21,9 +21,20 @@ const BusinessContext = createContext<BusinessContextType | undefined>(undefined
 
 interface BusinessProviderProps {
   children: ReactNode
+  // Accept initial data from server to avoid redundant fetching (using AuthUser type)
+  initialUser?: AuthUser
+  // Business context from permalink layout
+  currentBusiness?: {
+    business_id: string | number
+    company_name: string
+    permalink: string
+    avatar_url?: string
+    city?: string
+    state?: string
+  }
 }
 
-export function BusinessProvider({ children }: BusinessProviderProps) {
+export function BusinessProvider({ children, initialUser, currentBusiness }: BusinessProviderProps) {
   const [currentBusinessId, setCurrentBusinessId] = useState<string | null>(null)
   const [availableBusinesses, setAvailableBusinesses] = useState<BusinessSwitcherData[]>([])
   const [selectedCompany, setSelectedCompanyState] = useState<BusinessSwitcherData | null>(null)
@@ -46,10 +57,45 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
     try {
       setIsLoading(true)
 
+      // If we have initial user data, use it to avoid redundant API calls
+      if (initialUser) {
+        console.log('[BUSINESS_CONTEXT] Using initial server data to avoid API calls')
+
+        setCurrentBusinessId(initialUser.currentBusinessId || null)
+        setUserRole(initialUser.profile?.role ?? 1)
+        setAvailableBusinesses(initialUser.accessibleBusinesses || [])
+
+        // Determine selected company based on current business from permalink or user data
+        let selectedBusiness = null
+
+        if (currentBusiness && initialUser.accessibleBusinesses) {
+          // Use business from permalink layout if available
+          selectedBusiness = initialUser.accessibleBusinesses.find(
+            b => b.business_id === currentBusiness.business_id.toString()
+          )
+        }
+
+        if (!selectedBusiness && initialUser.currentBusinessId && initialUser.accessibleBusinesses) {
+          // Fallback to user's stored business
+          selectedBusiness = initialUser.accessibleBusinesses.find(
+            b => b.business_id === initialUser.currentBusinessId
+          )
+        }
+
+        if (!selectedBusiness && initialUser.accessibleBusinesses && initialUser.accessibleBusinesses.length > 0) {
+          // Final fallback to first available business
+          selectedBusiness = initialUser.accessibleBusinesses[0]
+        }
+
+        setSelectedCompanyState(selectedBusiness || null)
+        setIsLoading(false)
+        return
+      }
+
+      // Fallback to API calls only if no initial data is provided
       const isAuthenticated = await checkAuth()
       if (!isAuthenticated) {
         console.warn('User is not authenticated, clearing business context')
-        // Clear context when not authenticated
         setCurrentBusinessId(null)
         setAvailableBusinesses([])
         setSelectedCompanyState(null)
@@ -68,23 +114,19 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
       const businesses = businessResult.data || []
       setAvailableBusinesses(businesses)
 
-      // Select appropriate business with enhanced persistence logic
+      // Select appropriate business
       let selectedBusiness = null
 
-      // First priority: Use the stored business ID from user profile (persistence)
       if (data.currentBusinessId) {
         selectedBusiness = businesses.find((b: BusinessSwitcherData) =>
           b.business_id === data.currentBusinessId
         )
       }
 
-      // Fallback: If stored business not found/accessible, use first available business
       if (!selectedBusiness && businesses.length > 0) {
         selectedBusiness = businesses[0]
-        // Update the user's profile to persist this selection
         setCurrentBusinessId(selectedBusiness.business_id)
 
-        // Also update the database to persist across sessions
         try {
           await authPost('/api/user/switch-business', { businessId: selectedBusiness.business_id })
         } catch (error) {
@@ -95,7 +137,6 @@ export function BusinessProvider({ children }: BusinessProviderProps) {
       setSelectedCompanyState(selectedBusiness)
     } catch (error) {
       console.error('Failed to refresh business context:', error)
-      // Clear context on error to ensure loading state resolves
       setCurrentBusinessId(null)
       setAvailableBusinesses([])
       setSelectedCompanyState(null)
