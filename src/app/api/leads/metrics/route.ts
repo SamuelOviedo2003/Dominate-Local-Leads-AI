@@ -1,45 +1,29 @@
 import { NextRequest } from 'next/server'
-import { authenticateRequest } from '@/lib/api-auth'
-import { createCookieClient } from '@/lib/supabase/server'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { LeadMetrics } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await authenticateRequest(request)
-
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const businessIdParam = searchParams.get('businessId')
 
-    if (!startDate || !businessIdParam) {
+    if (!startDate) {
       return Response.json(
-        { error: 'Missing required parameters: startDate and businessId' },
+        { error: 'Missing required parameter: startDate' },
         { status: 400 }
       )
     }
 
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return Response.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    // Validate business access permissions using user's accessible businesses
-    const hasAccess = user.accessibleBusinesses?.some(
-      business => business.business_id === businessIdParam
-    )
-    if (!hasAccess) {
-      return Response.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
-    }
-
-    const supabase = createCookieClient()
+    const { user, supabase, businessId: requestedBusinessId } = authResult
 
     // Fetch all leads for metrics calculation
     const { data: leads, error } = await supabase

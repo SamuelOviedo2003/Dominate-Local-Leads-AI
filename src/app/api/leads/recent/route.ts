@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
-import { authenticateRequest } from '@/lib/api-auth'
-import { createCookieClient } from '@/lib/supabase/server'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { logger } from '@/lib/logging'
 
 export const dynamic = 'force-dynamic'
@@ -9,53 +8,19 @@ export async function GET(request: NextRequest) {
   try {
     logger.debug('Recent leads API call started')
 
-    // Get authenticated user using the proper auth method
-    const { user } = await authenticateRequest(request)
-
     // Extract query parameters
     const { searchParams } = new URL(request.url)
     const businessIdParam = searchParams.get('businessId')
 
-    if (!businessIdParam) {
-      return Response.json(
-        { error: 'Business ID is required' },
-        { status: 400 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return Response.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
-    }
-
-    // Validate business access permissions using user's accessible businesses
-    logger.debug('Business access validation', {
-      businessIdParam,
-      accessibleBusinesses: user.accessibleBusinesses?.map(b => b.business_id),
-      userId: user.id
-    })
-
-    const hasAccess = user.accessibleBusinesses?.some(
-      business => business.business_id === businessIdParam
-    )
-    if (!hasAccess) {
-      logger.warn('Business access denied', {
-        businessIdParam,
-        accessibleBusinesses: user.accessibleBusinesses?.map(b => b.business_id),
-        userId: user.id
-      })
-      return Response.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
-    }
+    const { user, supabase, businessId: requestedBusinessId } = authResult
 
     logger.debug('Recent leads query params', { businessId: businessIdParam, userId: user.id })
-
-    const supabase = createCookieClient()
 
     // Fetch recent leads - all leads for the business, ordered by creation date
     const { data: leads, error } = await supabase

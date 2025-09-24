@@ -28,9 +28,10 @@ interface BusinessProviderProps {
     business_id: string | number
     company_name: string
     permalink: string
-    avatar_url?: string
-    city?: string
-    state?: string
+    dashboard?: boolean
+    avatar_url?: string | null
+    city?: string | null
+    state?: string | null
   }
 }
 
@@ -183,10 +184,18 @@ export function BusinessProvider({ children, initialUser, currentBusiness }: Bus
     }
   }
 
-  // Load context on mount
+  // Initialize with server data - no useEffect API calls needed
   useEffect(() => {
-    refreshContext()
-  }, [])
+    if (initialUser) {
+      // Use server-provided data immediately - no API calls
+      console.log('[BUSINESS_CONTEXT_OPTIMIZED] Initializing with server data - no API calls needed')
+      refreshContext()
+    } else {
+      // Fallback for legacy components that don't provide initial data
+      console.log('[BUSINESS_CONTEXT_OPTIMIZED] No initial data provided - falling back to API calls')
+      refreshContext()
+    }
+  }, [initialUser])
 
   return (
     <BusinessContext.Provider

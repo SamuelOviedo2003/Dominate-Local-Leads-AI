@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCookieClient } from '@/lib/supabase/server'
-import { authenticateRequest } from '@/lib/api-auth'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import {
   SourceDistribution,
   CallerTypeDistribution,
@@ -19,41 +18,24 @@ interface IncomingCallsAnalyticsResponse {
 
 export async function GET(request: NextRequest) {
   try {
-    // Use consistent authentication method like other working APIs
-    const { user } = await authenticateRequest(request)
-
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const businessIdParam = searchParams.get('businessId')
 
-    if (!startDate || !businessIdParam) {
+    if (!startDate) {
       return NextResponse.json(
-        { error: 'Missing required parameters: startDate and businessId' },
+        { error: 'Missing required parameter: startDate' },
         { status: 400 }
       )
     }
 
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return NextResponse.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    // Validate business access permissions using user's accessible businesses (consistent with leads API)
-    const hasAccess = user.accessibleBusinesses?.some(
-      business => business.business_id === businessIdParam
-    )
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
-    }
-
-    const supabase = createCookieClient()
+    const { user, supabase, businessId: requestedBusinessId } = authResult
 
     // Single database query to get all required data
     const { data: rawCalls, error } = await supabase

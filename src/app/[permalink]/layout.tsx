@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { notFound, redirect } from 'next/navigation'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
-import { getBusinessByPermalink } from '@/lib/permalink-cache'
+import { getRequestAuthUser, getBusinessByPermalinkCached } from '@/lib/supabase/server-optimized'
+import { AuthDataProvider } from '@/contexts/AuthDataContext'
 import { headers } from 'next/headers'
 
 interface PermalinkLayoutProps {
@@ -28,31 +28,29 @@ export default async function PermalinkLayout({
   console.log(`[LAYOUT] Current pathname: ${pathname}`)
   
   try {
-    // Get authenticated user with enhanced caching and rate limit handling
-    const user = await getAuthenticatedUserFromRequest()
-    
-    // Handle case where no user is authenticated (common in localStorage mode for server components)
+    // Get authenticated user using request-scoped cache (single fetch per request)
+    const user = await getRequestAuthUser()
+
     if (!user) {
-      console.log(`[LAYOUT] No authenticated user found for ${permalink}, redirecting to login`)
+      console.log(`[LAYOUT_OPTIMIZED] No authenticated user found for ${permalink}, redirecting to login`)
       if (pathname !== '/login') {
         redirect('/login')
       } else {
         notFound()
       }
     }
-    
-    console.log(`[LAYOUT] User ${user.email} (role: ${user.profile?.role ?? 1}) accessing ${permalink}`)
-    
-    // Resolve business from permalink using cached resolution
-    const businessResult = await getBusinessByPermalink(permalink)
-    
-    if (!businessResult) {
-      console.log(`[LAYOUT] Business not found for permalink: ${permalink}`)
+
+    console.log(`[LAYOUT_OPTIMIZED] User ${user.email} (role: ${user.profile?.role ?? 1}) accessing ${permalink}`)
+
+    // Resolve business using request-scoped cache (single fetch per request)
+    const business = await getBusinessByPermalinkCached(permalink)
+
+    if (!business) {
+      console.log(`[LAYOUT_OPTIMIZED] Business not found for permalink: ${permalink}`)
       notFound()
     }
-    
-    const { business, source } = businessResult
-    console.log(`[LAYOUT] Business resolved from ${source}: ${business.company_name} (${business.business_id})`)
+
+    console.log(`[LAYOUT_OPTIMIZED] Business resolved: ${business.company_name} (${business.business_id})`)
     
     // Handle null role by treating as regular user (role 1) for backward compatibility
     const effectiveRole = user.profile?.role ?? 1
@@ -67,10 +65,10 @@ export default async function PermalinkLayout({
     } else {
       // Regular user - check against accessible businesses
       hasAccess = user.accessibleBusinesses?.some(
-        (accessibleBusiness) => accessibleBusiness.business_id === business.business_id.toString()
+        (accessibleBusiness: any) => accessibleBusiness.business_id === business.business_id.toString()
       ) || false
       console.log(`[LAYOUT] Regular user access check for business ${business.business_id}: ${hasAccess}`)
-      console.log(`[LAYOUT] User accessible businesses:`, user.accessibleBusinesses?.map(b => `${b.company_name} (${b.business_id})`))
+      console.log(`[LAYOUT] User accessible businesses:`, user.accessibleBusinesses?.map((b: any) => `${b.company_name} (${b.business_id})`))
     }
     
     if (!hasAccess) {
@@ -139,17 +137,24 @@ export default async function PermalinkLayout({
       }
     }
     
-    // Store business context for child components
-    console.log(`[LAYOUT] Rendering layout for business ${business.company_name}`)
+    // Pass cached user and business data to child components via optimized Context
+    console.log(`[LAYOUT_OPTIMIZED] Providing cached data to children via AuthDataProvider`)
+
     return (
-      <div 
-        data-business-id={business.business_id} 
-        data-business-permalink={permalink}
-        data-business-name={business.company_name}
-        data-user-role={effectiveRole}
+      <AuthDataProvider
+        user={user}
+        business={business}
+        effectiveRole={effectiveRole}
       >
-        {children}
-      </div>
+        <div
+          data-business-id={business.business_id}
+          data-business-permalink={permalink}
+          data-business-name={business.company_name}
+          data-user-role={effectiveRole}
+        >
+          {children}
+        </div>
+      </AuthDataProvider>
     )
     
   } catch (error) {

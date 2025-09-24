@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCookieClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { EnhancedDashboardMetrics, PlatformSpend } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -67,50 +66,27 @@ function calculateDaysDifference(startDate: string, endDate: string): number {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication using cookie-based auth
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
-
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const businessIdParam = searchParams.get('businessId')
 
-    if (!startDate || !businessIdParam) {
+    if (!startDate) {
       return NextResponse.json(
-        { error: 'Missing required parameters: startDate and businessId' },
+        { error: 'Missing required parameter: startDate' },
         { status: 400 }
       )
     }
+
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
+    }
+
+    const { user, supabase, businessId: requestedBusinessId } = authResult
 
     // TypeScript safety: startDate is guaranteed to be non-null after the check above
     const validStartDate: string = startDate
-
-    // Convert businessId to number since database expects smallint
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return NextResponse.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
-    }
-
-    // Validate business access permissions using user's accessible businesses
-    const hasAccess = user.accessibleBusinesses?.some(
-      business => business.business_id === businessIdParam
-    )
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
-    }
-
-    const supabase = createCookieClient()
 
     // Fetch ad spends data aggregated by platform
     const { data: platformSpends, error } = await supabase
