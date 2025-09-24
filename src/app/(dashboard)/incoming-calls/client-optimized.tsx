@@ -7,9 +7,10 @@ import { Phone, Users, Calendar } from 'lucide-react'
 import { ComponentLoading } from '@/components/LoadingSystem'
 import { HoverCallerTypePopup } from '@/components/HoverCallerTypePopup'
 import RecentCallsPopup from '@/components/RecentCallsPopup'
+import { useBusinessContext } from '@/contexts/BusinessContext'
 
 interface IncomingCallsClientProps {
-  businessId: string
+  businessId?: string
   userRole?: number | null
 }
 
@@ -200,6 +201,10 @@ function RecentCallsTable({ calls, onCallClick }: { calls: any[], onCallClick: (
 }
 
 export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingCallsClientProps) {
+  // Get the effective business ID from BusinessContext (like NewLeadsClient)
+  const { currentBusinessId, isLoading: businessContextLoading } = useBusinessContext()
+  const effectiveBusinessId = currentBusinessId || ''
+
   const [timePeriod, setTimePeriod] = useState<IncomingCallsTimePeriod>('30')
   const [popupState, setPopupState] = useState<{
     show: boolean
@@ -226,7 +231,10 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
     error,
     refetch,
     fetchSourceCallerTypes
-  } = useIncomingCallsDataOptimized({ timePeriod, businessId })
+  } = useIncomingCallsDataOptimized({ timePeriod, businessId: effectiveBusinessId })
+
+  // Coordinated loading states to prevent flash of empty content (like NewLeadsClient)
+  const isDataLoadingCoordinated = businessContextLoading || isLoading || !effectiveBusinessId
 
   const handleTimePeriodChange = (newPeriod: string) => {
     const mappedPeriod = timePeriodMapping[newPeriod]
@@ -279,8 +287,8 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
     setSelectedCallId(null)
   }
 
-  // Show unified loading state while data is loading
-  if (isLoading) {
+  // Show unified loading state while data is loading (coordinated like NewLeadsClient)
+  if (isDataLoadingCoordinated) {
     return <UnifiedLoadingState />
   }
 

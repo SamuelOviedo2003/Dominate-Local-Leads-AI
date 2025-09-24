@@ -41,11 +41,32 @@ async function checkAuthentication(): Promise<boolean> {
  */
 export async function authFetch(url: string, options: AuthFetchOptions = {}): Promise<Response> {
   try {
+    console.log('[AUTH_DEBUG] authFetch called:', {
+      url,
+      method: options.method || 'GET',
+      hasHeaders: !!options.headers,
+      timestamp: new Date().toISOString()
+    })
+
     // Get JWT token from Supabase session
+    console.log('[AUTH_DEBUG] Creating client-side Supabase client for session...')
     const supabase = createClient()
+
+    console.log('[AUTH_DEBUG] Fetching session from Supabase...')
     const { data: { session }, error } = await supabase.auth.getSession()
 
+    console.log('[AUTH_DEBUG] Session fetch result:', {
+      hasSession: !!session,
+      hasAccessToken: !!session?.access_token,
+      tokenLength: session?.access_token?.length || 0,
+      expiresAt: session?.expires_at,
+      refreshToken: !!session?.refresh_token,
+      error: error?.message,
+      userEmail: session?.user?.email
+    })
+
     if (error || !session?.access_token) {
+      console.error('[AUTH_DEBUG] Authentication failed:', error?.message)
       throw new Error('Authentication failed - please refresh and try again')
     }
 
@@ -55,22 +76,48 @@ export async function authFetch(url: string, options: AuthFetchOptions = {}): Pr
       ...options.headers
     }
 
+    console.log('[AUTH_DEBUG] Prepared request headers:', {
+      hasContentType: !!fetchHeaders['Content-Type'],
+      hasAuthorization: !!fetchHeaders['Authorization'],
+      authTokenPrefix: session.access_token.substring(0, 30) + '...'
+    })
+
     const fetchOptions: RequestInit = {
       ...options,
       headers: fetchHeaders
     }
 
+    console.log('[AUTH_DEBUG] Making authenticated request to:', url)
+    const startTime = Date.now()
     const response = await fetch(url, fetchOptions)
+    const requestDuration = Date.now() - startTime
+
+    console.log('[AUTH_DEBUG] Request completed:', {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      durationMs: requestDuration,
+      hasResponseBody: !!response.body,
+      contentType: response.headers.get('content-type')
+    })
 
     // Handle authentication errors
     if (response.status === 401 || response.status === 403) {
-      console.error('Authentication failed for request:', url, response.status)
+      console.error('[AUTH_DEBUG] Authentication failed for request:', {
+        url,
+        status: response.status,
+        statusText: response.statusText
+      })
       throw new Error('Authentication failed - please refresh and try again')
     }
 
     return response
   } catch (error) {
-    console.error('AuthFetch error:', error)
+    console.error('[AUTH_DEBUG] AuthFetch error:', {
+      url,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    })
     throw error
   }
 }

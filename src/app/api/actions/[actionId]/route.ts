@@ -98,3 +98,71 @@ export async function PATCH(request: NextRequest, { params }: { params: { action
     )
   }
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: { actionId: string } }) {
+  try {
+    const { user } = await authenticateRequest(request)
+
+    const actionId = parseInt(params.actionId, 10)
+    if (isNaN(actionId)) {
+      return Response.json(
+        { error: 'actionId must be a valid number' },
+        { status: 400 }
+      )
+    }
+
+    const supabase = createCookieClient()
+
+    // First, verify the action exists and the user has access to it
+    const { data: actionData, error: fetchError } = await supabase
+      .from('ai_recap_actions')
+      .select('business_id, lead_id, recap_action')
+      .eq('ai_recap_action_id', actionId)
+      .single()
+
+    if (fetchError || !actionData) {
+      return Response.json(
+        { error: 'Action not found' },
+        { status: 404 }
+      )
+    }
+
+    // Validate business access permissions using user's accessible businesses
+    const hasAccess = user.accessibleBusinesses?.some(
+      business => business.business_id === actionData.business_id.toString()
+    )
+    if (!hasAccess) {
+      return Response.json(
+        { error: 'Access denied - You do not have access to this business data' },
+        { status: 403 }
+      )
+    }
+
+    // Delete the action
+    const { error: deleteError } = await supabase
+      .from('ai_recap_actions')
+      .delete()
+      .eq('ai_recap_action_id', actionId)
+
+    if (deleteError) {
+      console.error('Database error:', deleteError)
+      return Response.json(
+        { error: 'Failed to delete action' },
+        { status: 500 }
+      )
+    }
+
+    return Response.json({
+      data: { actionId, deleted: true },
+      success: true,
+      message: 'Action deleted successfully'
+    })
+
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return Response.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

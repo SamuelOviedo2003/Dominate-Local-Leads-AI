@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, memo } from 'react'
-import { CheckSquare, Square, Clock, AlertCircle, Edit3, X } from 'lucide-react'
+import { CheckSquare, Square, Clock, AlertCircle, Edit3, X, Trash2 } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { AIRecapAction } from '@/types/leads'
-import { authGet, authPatch } from '@/lib/auth-fetch'
+import { authGet, authPatch, authDelete } from '@/lib/auth-fetch'
 
 interface ActionsChecklistProps {
   leadId: string
@@ -19,6 +19,8 @@ const ActionsChecklistComponent = ({ leadId, businessId }: ActionsChecklistProps
   const [editingAction, setEditingAction] = useState<AIRecapAction | null>(null)
   const [editText, setEditText] = useState('')
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const fetchActions = useCallback(async () => {
     if (!leadId || !businessId) return
@@ -86,6 +88,7 @@ const ActionsChecklistComponent = ({ leadId, businessId }: ActionsChecklistProps
   const handleCancelEdit = useCallback(() => {
     setEditingAction(null)
     setEditText('')
+    setShowDeleteConfirm(false)
   }, [])
 
   const handleSaveEdit = useCallback(async () => {
@@ -118,6 +121,41 @@ const ActionsChecklistComponent = ({ leadId, businessId }: ActionsChecklistProps
       setIsSaving(false)
     }
   }, [editingAction, editText])
+
+  const handleDeleteAction = useCallback(async () => {
+    if (!editingAction) return
+
+    setIsDeleting(true)
+
+    try {
+      const response = await authDelete(`/api/actions/${editingAction.ai_recap_action_id}`)
+
+      if (response.success) {
+        // Remove the action from the local state
+        setActions(prevActions =>
+          prevActions.filter(action => action.ai_recap_action_id !== editingAction.ai_recap_action_id)
+        )
+        setEditingAction(null)
+        setEditText('')
+        setShowDeleteConfirm(false)
+      } else {
+        throw new Error(response.error || 'Failed to delete action')
+      }
+    } catch (err) {
+      console.error('Error deleting action:', err)
+      // You could add a toast notification here
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [editingAction])
+
+  const handleDeleteClick = useCallback(() => {
+    setShowDeleteConfirm(true)
+  }, [])
+
+  const handleCancelDelete = useCallback(() => {
+    setShowDeleteConfirm(false)
+  }, [])
 
   useEffect(() => {
     fetchActions()
@@ -309,21 +347,80 @@ const ActionsChecklistComponent = ({ leadId, businessId }: ActionsChecklistProps
               />
             </div>
 
+            <div className="flex gap-3 justify-between">
+              <div>
+                <button
+                  onClick={handleDeleteClick}
+                  disabled={isSaving || isDeleting}
+                  className="px-4 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={isSaving || isDeleting}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={isSaving || !editText.trim() || isDeleting}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isSaving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && editingAction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Action</h3>
+              <button
+                onClick={handleCancelDelete}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-3">
+                Are you sure you want to delete this action? This action cannot be undone.
+              </p>
+              <div className="bg-gray-50 p-3 rounded border">
+                <p className="text-sm text-gray-800 font-medium">
+                  {editingAction.recap_action}
+                </p>
+              </div>
+            </div>
+
             <div className="flex gap-3 justify-end">
               <button
-                onClick={handleCancelEdit}
-                disabled={isSaving}
+                onClick={handleCancelDelete}
+                disabled={isDeleting}
                 className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
-                onClick={handleSaveEdit}
-                disabled={isSaving || !editText.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                onClick={handleDeleteAction}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
-                {isSaving && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                Save
+                {isDeleting && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                <Trash2 className="w-4 h-4" />
+                Delete
               </button>
             </div>
           </div>

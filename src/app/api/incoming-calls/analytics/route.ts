@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCookieClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
+import { authenticateRequest } from '@/lib/api-auth'
 import {
   SourceDistribution,
   CallerTypeDistribution,
@@ -19,14 +19,8 @@ interface IncomingCallsAnalyticsResponse {
 
 export async function GET(request: NextRequest) {
   try {
-    // Single authentication check
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
+    // Use consistent authentication method like other working APIs
+    const { user } = await authenticateRequest(request)
 
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
@@ -47,10 +41,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Single access check
-    const hasAccess = user.accessibleBusinesses?.some(business =>
-      business.business_id === businessIdParam
+    // Validate business access permissions using user's accessible businesses (consistent with leads API)
+    const hasAccess = user.accessibleBusinesses?.some(
+      business => business.business_id === businessIdParam
     )
+
     if (!hasAccess) {
       return NextResponse.json(
         { error: 'Access denied - You do not have access to this business data' },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCookieClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
+import { authenticateRequest } from '@/lib/api-auth'
 import { IncomingCall } from '@/types/leads'
 import { updateCallerTypeSchema } from '@/lib/validation'
 import { requireValidBusinessId } from '@/lib/type-utils'
@@ -16,14 +16,8 @@ interface CallIdParams {
 
 export async function GET(request: NextRequest, { params }: CallIdParams) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
+    // Use consistent authentication method like other working APIs
+    const { user } = await authenticateRequest(request)
 
     const { callId } = params
     if (!callId) {
@@ -51,8 +45,8 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-    // Check if user has access to this business data
-    const hasAccess = await user.accessibleBusinesses?.some(business =>
+    // Check if user has access to this business data (consistent with leads API)
+    const hasAccess = user.accessibleBusinesses?.some(business =>
       business.business_id === callData.business_id.toString()
     )
     if (!hasAccess) {
@@ -92,14 +86,8 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
 
 export async function PATCH(request: NextRequest, { params }: CallIdParams) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
+    // Use consistent authentication method like other working APIs
+    const { user } = await authenticateRequest(request)
 
     const { callId } = params
     if (!callId) {
@@ -139,8 +127,8 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-    // Check if user has access to this business data
-    const hasAccess = await user.accessibleBusinesses?.some(business =>
+    // Check if user has access to this business data (consistent with leads API)
+    const hasAccess = user.accessibleBusinesses?.some(business =>
       business.business_id === existingCall.business_id.toString()
     )
     if (!hasAccess) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCookieClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
+import { authenticateRequest } from '@/lib/api-auth'
 import { CallerTypeDistribution } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -66,7 +66,7 @@ function validateDate(dateString: string | null, paramName: string): Date {
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
-  
+
   try {
     // Rate limiting hint for real-time usage
     // Consider implementing rate limiting middleware for hover events
@@ -75,15 +75,8 @@ export async function GET(request: NextRequest) {
       console.warn('Bot/crawler detected, consider rate limiting')
     }
 
-    // Check authentication using cookie-based auth
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      console.warn('Unauthorized access attempt to source-caller-types endpoint')
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
+    // Use consistent authentication method like other working APIs
+    const { user } = await authenticateRequest(request)
 
     const { searchParams } = new URL(request.url)
     const startDateParam = searchParams.get('startDate')
@@ -115,9 +108,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Validate business access permissions using cookie-based auth
-    const hasAccess = user.accessibleBusinesses?.some(business =>
-      business.business_id === businessIdParam!
+    // Validate business access permissions using user's accessible businesses (consistent with leads API)
+    const hasAccess = user.accessibleBusinesses?.some(
+      business => business.business_id === businessIdParam!
     )
     if (!hasAccess) {
       console.warn(`Access denied: User ${user.id} tried to access business ${requestedBusinessId}`)

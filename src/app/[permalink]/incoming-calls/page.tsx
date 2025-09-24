@@ -46,18 +46,13 @@ export default async function PermalinkIncomingCallsPage({
 
   // The permalink layout has already validated:
   // 1. User authentication
-  // 2. Business exists in database 
+  // 2. Business exists in database
   // 3. User has access to this business
-  // 4. Business context is provided via data attributes
-  
-  // The IncomingCallsClient will use the BusinessContext which should be set up
-  // to use the business from the permalink route
-  // For now, we'll pass the first accessible business ID as fallback
-  const businessId = user.accessibleBusinesses[0]!.business_id
+  // 4. Business context is provided via BusinessContextProvider in the layout
 
+  // The IncomingCallsClient will use the BusinessContext from the layout (like NewLeadsClient)
   return (
     <IncomingCallsClientOptimized
-      businessId={businessId}
       userRole={user.profile?.role}
     />
   )
