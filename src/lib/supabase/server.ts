@@ -37,7 +37,7 @@ export function createCookieClient() {
   console.log('[AUTH_DEBUG] Available cookies:', {
     cookieCount: allCookies.length,
     cookieNames: allCookies.map(c => c.name),
-    supabaseCookies: allCookies.filter(c => c.name.includes('supabase')).map(c => ({
+    supabaseCookies: allCookies.filter(c => c.name.startsWith('sb-')).map(c => ({
       name: c.name,
       hasValue: !!c.value,
       valueLength: c.value?.length || 0
@@ -78,6 +78,11 @@ export function createCookieClient() {
             // user sessions.
           }
         },
+      },
+      auth: {
+        persistSession: false,    // Server doesn't manage session persistence
+        autoRefreshToken: false,  // Middleware handles token refresh
+        detectSessionInUrl: false // Server doesn't need URL-based session detection
       },
     }
   )
