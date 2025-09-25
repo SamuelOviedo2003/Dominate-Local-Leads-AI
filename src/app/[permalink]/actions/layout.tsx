@@ -1,6 +1,5 @@
 import { ReactNode } from 'react'
-import { BusinessContextProvider } from '@/contexts/BusinessContext'
-import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
+import OptimizedLayoutWrapper from '@/components/OptimizedLayoutWrapper'
 
 interface PermalinkActionsLayoutProps {
   children: ReactNode
@@ -9,8 +8,8 @@ interface PermalinkActionsLayoutProps {
 
 /**
  * Optimized Actions layout that leverages parent layout's AuthDataProvider
+ * Uses OptimizedLayoutWrapper which includes UniversalHeader and necessary context providers
  * Eliminates redundant authentication calls and database queries
- * Provides necessary context providers that child components require
  */
 export default function PermalinkActionsLayout({
   children,
@@ -19,13 +18,11 @@ export default function PermalinkActionsLayout({
   console.log('[ACTIONS_LAYOUT_OPTIMIZED] Using cached auth data from parent layout')
 
   // No authentication or business resolution needed - parent layout provides AuthDataProvider
-  // But we still need to provide BusinessContextProvider and DynamicThemeProvider for child components
+  // OptimizedLayoutWrapper provides UniversalHeader, BusinessContextProvider, and DynamicThemeProvider
 
   return (
-    <DynamicThemeProvider>
-      <BusinessContextProvider>
-        {children}
-      </BusinessContextProvider>
-    </DynamicThemeProvider>
+    <OptimizedLayoutWrapper>
+      {children}
+    </OptimizedLayoutWrapper>
   )
 }
