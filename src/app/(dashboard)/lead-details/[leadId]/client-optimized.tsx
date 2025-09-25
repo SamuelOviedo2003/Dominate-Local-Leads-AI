@@ -171,6 +171,7 @@ const LeadDetailsPageOptimized = () => {
         <div className="w-full">
           <CommunicationsHistory
             communications={leadDetails?.communications || null}
+            callWindows={leadDetails?.callWindows || null}
             isLoading={false} // No individual loading since we have unified loading
             error={null} // No individual errors since we handle errors globally
             leadId={leadId}

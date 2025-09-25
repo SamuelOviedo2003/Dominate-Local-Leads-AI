@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
-import { LeadWithClient } from '@/types/leads'
+import { LeadWithClient, CallWindow } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const { user, supabase, businessId } = authResult
 
-    // Fetch leads with clients data - only show stage 3 leads (bookings) from all time periods
+    // Fetch leads with clients and call windows data - only show stage 3 leads (bookings) from all time periods
     const { data: leadsData, error: leadsError } = await supabase
       .from('leads')
       .select(`
@@ -35,6 +35,14 @@ export async function GET(request: NextRequest) {
           house_url,
           distance_meters,
           duration_seconds
+        ),
+        call_windows!left (
+          call_window,
+          window_start_at,
+          window_end_at,
+          called_at,
+          called_out,
+          status
         )
       `)
       .eq('business_id', businessId)
@@ -58,14 +66,30 @@ export async function GET(request: NextRequest) {
       return date.toISOString()
     }
 
-    // Transform the data to match our expected structure
+    // Transform the data to match our expected structure with call windows
     const leads: LeadWithClient[] = leadsData.map(leadData => {
-      const { clients, ...lead } = leadData
+      const { clients, call_windows, ...lead } = leadData
+
+      // Process call windows - filter for non-null status and transform to CallWindow interface
+      const processedCallWindows: CallWindow[] = (call_windows || [])
+        .filter((cw: any) => cw.status !== null && cw.status !== undefined)
+        .map((cw: any) => ({
+          callNumber: cw.call_window,
+          active: true, // For table display, we show all as active
+          window_start_at: cw.window_start_at,
+          window_end_at: cw.window_end_at,
+          status: cw.status,
+          calledAt: cw.called_at,
+          calledOut: cw.called_out
+        }))
+        .sort((a: CallWindow, b: CallWindow) => a.callNumber - b.callNumber)
+
       return {
         ...lead,
         // next_step comes directly from leads table, no need to override
         created_at: formatDateTimeWithTime(lead.created_at),
-        client: Array.isArray(clients) ? clients[0] : clients
+        client: Array.isArray(clients) ? clients[0] : clients,
+        callWindows: processedCallWindows
       }
     })
 

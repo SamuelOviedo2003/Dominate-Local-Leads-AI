@@ -152,7 +152,7 @@ export interface CallWindow {
   active: boolean // Whether this call window should be displayed
   window_start_at: string | null // Start time of the call window
   window_end_at: string | null // End time of the call window
-  status_name: string // Status name that determines the tag text and color (empty string if no status)
+  status: number | null // Numeric status that determines the tag styling (1=Green, 2=Orange, 3=Yellow, 4=Red, 10=Diamond, 11=Gold, 12=Silver, 13=Bronze)
   calledAt: string | null // Exact timestamp when call was made
   calledOut: string | null // Called out value for Call 1 when called_at is null
 }

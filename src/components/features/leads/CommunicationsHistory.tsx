@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo, useCallback, memo, useState } from 'react'
-import { Communication } from '@/types/leads'
+import { Communication, CallWindow } from '@/types/leads'
 import { AudioPlayer } from './AudioPlayer'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { CallWindowIcon } from '@/components/ui/CallWindowIcon'
@@ -9,13 +9,14 @@ import { useChatWebhook } from '@/hooks/useChatWebhook'
 
 interface CommunicationsHistoryProps {
   communications?: Communication[] | null
+  callWindows?: CallWindow[] | null // Added to support dynamic icon styling
   isLoading?: boolean
   error?: string | null
   leadId?: string
   businessId?: string
 }
 
-const CommunicationsHistoryComponent = ({ communications = [], isLoading = false, error = null, leadId, businessId }: CommunicationsHistoryProps) => {
+const CommunicationsHistoryComponent = ({ communications = [], callWindows = [], isLoading = false, error = null, leadId, businessId }: CommunicationsHistoryProps) => {
   // All hooks must be declared at the top, before any conditional logic
   const [message, setMessage] = useState('')
   const { sendMessage, getCurrentUserId, isLoading: isSending, error: webhookError } = useChatWebhook()
@@ -112,6 +113,33 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
         return messageType.charAt(0).toUpperCase() + messageType.slice(1)
     }
   }, [])
+
+  /**
+   * Find the associated Call Window for a communication
+   * Links communication.call_window (1-6) to corresponding CallWindow.callNumber
+   */
+  const findAssociatedCallWindow = useCallback((communication: Communication): CallWindow | null => {
+    if (!communication.call_window || !callWindows || callWindows.length === 0) {
+      return null
+    }
+
+    // Find Call Window with matching callNumber
+    return callWindows.find(cw => cw.callNumber === communication.call_window) || null
+  }, [callWindows])
+
+  /**
+   * Get the status for dynamic icon styling
+   * Returns the numeric status directly from Call Window (optimized)
+   */
+  const getCallWindowStatus = useCallback((communication: Communication): number | null => {
+    const associatedWindow = findAssociatedCallWindow(communication)
+    if (!associatedWindow) {
+      return null
+    }
+
+    // Return numeric status directly - no parsing needed
+    return associatedWindow.status
+  }, [findAssociatedCallWindow])
 
   const sortedCommunications = useMemo(() => {
     if (!communications || communications.length === 0) return []
@@ -230,10 +258,11 @@ const CommunicationsHistoryComponent = ({ communications = [], isLoading = false
                     {formatDate(communication.created_at)}
                   </span>
                   {communication.call_window && communication.call_window >= 1 && communication.call_window <= 6 && (
-                    <CallWindowIcon 
-                      callNumber={communication.call_window} 
+                    <CallWindowIcon
+                      callNumber={communication.call_window}
                       size="sm"
                       className="flex-shrink-0"
+                      status={getCallWindowStatus(communication)}
                     />
                   )}
                   <span 

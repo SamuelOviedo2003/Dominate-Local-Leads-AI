@@ -40,21 +40,29 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
     return `${start} - ${end}`
   }, [businessTimezone])
 
-  // Get status tag configuration - simplified without medal system
-  const getStatusConfig = useCallback((statusName: string) => {
-    const status = statusName.toLowerCase().trim()
+  // Get status tag configuration using numeric status - optimized for database consistency
+  const getStatusConfig = useCallback((status: number | null) => {
+    if (!status) return null
 
     switch (status) {
-      case 'done on time':
+      case 1: // Green
         return { text: 'DONE ON TIME', bgColor: 'bg-green-500', textColor: 'text-white' }
-      case 'done late':
+      case 2: // Orange
         return { text: 'DONE LATE', bgColor: 'bg-orange-500', textColor: 'text-white' }
-      case 'due':
+      case 3: // Yellow
         return { text: 'DUE', bgColor: 'bg-yellow-500', textColor: 'text-white' }
-      case 'missed':
+      case 4: // Red
         return { text: 'MISSED', bgColor: 'bg-red-500', textColor: 'text-white' }
+      case 10: // Diamond
+        return { text: 'DIAMOND', bgColor: 'bg-gradient-to-br from-blue-100 to-indigo-200', textColor: 'text-blue-900' }
+      case 11: // Gold
+        return { text: 'GOLD', bgColor: 'bg-gradient-to-br from-yellow-400 to-yellow-600', textColor: 'text-white' }
+      case 12: // Silver
+        return { text: 'SILVER', bgColor: 'bg-gradient-to-br from-gray-400 to-gray-600', textColor: 'text-white' }
+      case 13: // Bronze (Copper tone)
+        return { text: 'BRONZE', bgColor: 'bg-gradient-to-br from-orange-600 to-red-800', textColor: 'text-white' }
       default:
-        return { text: statusName.toUpperCase(), bgColor: 'bg-gray-500', textColor: 'text-white' }
+        return { text: `STATUS ${status}`, bgColor: 'bg-gray-500', textColor: 'text-white' }
     }
   }, [])
 
@@ -78,7 +86,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
     callWindowsData: activeCallWindows.map(cw => ({
       callNumber: cw.callNumber,
       active: cw.active,
-      status_name: cw.status_name
+      status: cw.status
     }))
   })
 
@@ -167,8 +175,8 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
       <div className="flex-1 space-y-3">
         {activeCallWindows.map((window) => {
           const timeRange = formatTimeRange(window.window_start_at, window.window_end_at)
-          const hasStatus = window.status_name && window.status_name.trim() !== ''
-          const statusConfig = hasStatus ? getStatusConfig(window.status_name) : null
+          const hasStatus = window.status !== null && window.status !== undefined
+          const statusConfig = hasStatus ? getStatusConfig(window.status) : null
 
           // Check conditions for showing called_at time (applies to any call)
           const shouldShowCalledAt =
@@ -207,9 +215,23 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
               <div className="flex flex-col items-end gap-1">
                 {hasStatus && statusConfig && (
                   <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig.bgColor} ${statusConfig.textColor}`}
+                    className={`relative px-2 py-1 text-xs font-medium rounded-full shadow-sm overflow-hidden transition-transform duration-200 hover:scale-105 ${statusConfig.bgColor} ${statusConfig.textColor}`}
                   >
-                    {statusConfig.text}
+                    <span className="relative z-10">{statusConfig.text}</span>
+
+                    {/* Diamond sparkle effects for status 10 */}
+                    {window.status === 10 && (
+                      <>
+                        <div className="absolute top-0.5 left-1 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{animationDelay: '0s'}} />
+                        <div className="absolute top-1 right-1 w-0.5 h-0.5 bg-blue-200 rounded-full animate-pulse" style={{animationDelay: '0.3s'}} />
+                        <div className="absolute bottom-0.5 left-1.5 w-0.5 h-0.5 bg-white rounded-full animate-pulse" style={{animationDelay: '0.6s'}} />
+                      </>
+                    )}
+
+                    {/* Subtle glow effect for medal statuses (Gold, Silver, Bronze) */}
+                    {[11, 12, 13].includes(window.status || 0) && (
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-pulse" style={{animationDelay: '1s', animationDuration: '3s'}} />
+                    )}
                   </span>
                 )}
                 {/* Show called_at time on right side - below status tag if it exists, or just on right if no status */}

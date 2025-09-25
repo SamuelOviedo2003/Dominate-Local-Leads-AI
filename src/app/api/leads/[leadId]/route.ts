@@ -33,7 +33,7 @@ function processCallWindows(rawData: any[]): CallWindow[] {
     active: window.active,
     window_start_at: window.window_start_at,
     window_end_at: window.window_end_at,
-    status_name: window.status_name || '', // Use empty string if no status
+    status: window.status || null, // Use numeric status directly
     calledAt: window.called_at,
     calledOut: window.called_out
   }))
@@ -141,10 +141,13 @@ export async function GET(request: NextRequest, context: RouteParams) {
 
     // Fetch call windows with business logic implementation
     
+    // Optimized query: Use numeric status column with filtering for valid statuses
     const { data: rawCallWindowsData, error: callWindowsError } = await supabase
       .from('call_windows')
-      .select('call_window, window_start_at, window_end_at, created_at, called_at, called_out, business_id, account_id, active, status_name')
+      .select('call_window, window_start_at, window_end_at, created_at, called_at, called_out, business_id, account_id, active, status')
       .eq('account_id', lead.account_id)
+      .not('status', 'is', null) // Filter for records with valid numeric status
+      .in('status', [1, 2, 3, 4, 10, 11, 12, 13]) // Only retrieve records with valid status values
       .order('call_window', { ascending: true })
     
     let callWindows: CallWindow[] = []

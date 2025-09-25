@@ -5,6 +5,7 @@ import { useState, memo, useCallback } from 'react'
 import { Sun, Moon } from 'lucide-react'
 import { LeadWithClient } from '@/types/leads'
 import { usePermalinkNavigation, usePermalinkUrl } from '@/lib/permalink-navigation'
+import { CallWindowHistoryIcons } from '@/components/ui/CallWindowHistoryIcons'
 
 interface LeadsTableProps {
   leads: LeadWithClient[] | null
@@ -275,9 +276,13 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                       {formatDateTime(lead.created_at)}
                     </td>
                     
-                    {/* Next Step Column with AI Recap Purpose Tags */}
+                    {/* Next Step Column with Call Window History Icons and AI Recap Purpose Tags */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
+                        <CallWindowHistoryIcons
+                          callWindows={lead.callWindows}
+                          className="flex-shrink-0"
+                        />
                         <span className="text-sm text-gray-900">
                           {lead.next_step || 'Not set'}
                         </span>
