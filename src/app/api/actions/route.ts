@@ -1,14 +1,11 @@
 import { NextRequest } from 'next/server'
-import { authenticateRequest } from '@/lib/api-auth'
-import { createCookieClient } from '@/lib/supabase/server'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { AIRecapAction } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await authenticateRequest(request)
-
     const { searchParams } = new URL(request.url)
     const leadId = searchParams.get('leadId')
     const businessIdParam = searchParams.get('businessId')
@@ -20,33 +17,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return Response.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    // Validate business access permissions using user's accessible businesses
-    const hasAccess = user.accessibleBusinesses?.some(
-      business => business.business_id === businessIdParam
-    )
-    if (!hasAccess) {
-      return Response.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
-    }
+    const { user, supabase, businessId } = authResult
 
-    const supabase = createCookieClient()
-
-    // Fetch actions data for the specific lead
+    // Fetch actions data for the specific lead using cached business ID
     const { data: actions, error } = await supabase
       .from('ai_recap_actions')
       .select('*')
       .eq('lead_id', leadId)
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .order('created_at', { ascending: true })
 
     if (error) {

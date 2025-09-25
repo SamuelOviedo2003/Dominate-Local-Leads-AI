@@ -1,14 +1,11 @@
 import { NextRequest } from 'next/server'
-import { authenticateRequest } from '@/lib/api-auth'
-import { createCookieClient } from '@/lib/supabase/server'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { RevenueTrendData } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await authenticateRequest(request)
-
     const { searchParams } = new URL(request.url)
     const startDateParam = searchParams.get('startDate')
     const businessIdParam = searchParams.get('businessId')
@@ -24,33 +21,20 @@ export async function GET(request: NextRequest) {
     const startDate: string = startDateParam
     const timePeriod: string = timePeriodParam || '30'
 
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return Response.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    // Validate business access permissions using user's accessible businesses
-    const hasAccess = user.accessibleBusinesses?.some(
-      business => business.business_id === businessIdParam
-    )
-    if (!hasAccess) {
-      return Response.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
-    }
+    const { user, supabase, businessId } = authResult
 
-    const supabase = createCookieClient()
-
-    // Fetch leads data for trend analysis
+    // Fetch leads data for trend analysis using cached business ID
     const { data: leads, error } = await supabase
       .from('leads')
       .select('lead_id, show, closed_amount, created_at')
       .gte('created_at', startDate)
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .order('created_at', { ascending: true })
 
     if (error) {

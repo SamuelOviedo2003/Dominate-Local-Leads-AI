@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCookieClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { IncomingCall } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication using cookie-based auth
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
-
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const businessIdParam = searchParams.get('businessId')
@@ -27,34 +17,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Convert businessId to number since database expects smallint
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return NextResponse.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    // Validate business access permissions using user's accessible businesses
-    const hasAccess = user.accessibleBusinesses?.some(
-      business => business.business_id === businessIdParam
-    )
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'Access denied - You do not have permission to access this business' },
-        { status: 403 }
-      )
-    }
+    const { user, supabase, businessId } = authResult
 
-    const supabase = createCookieClient()
-
-    // Fetch recent calls data (last 20 calls within the time period)
+    // Fetch recent calls data using cached business ID
     const { data: recentCalls, error } = await supabase
       .from('incoming_calls')
       .select('incoming_call_id, source, caller_type, duration, assigned_id, assigned, created_at, business_id, recording_url, call_summary')
       .gte('created_at', startDate)
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .order('created_at', { ascending: false })
       .limit(20)
 

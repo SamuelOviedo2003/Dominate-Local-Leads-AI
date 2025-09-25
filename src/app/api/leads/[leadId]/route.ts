@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCookieClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { LeadDetails, Lead, PropertyInfo, Communication, CallWindow } from '@/types/leads'
 import { logger } from '@/lib/logging'
 import { validateRequest, leadIdSchema, businessIdSchema, updateCallerTypeSchema } from '@/lib/validation'
@@ -45,17 +44,8 @@ function processCallWindows(rawData: any[]): CallWindow[] {
 export async function GET(request: NextRequest, context: RouteParams) {
   const { leadId } = await context.params
   let leadIdNumber: number | undefined
-  
-  try {
-    // Check authentication
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
 
+  try {
     const { searchParams } = new URL(request.url)
     const businessIdParam = searchParams.get('businessId')
 
@@ -80,30 +70,24 @@ export async function GET(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // Validate business access permissions using cookie-based auth
-    const hasBusinessAccess = user.accessibleBusinesses?.some(business =>
-      business.business_id === businessIdParam
-    )
-
-    if (!hasBusinessAccess) {
-      return NextResponse.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    const supabase = createCookieClient()
+    const { user, supabase, businessId } = authResult
 
-    // Fetch lead details
+    // Fetch lead details using the cached business ID from middleware
     const { data: leadData, error: leadError } = await supabase
       .from('leads')
       .select('*')
       .eq('lead_id', leadIdNumber)
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .single()
 
     if (leadError || !leadData) {
-      logger.error('Lead fetch failed', { leadId: leadIdNumber, businessId: requestedBusinessId, error: leadError })
+      logger.error('Lead fetch failed', { leadId: leadIdNumber, businessId: businessId, error: leadError })
       return NextResponse.json(
         { error: 'Lead not found' },
         { status: 404 }
@@ -116,7 +100,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
     const { data: businessData, error: businessError } = await supabase
       .from('business_clients')
       .select('time_zone, dialpad_phone')
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .single()
 
     let businessTimezone = 'UTC' // Default fallback
@@ -124,9 +108,9 @@ export async function GET(request: NextRequest, context: RouteParams) {
     if (businessData && !businessError) {
       businessTimezone = businessData.time_zone || 'UTC'
       dialpadPhone = businessData.dialpad_phone || null
-      logger.dbDebug('Business data fetch', 'business_clients', { businessId: requestedBusinessId, timezone: businessTimezone, dialpadPhone: dialpadPhone })
+      logger.dbDebug('Business data fetch', 'business_clients', { businessId: businessId, timezone: businessTimezone, dialpadPhone: dialpadPhone })
     } else {
-      logger.warn('Business data fetch failed, using fallback', { businessId: requestedBusinessId, error: businessError, fallback: businessTimezone })
+      logger.warn('Business data fetch failed, using fallback', { businessId: businessId, error: businessError, fallback: businessTimezone })
     }
 
     // Fetch property information using account_id from lead
@@ -168,7 +152,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
     if (callWindowsError) {
       logger.error('Call windows fetch failed', {
         accountId: lead.account_id,
-        businessId: requestedBusinessId,
+        businessId: businessId,
         error: {
           message: callWindowsError.message,
           code: callWindowsError.code,
@@ -221,15 +205,6 @@ export async function GET(request: NextRequest, context: RouteParams) {
  */
 export async function PATCH(request: NextRequest, context: RouteParams) {
   try {
-    // Check authentication
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
-
     const { leadId } = await context.params
     const { searchParams } = new URL(request.url)
     const businessIdParam = searchParams.get('businessId')
@@ -250,26 +225,13 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // Convert businessId to number since database expects smallint
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return NextResponse.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    // Validate business access permissions using cookie-based auth
-    const hasBusinessAccess = user.accessibleBusinesses?.some(business =>
-      business.business_id === businessIdParam
-    )
-
-    if (!hasBusinessAccess) {
-      return NextResponse.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
-    }
+    const { user, supabase, businessId } = authResult
 
     // Parse request body
     const body = await request.json()
@@ -279,21 +241,19 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
     const validCallerTypes = ['Client', 'Sales person', 'Other', 'Looking for job']
     if (caller_type !== null && !validCallerTypes.includes(caller_type)) {
       return NextResponse.json(
-        { 
-          error: 'Invalid caller_type. Must be one of: Client, Sales person, Other, Looking for job, or null' 
+        {
+          error: 'Invalid caller_type. Must be one of: Client, Sales person, Other, Looking for job, or null'
         },
         { status: 400 }
       )
     }
-
-    const supabase = createCookieClient()
 
     // First verify the lead exists and belongs to the business
     const { data: leadExists, error: leadCheckError } = await supabase
       .from('leads')
       .select('lead_id')
       .eq('lead_id', leadIdNumber)
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .single()
 
     if (leadCheckError || !leadExists) {
@@ -308,12 +268,12 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       .from('leads')
       .update({ caller_type })
       .eq('lead_id', leadIdNumber)
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .select('lead_id, caller_type')
       .single()
 
     if (updateError) {
-      logger.error('Lead caller_type update failed', { leadId: leadIdNumber, businessId: requestedBusinessId, error: updateError })
+      logger.error('Lead caller_type update failed', { leadId: leadIdNumber, businessId: businessId, error: updateError })
       return NextResponse.json(
         { error: 'Failed to update lead caller_type' },
         { status: 500 }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCookieClient } from '@/lib/supabase/server'
-import { authenticateRequest } from '@/lib/api-auth'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { CallerTypeDistribution } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -75,9 +74,6 @@ export async function GET(request: NextRequest) {
       console.warn('Bot/crawler detected, consider rate limiting')
     }
 
-    // Use consistent authentication method like other working APIs
-    const { user } = await authenticateRequest(request)
-
     const { searchParams } = new URL(request.url)
     const startDateParam = searchParams.get('startDate')
     const businessIdParam = searchParams.get('businessId')
@@ -85,20 +81,14 @@ export async function GET(request: NextRequest) {
 
     // Comprehensive input validation
     let startDate: Date
-    let requestedBusinessId: number
     let source: string
-    
+
     try {
       startDate = validateDate(startDateParam, 'startDate')
       source = validateSource(sourceParam)
-      
-      if (!businessIdParam) {
-        throw new Error('businessId parameter is required')
-      }
-      
-      requestedBusinessId = parseInt(businessIdParam, 10)
-      if (isNaN(requestedBusinessId) || requestedBusinessId <= 0) {
-        throw new Error('businessId must be a positive integer')
+
+      if (!startDateParam || !businessIdParam) {
+        throw new Error('Missing required parameters: startDate and businessId')
       }
     } catch (validationError) {
       console.warn('Input validation failed:', validationError)
@@ -108,34 +98,28 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Validate business access permissions using user's accessible businesses (consistent with leads API)
-    const hasAccess = user.accessibleBusinesses?.some(
-      business => business.business_id === businessIdParam!
-    )
-    if (!hasAccess) {
-      console.warn(`Access denied: User ${user.id} tried to access business ${requestedBusinessId}`)
-      return NextResponse.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    const supabase = createCookieClient()
+    const { user, supabase, businessId } = authResult
 
-    // Optimized query with database-level filtering (consistent with other endpoints)
+    // Optimized query using cached business ID
     const { data: callerTypeData, error } = await supabase
       .from('incoming_calls')
       .select('caller_type')
       .gte('created_at', startDate.toISOString())
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .eq('source', source)
       .not('caller_type', 'is', null)
-      .neq('caller_type', 'Unknown') // Exclude "Unknown" values for consistency with caller-type-distribution
+      .neq('caller_type', 'Unknown')
 
     if (error) {
       console.error('Database error in source-caller-types query:', {
         error,
-        businessId: requestedBusinessId,
+        businessId: businessId,
         source: source,
         startDate: startDate.toISOString()
       })
@@ -162,7 +146,7 @@ export async function GET(request: NextRequest) {
 
     // Handle empty results gracefully
     if (callerTypeDistribution.length === 0) {
-      console.info(`No caller type data found for source: ${source}, business: ${requestedBusinessId}, since: ${startDate.toISOString()}`)
+      console.info(`No caller type data found for source: ${source}, business: ${businessId}, since: ${startDate.toISOString()}`)
     } else {
       console.info(`Source-caller-types query completed in ${queryTime}ms for source: ${source}, found ${callerTypeDistribution.length} caller types`)
     }
@@ -174,7 +158,7 @@ export async function GET(request: NextRequest) {
       metadata: {
         source: source,
         startDate: startDate.toISOString(),
-        businessId: requestedBusinessId,
+        businessId: businessId,
         queryTimeMs: queryTime,
         recordCount: callerTypeDistribution.length
       }

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { createCookieClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { AppointmentSetter } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
@@ -11,15 +9,17 @@ export async function GET(request: NextRequest) {
     // TEMPORARILY DISABLED: Appointment setters functionality commented out due to missing time_speed column
     // This functionality will be restored when the database schema is updated
     console.log('Appointment setters endpoint called but functionality is temporarily disabled')
-    
-    // Basic authentication check to maintain API security using cookie-based auth
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
+
+    const { searchParams } = new URL(request.url)
+    const businessIdParam = searchParams.get('businessId')
+
+    // Use optimized authentication and authorization for future use
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
+
+    const { user, supabase, businessId } = authResult
 
     // Return empty data instead of querying the missing time_speed column
     return NextResponse.json({
@@ -28,55 +28,23 @@ export async function GET(request: NextRequest) {
     })
 
     /* COMMENTED OUT: Original implementation that queries time_speed column
-    const { searchParams } = new URL(request.url)
+    // When re-enabled, this endpoint will use the optimized middleware above
+    // and fetch data using the cached supabase client from authResult
+
     const startDate = searchParams.get('startDate')
-    const businessIdParam = searchParams.get('businessId')
-
-    if (!startDate || !businessIdParam) {
+    if (!startDate) {
       return NextResponse.json(
-        { error: 'Missing required parameters: startDate and businessId' },
+        { error: 'Missing required parameter: startDate' },
         { status: 400 }
       )
     }
 
-    // Convert businessId to number since database expects smallint
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return NextResponse.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
-    }
-
-    // Ensure user can only access their own business data (unless Super Admin)
-    const userBusinessId = parseInt(user.profile.business_id, 10)
-    if (user.profile.role !== 0 && requestedBusinessId !== userBusinessId) {
-      return NextResponse.json(
-        { error: 'Access denied - You can only access your own business data' },
-        { status: 403 }
-      )
-    }
-
-    // Get token from headers for Supabase client
-    const headersList = headers()
-    const authHeader = headersList.get('authorization')
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : headersList.get('x-supabase-token')
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'No authorization token provided' },
-        { status: 401 }
-      )
-    }
-
-    const supabase = createClient(token)
-
-    // Step 1: Get base leads data
+    // Step 1: Get base leads data using cached business ID
     const { data: leads, error: leadsError } = await supabase
       .from('leads')
       .select('lead_id, contacted, start_time, created_at, working_hours')
       .gte('created_at', startDate)
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
 
     if (leadsError) {
       console.error('Database error fetching leads:', leadsError)

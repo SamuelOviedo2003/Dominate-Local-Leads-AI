@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCookieClient } from '@/lib/supabase/server'
 import { authenticateRequest } from '@/lib/api-auth'
+import { createCookieClient } from '@/lib/supabase/server'
 import { IncomingCall } from '@/types/leads'
 import { updateCallerTypeSchema } from '@/lib/validation'
 import { requireValidBusinessId } from '@/lib/type-utils'
@@ -16,9 +16,6 @@ interface CallIdParams {
 
 export async function GET(request: NextRequest, { params }: CallIdParams) {
   try {
-    // Use consistent authentication method like other working APIs
-    const { user } = await authenticateRequest(request)
-
     const { callId } = params
     if (!callId) {
       return NextResponse.json(
@@ -27,7 +24,9 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-
+    // For this dynamic route, we need to fetch call data first to get businessId
+    // Use basic authentication first
+    const { user } = await authenticateRequest(request)
     const supabase = createCookieClient()
 
     // Fetch the specific call details
@@ -45,7 +44,7 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-    // Check if user has access to this business data (consistent with leads API)
+    // Check if user has access to this business data
     const hasAccess = user.accessibleBusinesses?.some(business =>
       business.business_id === callData.business_id.toString()
     )
@@ -86,9 +85,6 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
 
 export async function PATCH(request: NextRequest, { params }: CallIdParams) {
   try {
-    // Use consistent authentication method like other working APIs
-    const { user } = await authenticateRequest(request)
-
     const { callId } = params
     if (!callId) {
       return NextResponse.json(
@@ -109,7 +105,8 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-
+    // Use consistent authentication method
+    const { user } = await authenticateRequest(request)
     const supabase = createCookieClient()
 
     // First, verify the call exists and user has access
@@ -127,7 +124,7 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
       )
     }
 
-    // Check if user has access to this business data (consistent with leads API)
+    // Check if user has access to this business data
     const hasAccess = user.accessibleBusinesses?.some(business =>
       business.business_id === existingCall.business_id.toString()
     )

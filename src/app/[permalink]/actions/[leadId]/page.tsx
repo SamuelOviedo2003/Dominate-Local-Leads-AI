@@ -1,6 +1,4 @@
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
-import { redirect } from 'next/navigation'
-import ActionsPageOptimized from './client-optimized'
+import { ActionsClientOptimized } from '@/components/ActionsClientOptimized'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,22 +10,14 @@ interface ActionsPageProps {
 }
 
 /**
- * Optimized Actions page that provides unified loading experience
- * Eliminates the two-step loading pattern by using consolidated data fetching
+ * Optimized Actions page that uses cached authentication data from AuthDataProvider
+ * Eliminates redundant getAuthenticatedUserFromRequest() call
  */
-export default async function ActionsPage({ params }: ActionsPageProps) {
-  // Check authentication
-  const user = await getAuthenticatedUserFromRequest()
+export default function ActionsPage({ params }: ActionsPageProps) {
+  console.log('[ACTIONS_PAGE_OPTIMIZED] Rendering actions page with cached auth data')
 
-  if (!user) {
-    redirect('/login')
-  }
+  // No server-side auth calls needed - data comes from AuthDataProvider
+  // All authentication and business validation is handled by parent layout
 
-  // Check if user has access to any businesses
-  if (!user.accessibleBusinesses || user.accessibleBusinesses.length === 0) {
-    redirect(`/${params.permalink}/dashboard`)
-  }
-
-  // Render the optimized client component
-  return <ActionsPageOptimized />
+  return <ActionsClientOptimized />
 }

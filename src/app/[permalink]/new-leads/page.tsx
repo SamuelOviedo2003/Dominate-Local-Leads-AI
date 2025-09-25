@@ -1,5 +1,4 @@
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
-import { NewLeadsClient } from '@/app/(dashboard)/new-leads/client'
+import { NewLeadsClientOptimized } from '@/components/NewLeadsClientOptimized'
 
 export const dynamic = 'force-dynamic'
 
@@ -8,39 +7,17 @@ interface PermalinkNewLeadsPageProps {
 }
 
 /**
- * Permalink-based new leads page that handles /{permalink}/new-leads routes
- * This leverages the business context established by the permalink layout
- * and reuses the existing NewLeadsClient component
+ * Optimized permalink-based new leads page
+ * Uses cached authentication data from AuthDataProvider
+ * Eliminates redundant getAuthenticatedUserFromRequest() call
  */
-export default async function PermalinkNewLeadsPage({ 
-  params 
+export default function PermalinkNewLeadsPage({
+  params
 }: PermalinkNewLeadsPageProps) {
-  // Get authenticated user on server side using cookie-based auth
-  const user = await getAuthenticatedUserFromRequest()
-  
-  // Check if user exists and has access to any businesses
-  if (!user || !user.accessibleBusinesses || user.accessibleBusinesses.length === 0) {
-    return (
-      <div className="p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-red-600">No business access assigned. Please contact support.</div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  console.log('[NEW_LEADS_PAGE_OPTIMIZED] Rendering new leads with cached auth data')
 
-  // The permalink layout has already validated:
-  // 1. User authentication
-  // 2. Business exists in database 
-  // 3. User has access to this business
-  // 4. Business context is provided via BusinessContextProvider in the layout
-  
-  // The NewLeadsClient will use the BusinessContext from the layout
-  return (
-    <NewLeadsClient 
-      userRole={user.profile?.role}
-    />
-  )
+  // No server-side auth calls needed - data comes from AuthDataProvider
+  // All authentication and business validation is handled by parent layout
+
+  return <NewLeadsClientOptimized />
 }

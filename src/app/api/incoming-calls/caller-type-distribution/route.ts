@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createCookieClient } from '@/lib/supabase/server'
-import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { CallerTypeDistribution } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication using cookie-based auth
-    const user = await getAuthenticatedUserFromRequest()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Please log in' },
-        { status: 401 }
-      )
-    }
-
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const businessIdParam = searchParams.get('businessId')
@@ -27,34 +17,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Convert businessId to number since database expects smallint
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return NextResponse.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    // Validate business access permissions using cookie-based auth
-    const hasAccess = user.accessibleBusinesses?.some(business =>
-      business.business_id === businessIdParam
-    )
-    if (!hasAccess) {
-      return NextResponse.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
-    }
+    const { user, supabase, businessId } = authResult
 
-    const supabase = createCookieClient()
-
-    // Fetch caller type distribution data (excluding "Unknown" values as per requirements)
+    // Fetch caller type distribution data using cached business ID
     const { data: callerTypeData, error } = await supabase
       .from('incoming_calls')
       .select('caller_type')
       .gte('created_at', startDate)
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .not('caller_type', 'is', null)
       .neq('caller_type', 'Unknown')
 

@@ -1,14 +1,11 @@
 import { NextRequest } from 'next/server'
-import { authenticateRequest } from '@/lib/api-auth'
-import { createCookieClient } from '@/lib/supabase/server'
+import { authenticateAndAuthorizeApiRequest } from '@/lib/api-auth-optimized'
 import { LeadWithClient } from '@/types/leads'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const { user } = await authenticateRequest(request)
-
     const { searchParams } = new URL(request.url)
     const businessIdParam = searchParams.get('businessId')
 
@@ -19,26 +16,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const requestedBusinessId = parseInt(businessIdParam, 10)
-    if (isNaN(requestedBusinessId)) {
-      return Response.json(
-        { error: 'businessId must be a valid number' },
-        { status: 400 }
-      )
+    // Use optimized authentication and authorization
+    const authResult = await authenticateAndAuthorizeApiRequest(request, businessIdParam)
+    if (authResult instanceof Response) {
+      return authResult
     }
 
-    // Validate business access permissions using user's accessible businesses
-    const hasAccess = user.accessibleBusinesses?.some(
-      business => business.business_id === businessIdParam
-    )
-    if (!hasAccess) {
-      return Response.json(
-        { error: 'Access denied - You do not have access to this business data' },
-        { status: 403 }
-      )
-    }
-
-    const supabase = createCookieClient()
+    const { user, supabase, businessId } = authResult
 
     // Fetch leads with clients data - only show stage 3 leads (bookings) from all time periods
     const { data: leadsData, error: leadsError } = await supabase
@@ -53,7 +37,7 @@ export async function GET(request: NextRequest) {
           duration_seconds
         )
       `)
-      .eq('business_id', requestedBusinessId)
+      .eq('business_id', businessId)
       .eq('stage', 3)
       .order('created_at', { ascending: false })
 

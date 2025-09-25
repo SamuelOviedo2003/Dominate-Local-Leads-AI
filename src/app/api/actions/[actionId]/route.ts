@@ -6,8 +6,6 @@ export const dynamic = 'force-dynamic'
 
 export async function PATCH(request: NextRequest, { params }: { params: { actionId: string } }) {
   try {
-    const { user } = await authenticateRequest(request)
-
     const actionId = parseInt(params.actionId, 10)
     if (isNaN(actionId)) {
       return Response.json(
@@ -27,6 +25,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { action
       )
     }
 
+    // For this dynamic route, we need to fetch action data first to get businessId
+    // Use consistent authentication method
+    const { user } = await authenticateRequest(request)
     const supabase = createCookieClient()
 
     // First, verify the action exists and the user has access to it
@@ -101,8 +102,6 @@ export async function PATCH(request: NextRequest, { params }: { params: { action
 
 export async function DELETE(request: NextRequest, { params }: { params: { actionId: string } }) {
   try {
-    const { user } = await authenticateRequest(request)
-
     const actionId = parseInt(params.actionId, 10)
     if (isNaN(actionId)) {
       return Response.json(
@@ -111,6 +110,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { actio
       )
     }
 
+    // Use consistent authentication method
+    const { user } = await authenticateRequest(request)
     const supabase = createCookieClient()
 
     // First, verify the action exists and the user has access to it
