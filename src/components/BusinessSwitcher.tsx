@@ -219,11 +219,11 @@ export default function BusinessSwitcher({
           isMobile 
             ? 'left-0 right-0 mt-2' 
             : 'right-0 mt-2 w-80'
-        } bg-white rounded-lg shadow-lg border border-gray-200 py-2 dark:bg-gray-800 dark:border-gray-600 max-h-64 overflow-y-auto`}>
+        } bg-white rounded-lg shadow-lg border border-gray-200 py-2 max-h-64 overflow-y-auto`}>
           
           {/* Header */}
-          <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
-            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+          <div className="px-4 py-2 border-b border-gray-100">
+            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Switch Business
             </div>
           </div>
@@ -238,7 +238,7 @@ export default function BusinessSwitcher({
                   key={business.business_id}
                   onClick={() => handleBusinessSelect(business.business_id)}
                   disabled={isLoading}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center space-x-3 group transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-3 group transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   role="option"
                   aria-selected={isSelected}
                 >
@@ -261,10 +261,10 @@ export default function BusinessSwitcher({
 
                   {/* Business Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    <div className="text-sm font-medium text-gray-900 truncate">
                       {business.company_name}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    <div className="text-xs text-gray-500 truncate">
                       {business.city && business.state 
                         ? `${business.city}, ${business.state}`
                         : ''

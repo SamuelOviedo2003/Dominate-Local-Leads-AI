@@ -5,7 +5,6 @@ import { useState, memo, useCallback } from 'react'
 import { Sun, Moon } from 'lucide-react'
 import { LeadWithClient } from '@/types/leads'
 import { usePermalinkNavigation, usePermalinkUrl } from '@/lib/permalink-navigation'
-import { CallWindowHistoryIcons } from '@/components/ui/CallWindowHistoryIcons'
 
 interface RecentLeadsTableProps {
   leads: LeadWithClient[] | null
@@ -204,9 +203,6 @@ function RecentLeadsTableComponent({
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Next Step
-                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -259,21 +255,10 @@ function RecentLeadsTableComponent({
                         </span>
                       </td>
 
-                      {/* Date Column */}
+                      {/* Date Column - now includes AI Recap Purpose Tags only */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDateTime(lead.created_at)}
-                      </td>
-
-                      {/* Next Step Column with Call Window History Icons and AI Recap Purpose Tags */}
-                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <CallWindowHistoryIcons
-                            callWindows={lead.callWindows}
-                            className="flex-shrink-0"
-                          />
-                          <span className="text-sm text-gray-900">
-                            {lead.next_step || 'Not set'}
-                          </span>
+                          <span>{formatDateTime(lead.created_at)}</span>
                           {lead.ai_recap_purposes && (
                             <div className="flex flex-wrap gap-1">
                               {parsePurposes(lead.ai_recap_purposes).map((purpose, index) => (

@@ -159,27 +159,27 @@ export default function SettingsClient({ user }: SettingsClientProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50">
       {/* Header with return button */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <button
               onClick={handleReturnToDashboard}
-              className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Return to Dashboard</span>
             </button>
             
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h1 className="text-xl font-semibold text-gray-900">
               Settings
             </h1>
             
@@ -192,8 +192,8 @@ export default function SettingsClient({ user }: SettingsClientProps) {
         <div className="flex gap-8">
           {/* Left Vertical Menu */}
           <div className="w-64 flex-shrink-0">
-            <nav className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-              <h2 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
+            <nav className="bg-white rounded-lg shadow p-4">
+              <h2 className="text-sm font-medium text-gray-900 mb-4">
                 Account Settings
               </h2>
               <ul className="space-y-2">
@@ -202,8 +202,8 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                     onClick={() => setActiveSection('edit-profile')}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       activeSection === 'edit-profile'
-                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
                     <User className="w-4 h-4" />
@@ -216,19 +216,19 @@ export default function SettingsClient({ user }: SettingsClientProps) {
 
           {/* Right Content Area */}
           <div className="flex-1">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div className="bg-white rounded-lg shadow">
               <div className="p-6">
                 {activeSection === 'edit-profile' && (
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-6">
                       Profile Information
                     </h3>
 
                     {message && (
                       <div className={`mb-4 p-4 rounded-md ${
                         message.type === 'success' 
-                          ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200' 
-                          : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
+                          ? 'bg-green-50 text-green-800' 
+                          : 'bg-red-50 text-red-800'
                       }`}>
                         {message.text}
                       </div>
@@ -237,7 +237,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                     <form onSubmit={handleSubmit} className="space-y-6">
                       {/* Email Field - Read-only */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Email Address
                         </label>
                         <div className="relative">
@@ -245,7 +245,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                             type="email"
                             value={profile?.email || ''}
                             readOnly
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white cursor-not-allowed"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-900 cursor-not-allowed"
                           />
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
                             {emailVerified ? (
@@ -255,14 +255,14 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                             )}
                           </div>
                         </div>
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p className="mt-1 text-sm text-gray-500">
                           Email verification status: {emailVerified ? 'Verified' : 'Not verified'}
                         </p>
                       </div>
 
                       {/* Full Name Field */}
                       <div>
-                        <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-2">
                           Full Name *
                         </label>
                         <input
@@ -272,14 +272,14 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                           required
                           value={formData.full_name}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                           placeholder="Enter your full name"
                         />
                       </div>
 
                       {/* Telegram ID Field */}
                       <div>
-                        <label htmlFor="telegram_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="telegram_id" className="block text-sm font-medium text-gray-700 mb-2">
                           Telegram ID
                         </label>
                         <input
@@ -288,14 +288,14 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                           name="telegram_id"
                           value={formData.telegram_id}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                           placeholder="Enter your Telegram ID"
                         />
                       </div>
 
                       {/* GHL ID Field */}
                       <div>
-                        <label htmlFor="ghl_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="ghl_id" className="block text-sm font-medium text-gray-700 mb-2">
                           GHL ID
                         </label>
                         <input
@@ -304,7 +304,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                           name="ghl_id"
                           value={formData.ghl_id}
                           onChange={handleInputChange}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                           placeholder="Enter your GHL ID"
                         />
                       </div>

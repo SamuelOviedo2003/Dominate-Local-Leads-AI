@@ -70,22 +70,22 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 dark:bg-gray-800 dark:border-gray-600">
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
           {/* User Info Section */}
-          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+          <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
                 {getInitials(user?.email)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <p className="text-sm font-medium text-gray-900 truncate">
                   {user?.profile?.full_name || user?.email || 'Unknown User'}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                <p className="text-xs text-gray-500 truncate">
                   {user?.email || 'Unknown User'}
                 </p>
                 {user?.profile?.role === 0 && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                  <p className="text-xs text-blue-600 font-medium">
                     Super Admin
                   </p>
                 )}
@@ -98,7 +98,7 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
             {/* Settings Link */}
             <Link
               href="/settings"
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 transition-colors"
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
               onClick={() => setIsOpen(false)}
             >
               <Settings className="w-4 h-4" />
@@ -116,7 +116,7 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
                   secureLogout()
                 }
               }}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 transition-colors"
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
             >
               <LogOut className="w-4 h-4" />
               <span>Sign out</span>

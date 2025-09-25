@@ -93,14 +93,14 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
   // Handle loading state
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-[#1C2833] rounded-lg shadow-sm p-4 h-full flex flex-col">
+      <div className="bg-white rounded-lg shadow-sm p-4 h-full flex flex-col">
         <div className="flex items-center gap-3 mb-4">
           <div className="relative">
             <PhoneCall className="w-6 h-6 text-blue-600" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
           </div>
           <div className="flex-1 flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Call Windows</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
             <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
               {workingHoursStatus.label}
             </div>
@@ -120,14 +120,14 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
   // Handle error state
   if (error) {
     return (
-      <div className="bg-white dark:bg-[#1C2833] rounded-lg shadow-sm p-4 h-full flex flex-col">
+      <div className="bg-white rounded-lg shadow-sm p-4 h-full flex flex-col">
         <div className="flex items-center gap-3 mb-4">
           <div className="relative">
             <PhoneCall className="w-6 h-6 text-blue-600" />
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
           </div>
           <div className="flex-1 flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Call Windows</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
             <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
               {workingHoursStatus.label}
             </div>
@@ -143,7 +143,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
               <Phone className="w-5 h-5" />
               Error Loading Call Data
             </div>
-            <p className="text-gray-600 dark:text-gray-300">{error}</p>
+            <p className="text-gray-600">{error}</p>
           </div>
         </div>
       </div>
@@ -152,7 +152,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
 
 
   return (
-    <div className="bg-white dark:bg-[#1C2833] rounded-lg shadow-sm p-4 h-full flex flex-col w-full">
+    <div className="bg-white rounded-lg shadow-sm p-4 h-full flex flex-col w-full">
       {/* Header with Phone Icon, Working Hours Indicator, and Timer */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative">
@@ -160,7 +160,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
         </div>
         <div className="flex-1 flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Call Windows</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
           <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
             {workingHoursStatus.label}
           </div>
@@ -199,14 +199,14 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           return (
             <div
               key={window.callNumber}
-              className="bg-white dark:bg-[#1C2833] p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200"
+              className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow duration-200"
             >
               {/* Left Side - Call Info */}
               <div className="flex flex-col">
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-base font-semibold text-gray-900">
                   Call {window.callNumber}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-gray-600">
                   {timeRange}
                 </p>
               </div>
@@ -236,7 +236,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
                 )}
                 {/* Show called_at time on right side - below status tag if it exists, or just on right if no status */}
                 {calledAtTime && (
-                  <p className="text-xs text-blue-600 dark:text-blue-400">
+                  <p className="text-xs text-blue-600">
                     Called at {calledAtTime}
                   </p>
                 )}
@@ -248,7 +248,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
 
       {/* Empty State for No Active Call Windows */}
       {activeCallWindows.length === 0 && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-lg p-6 text-center flex-1 flex flex-col items-center justify-center border border-blue-100 dark:border-gray-700">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 text-center flex-1 flex flex-col items-center justify-center border border-blue-100">
           <div className="relative mb-4">
             {/* Phone Icon with Animation */}
             <div className="relative">
@@ -274,11 +274,11 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           </div>
 
           <div className="space-y-2">
-            <p className="text-gray-600 dark:text-gray-300 font-medium flex items-center gap-2 justify-center">
+            <p className="text-gray-600 font-medium flex items-center gap-2 justify-center">
               <Phone className="w-4 h-4" />
               No Active Call Windows
             </p>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">Scheduled call windows will appear here when they become active</p>
+            <p className="text-gray-500 text-sm">Scheduled call windows will appear here when they become active</p>
           </div>
         </div>
       )}
