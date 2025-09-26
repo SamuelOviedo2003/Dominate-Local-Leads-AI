@@ -5,8 +5,10 @@ import { useParams } from 'next/navigation'
 import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { PropertyInformation } from '@/components/features/leads/PropertyInformation'
+import { ActionsChecklist } from '@/components/features/leads/ActionsChecklist'
 import { CallNowButton } from '@/components/CallNowButton'
 import { LeadStageDropdown } from '@/components/LeadStageDropdown'
+import { BookingButton } from '@/components/BookingButton'
 import { useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useLeadDetailsDataOptimized } from '@/hooks/useLeadDetailsDataOptimized'
 import { usePermalinkNavigation } from '@/lib/permalink-navigation'
@@ -159,6 +161,12 @@ const PropertyDetailsPageOptimized = () => {
                 currentStage={leadDetails.lead.stage}
               />
             )}
+            {leadDetails?.lead && (
+              <BookingButton
+                leadId={leadId}
+                accountId={leadDetails.lead.account_id}
+              />
+            )}
             <CallNowButton
               phone={leadDetails?.lead?.phone}
               dialpadPhone={leadDetails?.dialpadPhone}
@@ -177,7 +185,16 @@ const PropertyDetailsPageOptimized = () => {
           />
         </div>
 
-        {/* Bottom Section: Communications and Property Information - Two Columns */}
+        {/* Second Section: Property Information - Full Width */}
+        <div className="w-full mb-6">
+          <PropertyInformation
+            property={leadDetails?.property || null}
+            isLoading={false} // No individual loading since we have unified loading
+            error={null} // No individual errors since we handle errors globally
+          />
+        </div>
+
+        {/* Bottom Section: Communications and Actions - Two Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Communications History */}
           <div className="w-full">
@@ -191,12 +208,11 @@ const PropertyDetailsPageOptimized = () => {
             />
           </div>
 
-          {/* Right Column - Property Information */}
+          {/* Right Column - Actions */}
           <div className="w-full">
-            <PropertyInformation
-              property={leadDetails?.property || null}
-              isLoading={false} // No individual loading since we have unified loading
-              error={null} // No individual errors since we handle errors globally
+            <ActionsChecklist
+              leadId={leadId}
+              businessId={businessId}
             />
           </div>
         </div>

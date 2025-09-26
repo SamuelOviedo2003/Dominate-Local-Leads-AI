@@ -7,6 +7,7 @@ import { CommunicationsHistory } from '@/components/features/leads/Communication
 import { ActionsChecklist } from '@/components/features/leads/ActionsChecklist'
 import { CallNowButton } from '@/components/CallNowButton'
 import { LeadStageDropdown } from '@/components/LeadStageDropdown'
+import { BookingButton } from '@/components/BookingButton'
 import { useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useLeadDetailsDataOptimized } from '@/hooks/useLeadDetailsDataOptimized'
 import { usePermalinkNavigation } from '@/lib/permalink-navigation'
@@ -157,6 +158,12 @@ const ActionsPageOptimized = () => {
               <LeadStageDropdown
                 leadId={leadId}
                 currentStage={leadDetails.lead.stage}
+              />
+            )}
+            {leadDetails?.lead && (
+              <BookingButton
+                leadId={leadId}
+                accountId={leadDetails.lead.account_id}
               />
             )}
             <CallNowButton
