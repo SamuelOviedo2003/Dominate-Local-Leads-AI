@@ -10,7 +10,7 @@ interface CallWindowHistoryIconsProps {
 
 /**
  * Mini Call Window History Icons Component
- * Displays up to 6 call window icons in a 2-column, 3-row grid
+ * Displays up to 6 call window icons in a horizontal row
  * Shows all non-null status call windows for quick lead interaction history
  */
 const CallWindowHistoryIconsComponent = ({ callWindows, className = '' }: CallWindowHistoryIconsProps) => {
@@ -56,20 +56,20 @@ const CallWindowHistoryIconsComponent = ({ callWindows, className = '' }: CallWi
 
   // If no valid call windows, return empty div
   if (validCallWindows.length === 0) {
-    return <div className={`w-12 ${className}`} /> // Placeholder to maintain layout
+    return <div className={`w-32 ${className}`} /> // Placeholder to maintain layout
   }
 
-  // Create grid with up to 6 slots (2 columns, 3 rows)
-  const gridSlots = Array.from({ length: 6 }, (_, index) => {
+  // Create horizontal layout with up to 6 slots (1 row, 6 columns)
+  const horizontalSlots = Array.from({ length: 6 }, (_, index) => {
     const callWindow = validCallWindows[index]
     return callWindow || null
   })
 
   return (
-    <div className={`inline-flex flex-col gap-0.5 w-12 ${className}`}>
-      {/* Grid: 2 columns, up to 3 rows */}
-      <div className="grid grid-cols-2 gap-0.5">
-        {gridSlots.map((callWindow, index) => (
+    <div className={`inline-flex items-center gap-0.5 w-32 ${className}`}>
+      {/* Horizontal layout: 1 row, up to 6 columns */}
+      <div className="flex gap-0.5">
+        {horizontalSlots.map((callWindow, index) => (
           <div
             key={index}
             className={`
