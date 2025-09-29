@@ -111,6 +111,9 @@ export async function POST(request: NextRequest) {
       webhookResponse: webhookResult
     })
 
+    // Extract the first result from the webhook response array
+    const result = Array.isArray(webhookResult) ? webhookResult[0] : webhookResult
+
     return NextResponse.json({
       success: true,
       message: 'Address verification request submitted successfully',
@@ -121,7 +124,9 @@ export async function POST(request: NextRequest) {
         street_name: street_name.trim(),
         postal_code: postal_code.trim(),
         submitted_at: new Date().toISOString()
-      }
+      },
+      // Include webhook response data for calendar functionality
+      webhook_response: result
     })
 
   } catch (error) {
