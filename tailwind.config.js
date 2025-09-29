@@ -8,6 +8,9 @@ module.exports = {
   darkMode: 'class', // Disable automatic dark mode detection
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-plus-jakarta-sans)', 'system-ui', 'sans-serif'],
+      },
       colors: {
         // Brand Orange (from logo) - Split-complementary harmony
         'brand-orange': {
