@@ -921,11 +921,14 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
         {/* Background overlay */}
         <div
           className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
-          onClick={currentStage === 'success' ? handleClose : undefined}
+          onClick={handleClose}
         />
 
         {/* Modal panel - Fixed size across all stages */}
-        <div className="relative inline-block w-[720px] h-[580px] text-left align-bottom transition-all transform bg-white rounded-xl shadow-xl sm:my-8 sm:align-middle flex flex-col">
+        <div
+          className="relative inline-block w-[720px] h-[580px] text-left align-bottom transition-all transform bg-white rounded-xl shadow-xl sm:my-8 sm:align-middle flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Fixed header with progress bar */}
           <div className="flex-shrink-0 p-6 pb-0">
             {currentStage !== 'success' && renderProgressBar()}
