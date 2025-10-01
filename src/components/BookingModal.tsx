@@ -72,7 +72,7 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
     }
   })
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([])
-  const [selectedProfile, setSelectedProfile] = useState<string>('')
+  const [selectedProfile, setSelectedProfile] = useState<string>('default')
   const [businessTimezone, setBusinessTimezone] = useState<string>('America/New_York')
   const [leadAttributes, setLeadAttributes] = useState<LeadAttributes>({
     service: '',
@@ -691,10 +691,10 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
                     hasSlots
                       ? isSelected
                         ? 'bg-blue-600 text-white'
-                        : 'hover:bg-gray-100 text-gray-800 cursor-pointer'
+                        : isToday
+                          ? 'text-gray-900 cursor-pointer'
+                          : 'bg-blue-200 text-gray-900 cursor-pointer hover:bg-blue-300'
                       : 'text-gray-400 cursor-not-allowed'
-                  } ${
-                    isToday && !isSelected ? 'bg-blue-50 text-blue-600' : ''
                   }`}
                 >
                   {day}
@@ -717,7 +717,7 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
               onChange={(e) => setSelectedProfile(e.target.value)}
               className="w-full h-12 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
             >
-              <option value="">Select profile...</option>
+              <option value="default">Default</option>
               {profileOptions.map(profile => (
                 <option key={profile.id} value={profile.id}>
                   {profile.full_name}
@@ -848,7 +848,7 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
                   </div>
                   <div>
                     <span className="font-medium">Assigned to:</span>
-                    <div className="text-blue-900 mt-0.5">{profileOptions.find(p => p.id === selectedProfile)?.full_name || 'Not selected'}</div>
+                    <div className="text-blue-900 mt-0.5">{selectedProfile === 'default' ? 'Default' : profileOptions.find(p => p.id === selectedProfile)?.full_name || 'Not selected'}</div>
                   </div>
                 </div>
               </div>
@@ -880,7 +880,7 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
   }
 
   const renderSuccessStage = () => {
-    const selectedProfileName = profileOptions.find(p => p.id === selectedProfile)?.full_name || 'Not selected'
+    const selectedProfileName = selectedProfile === 'default' ? 'Default' : profileOptions.find(p => p.id === selectedProfile)?.full_name || 'Not selected'
 
     return (
       <div className="text-center">

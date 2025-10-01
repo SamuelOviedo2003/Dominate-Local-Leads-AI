@@ -19,17 +19,29 @@ interface CallWindowsProps {
 const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, businessTimezone = 'UTC', workingHours }: CallWindowsProps) => {
   // ALL HOOKS MUST BE DECLARED FIRST - React Rules of Hooks requirement
 
-  // Determine working hours status display
-  const getWorkingHoursStatus = useCallback(() => {
-    // According to requirements: true if working_hours is true or null, false otherwise
-    if (workingHours === true || workingHours === null || workingHours === undefined) {
+  // Determine working hours status display for Call Window 1 only
+  // Based on call_window = 1 and its working_hours attribute
+  const getWorkingHoursStatusForCallOne = useCallback(() => {
+    const callWindowOne = callWindows?.find(cw => cw.callNumber === 1)
+
+    if (!callWindowOne) {
+      return null // No Call Window 1, don't show any tag
+    }
+
+    // If call_window = 1 AND working_hours = TRUE -> "Working Hours"
+    if (callWindowOne.working_hours === true) {
       return { isWorkingHours: true, label: 'Working Hours', color: 'text-green-600 bg-green-50' }
-    } else {
+    }
+
+    // If call_window = 1 AND (working_hours = FALSE OR working_hours IS NULL) -> "After Hours"
+    if (callWindowOne.working_hours === false || callWindowOne.working_hours === null) {
       return { isWorkingHours: false, label: 'After Hours', color: 'text-orange-600 bg-orange-50' }
     }
-  }, [workingHours])
 
-  const workingHoursStatus = getWorkingHoursStatus()
+    return null
+  }, [callWindows])
+
+  const workingHoursStatus = getWorkingHoursStatusForCallOne()
 
   // Format time range for display (time only, no date)
   const formatTimeRange = useCallback((startTime: string | null, endTime: string | null) => {
@@ -101,9 +113,11 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           </div>
           <div className="flex-1 flex items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
-            <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
-              {workingHoursStatus.label}
-            </div>
+            {workingHoursStatus && (
+              <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
+                {workingHoursStatus.label}
+              </div>
+            )}
             <CallWindowTimer
               callWindows={callWindows}
               businessTimezone={businessTimezone}
@@ -128,9 +142,11 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           </div>
           <div className="flex-1 flex items-center gap-3">
             <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
-            <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
-              {workingHoursStatus.label}
-            </div>
+            {workingHoursStatus && (
+              <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
+                {workingHoursStatus.label}
+              </div>
+            )}
             <CallWindowTimer
               callWindows={callWindows}
               businessTimezone={businessTimezone}
@@ -161,9 +177,11 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
         </div>
         <div className="flex-1 flex items-center gap-3">
           <h3 className="text-lg font-semibold text-gray-900">Call Windows</h3>
-          <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
-            {workingHoursStatus.label}
-          </div>
+          {workingHoursStatus && (
+            <div className={`px-2 py-1 rounded-full text-xs font-medium border ${workingHoursStatus.color} border-current`}>
+              {workingHoursStatus.label}
+            </div>
+          )}
           <CallWindowTimer
             callWindows={callWindows}
             businessTimezone={businessTimezone}
@@ -179,9 +197,10 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           const statusConfig = hasStatus ? getStatusConfig(window.status) : null
 
           // Check conditions for showing called_at time (applies to any call)
+          // Use working_hours from the individual call window record
           const shouldShowCalledAt =
             window.active === true &&
-            workingHours === true &&
+            window.working_hours === true &&
             window.calledAt
 
           const calledAtTime = shouldShowCalledAt ? formatTimeOnly(window.calledAt!, businessTimezone) : null
@@ -190,7 +209,7 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           logger.debug('Call Window called_at logic', {
             active: window.active,
             callNumber: window.callNumber,
-            workingHours,
+            working_hours: window.working_hours,
             hasCalledAt: !!window.calledAt,
             shouldShow: shouldShowCalledAt,
             calledAtTime

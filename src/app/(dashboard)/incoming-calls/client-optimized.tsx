@@ -8,6 +8,7 @@ import { ComponentLoading } from '@/components/LoadingSystem'
 import { HoverCallerTypePopup } from '@/components/HoverCallerTypePopup'
 import RecentCallsPopup from '@/components/RecentCallsPopup'
 import { useBusinessContext } from '@/contexts/BusinessContext'
+import { EmptyTableState } from '@/components/ui/EmptyTableState'
 
 interface IncomingCallsClientProps {
   businessId?: string
@@ -127,11 +128,7 @@ function SimpleBarChart({ data, title, onItemHover, onItemLeave }: SimpleBarChar
 // Recent calls table component
 function RecentCallsTable({ calls, onCallClick }: { calls: any[], onCallClick: (callId: string) => void }) {
   if (!calls || calls.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        No recent calls available for the selected period
-      </div>
-    )
+    return <EmptyTableState tableName="Recent Calls" />
   }
 
   const formatDate = (dateString: string) => {

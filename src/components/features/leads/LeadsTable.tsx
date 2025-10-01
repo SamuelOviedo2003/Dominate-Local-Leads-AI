@@ -6,6 +6,7 @@ import { Sun, Moon } from 'lucide-react'
 import { LeadWithClient } from '@/types/leads'
 import { usePermalinkNavigation, usePermalinkUrl } from '@/lib/permalink-navigation'
 import { CallWindowHistoryIcons } from '@/components/ui/CallWindowHistoryIcons'
+import { EmptyTableState } from '@/components/ui/EmptyTableState'
 
 interface LeadsTableProps {
   leads: LeadWithClient[] | null
@@ -186,21 +187,35 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
     )
   }
 
-  return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-      </div>
-      
-      {isLoading ? (
+  // If loading, show loading state in table structure
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        </div>
         <div className="p-6">
           <div className="flex items-center justify-center py-8">
             <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
           </div>
         </div>
-      ) : leads && leads.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+      </div>
+    )
+  }
+
+  // If no leads, show only EmptyTableState (no table structure)
+  if (!leads || leads.length === 0) {
+    return <EmptyTableState tableName={title} />
+  }
+
+  // Otherwise render the full table
+  return (
+    <div className="bg-white rounded-lg shadow">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -296,11 +311,6 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
             </tbody>
           </table>
         </div>
-      ) : (
-        <div className="p-6">
-          <div className="text-gray-500 text-center py-8">No leads found for the selected period</div>
-        </div>
-      )}
     </div>
   )
 }

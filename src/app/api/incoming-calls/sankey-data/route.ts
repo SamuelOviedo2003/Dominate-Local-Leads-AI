@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch Sankey relationship data using cached business ID
     const { data: sankeyRawData, error } = await supabase
-      .from('incoming_calls')
+      .from('calls_incoming')
       .select('source, caller_type')
       .gte('created_at', startDate)
       .eq('business_id', businessId)

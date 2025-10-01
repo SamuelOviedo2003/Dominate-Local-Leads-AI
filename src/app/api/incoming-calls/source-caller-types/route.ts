@@ -7,11 +7,11 @@ export const dynamic = 'force-dynamic'
 /**
  * API endpoint for retrieving caller type distribution filtered by source
  * Optimized for real-time usage (hover events) with database-level aggregation
- * 
+ *
  * Required database indexes for optimal performance:
- * - idx_incoming_calls_business_created ON (business_id, created_at DESC)
- * - idx_incoming_calls_business_source_created ON (business_id, source, created_at DESC)
- * - idx_incoming_calls_business_source_caller_created ON (business_id, source, caller_type, created_at DESC) WHERE source IS NOT NULL AND caller_type IS NOT NULL
+ * - idx_calls_incoming_business_created ON (business_id, created_at DESC)
+ * - idx_calls_incoming_business_source_created ON (business_id, source, created_at DESC)
+ * - idx_calls_incoming_business_source_caller_created ON (business_id, source, caller_type, created_at DESC) WHERE source IS NOT NULL AND caller_type IS NOT NULL
  */
 
 /**
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
 
     // Optimized query using cached business ID
     const { data: callerTypeData, error } = await supabase
-      .from('incoming_calls')
+      .from('calls_incoming')
       .select('caller_type')
       .gte('created_at', startDate.toISOString())
       .eq('business_id', businessId)

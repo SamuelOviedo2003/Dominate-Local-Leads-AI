@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
 
     // Fetch recent calls data using cached business ID
     const { data: recentCalls, error } = await supabase
-      .from('incoming_calls')
-      .select('incoming_call_id, source, caller_type, duration, assigned_id, assigned, created_at, business_id, recording_url, call_summary')
+      .from('calls_incoming')
+      .select('incoming_call_id, source, caller_type, duration, assigned_id, created_at, business_id, recording_url, recap_summary')
       .gte('created_at', startDate)
       .eq('business_id', businessId)
       .order('created_at', { ascending: false })
@@ -49,11 +49,11 @@ export async function GET(request: NextRequest) {
       caller_type: call.caller_type,
       duration: call.duration || 0,
       assigned_id: call.assigned_id || null,
-      assigned_name: call.assigned || null,
+      assigned_name: null, // assigned column no longer exists in calls_incoming
       created_at: call.created_at,
       business_id: call.business_id,
       recording_url: call.recording_url || null,
-      call_summary: call.call_summary || null
+      call_summary: call.recap_summary || null
     }))
 
     return NextResponse.json({

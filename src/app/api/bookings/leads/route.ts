@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
           window_start_at,
           window_end_at,
           called_at,
-          status
+          status,
+          working_hours
         )
       `)
       .eq('business_id', businessId)
@@ -79,7 +80,8 @@ export async function GET(request: NextRequest) {
           window_end_at: cw.window_end_at,
           status: cw.status,
           calledAt: cw.called_at,
-          calledOut: null
+          calledOut: null,
+          working_hours: cw.working_hours
         }))
         .sort((a: CallWindow, b: CallWindow) => a.callNumber - b.callNumber)
 

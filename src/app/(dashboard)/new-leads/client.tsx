@@ -69,63 +69,33 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
         />
 
         {/* Call now Table (Stage 1 AND call_now_status in [1,2]) */}
-        {(() => {
-          const callNowLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 1 && (lead.call_now_status === 1 || lead.call_now_status === 2)) : null
-          const hasCallNowLeads = callNowLeads && callNowLeads.length > 0
-
-          if (isRecentLeadsLoadingCoordinated || hasCallNowLeads) {
-            return (
-              <div className="mb-8">
-                <LeadsTable
-                  leads={callNowLeads}
-                  isLoading={isRecentLeadsLoadingCoordinated}
-                  error={recentLeadsError}
-                  title="Call now"
-                />
-              </div>
-            )
-          }
-          return null
-        })()}
+        <div className="mb-8">
+          <LeadsTable
+            leads={recentLeads ? recentLeads.filter(lead => lead.stage === 1 && (lead.call_now_status === 1 || lead.call_now_status === 2)) : null}
+            isLoading={isRecentLeadsLoadingCoordinated}
+            error={recentLeadsError}
+            title="Call now"
+          />
+        </div>
 
         {/* Follow Up Table (Stage 2) */}
-        {(() => {
-          const followUpLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 2) : null
-          const hasFollowUpLeads = followUpLeads && followUpLeads.length > 0
-
-          if (isRecentLeadsLoadingCoordinated || hasFollowUpLeads) {
-            return (
-              <div className="mb-8">
-                <LeadsTable
-                  leads={followUpLeads}
-                  isLoading={isRecentLeadsLoadingCoordinated}
-                  error={recentLeadsError}
-                  title="Follow Up"
-                  navigationTarget="actions"
-                />
-              </div>
-            )
-          }
-          return null
-        })()}
+        <div className="mb-8">
+          <LeadsTable
+            leads={recentLeads ? recentLeads.filter(lead => lead.stage === 2) : null}
+            isLoading={isRecentLeadsLoadingCoordinated}
+            error={recentLeadsError}
+            title="Follow Up"
+            navigationTarget="actions"
+          />
+        </div>
 
         {/* Waiting to call Table (Stage 1 AND call_now_status = 3) */}
-        {(() => {
-          const waitingToCallLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 1 && lead.call_now_status === 3) : null
-          const hasWaitingToCallLeads = waitingToCallLeads && waitingToCallLeads.length > 0
-
-          if (isRecentLeadsLoadingCoordinated || hasWaitingToCallLeads) {
-            return (
-              <LeadsTable
-                leads={waitingToCallLeads}
-                isLoading={isRecentLeadsLoadingCoordinated}
-                error={recentLeadsError}
-                title="Waiting to call"
-              />
-            )
-          }
-          return null
-        })()}
+        <LeadsTable
+          leads={recentLeads ? recentLeads.filter(lead => lead.stage === 1 && lead.call_now_status === 3) : null}
+          isLoading={isRecentLeadsLoadingCoordinated}
+          error={recentLeadsError}
+          title="Waiting to call"
+        />
       </div>
     </div>
   )

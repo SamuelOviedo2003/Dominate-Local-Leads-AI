@@ -212,10 +212,13 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
           {/* Received Date */}
           <div className="hidden sm:block">
             <p className="text-sm text-gray-500">
-              <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleDateString('en-US', {
+              <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleString('en-US', {
                 month: '2-digit',
                 day: '2-digit',
-                year: 'numeric'
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
               })}
             </p>
           </div>
@@ -251,10 +254,13 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
         {/* Mobile: Show received date */}
         <div className="sm:hidden mt-2">
           <p className="text-sm text-gray-500">
-            <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleDateString('en-US', {
+            <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleString('en-US', {
               month: '2-digit',
               day: '2-digit',
-              year: 'numeric'
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false
             })}
           </p>
         </div>

@@ -31,8 +31,8 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
 
     // Fetch the specific call details
     const { data: callData, error } = await supabase
-      .from('incoming_calls')
-      .select('incoming_call_id, source, caller_type, duration, assigned_id, assigned, created_at, business_id, recording_url, call_summary')
+      .from('calls_incoming')
+      .select('incoming_call_id, source, caller_type, duration, assigned_id, created_at, business_id, recording_url, recap_summary')
       .eq('incoming_call_id', callId)
       .single()
 
@@ -62,11 +62,11 @@ export async function GET(request: NextRequest, { params }: CallIdParams) {
       caller_type: callData.caller_type,
       duration: callData.duration || 0,
       assigned_id: callData.assigned_id || null,
-      assigned_name: callData.assigned || null,
+      assigned_name: null, // assigned column no longer exists in calls_incoming
       created_at: callData.created_at,
       business_id: callData.business_id,
       recording_url: callData.recording_url || null,
-      call_summary: callData.call_summary || null
+      call_summary: callData.recap_summary || null
     }
 
     return NextResponse.json({
@@ -111,7 +111,7 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
 
     // First, verify the call exists and user has access
     const { data: existingCall, error: fetchError } = await supabase
-      .from('incoming_calls')
+      .from('calls_incoming')
       .select('business_id')
       .eq('incoming_call_id', callId)
       .single()
@@ -137,7 +137,7 @@ export async function PATCH(request: NextRequest, { params }: CallIdParams) {
 
     // Update the caller_type
     const { data: updatedCall, error: updateError } = await supabase
-      .from('incoming_calls')
+      .from('calls_incoming')
       .update({ caller_type: caller_type })
       .eq('incoming_call_id', callId)
       .select('incoming_call_id, caller_type')
