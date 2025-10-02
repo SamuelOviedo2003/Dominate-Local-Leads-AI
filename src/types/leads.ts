@@ -22,7 +22,7 @@ export interface Lead {
   homeowner?: boolean | null
   email_valid?: boolean | null
   language?: string | null
-  stage: 1 | 2 | 3 | 99 | 100 // 1 = Contact, 2 = Follow up, 3 = Booked, 99 = Not interested, 100 = Email campaign
+  stage: 1 | 2 | 3 | 88 | 99 | 100 // 1 = Contact, 2 = Follow up, 3 = Booked, 88 = Bad number, 99 = Not interested, 100 = Email campaign
   communications_count: number // New field to track number of communications
   calls_count?: number // Number of calls made for this lead
   call_now_status?: 1 | 2 | 3 | null // Call priority: 1 = High (red), 2 = Medium (yellow), 3 = Normal (default)

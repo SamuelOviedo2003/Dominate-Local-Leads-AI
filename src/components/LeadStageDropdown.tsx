@@ -6,13 +6,13 @@ import { logger } from '@/lib/logging'
 
 interface LeadStageDropdownProps {
   leadId: string | number
-  currentStage: 1 | 2 | 3 | 99 | 100
+  currentStage: 1 | 2 | 3 | 88 | 99 | 100
   className?: string
   onStageChange?: (newStage: number) => void
 }
 
 interface StageOption {
-  value: 1 | 2 | 3 | 99 | 100
+  value: 1 | 2 | 3 | 88 | 99 | 100
   label: string
 }
 
@@ -20,6 +20,7 @@ const STAGE_OPTIONS: StageOption[] = [
   { value: 1, label: 'Contact' },
   { value: 2, label: 'Follow up' },
   { value: 3, label: 'Booked' },
+  { value: 88, label: 'Bad number' },
   { value: 99, label: 'Not interested' },
   { value: 100, label: 'Email campaign' }
 ]
@@ -34,14 +35,14 @@ export const LeadStageDropdown: React.FC<LeadStageDropdownProps> = ({
   const [isLoading, setIsLoading] = useState(false)
   const [selectedStage, setSelectedStage] = useState(currentStage)
   const [showConfirmation, setShowConfirmation] = useState(false)
-  const [pendingStage, setPendingStage] = useState<1 | 2 | 3 | 99 | 100 | null>(null)
+  const [pendingStage, setPendingStage] = useState<1 | 2 | 3 | 88 | 99 | 100 | null>(null)
 
   const getCurrentStageLabel = () => {
     const stage = STAGE_OPTIONS.find(option => option.value === selectedStage)
     return stage?.label || 'Unknown'
   }
 
-  const handleStageSelection = (newStage: 1 | 2 | 3 | 99 | 100) => {
+  const handleStageSelection = (newStage: 1 | 2 | 3 | 88 | 99 | 100) => {
     if (newStage === selectedStage) {
       setIsOpen(false)
       return
