@@ -6,7 +6,6 @@ import { Sun, Moon } from 'lucide-react'
 import { LeadWithClient } from '@/types/leads'
 import { usePermalinkNavigation, usePermalinkUrl } from '@/lib/permalink-navigation'
 import { CallWindowHistoryIcons } from '@/components/ui/CallWindowHistoryIcons'
-import { EmptyTableState } from '@/components/ui/EmptyTableState'
 
 interface LeadsTableProps {
   leads: LeadWithClient[] | null
@@ -203,9 +202,9 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
     )
   }
 
-  // If no leads, show only EmptyTableState (no table structure)
+  // If no leads, return null (parent component handles "no data" display)
   if (!leads || leads.length === 0) {
-    return <EmptyTableState tableName={title} />
+    return null
   }
 
   // Otherwise render the full table

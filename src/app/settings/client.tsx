@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthUser, Profile } from '@/types/auth'
-import { ArrowLeft, User, Check, X } from 'lucide-react'
+import { ArrowLeft, User, Check, X, Users } from 'lucide-react'
+import ProfileManagementClientOptimized from '@/app/(dashboard)/profile-management/client-optimized'
 
 interface SettingsClientProps {
   user: AuthUser
@@ -37,7 +38,15 @@ interface UpdateResponse {
  */
 export default function SettingsClient({ user }: SettingsClientProps) {
   const router = useRouter()
-  const [activeSection, setActiveSection] = useState<'edit-profile'>('edit-profile')
+  const [activeSection, setActiveSection] = useState<'edit-profile' | 'profile-management'>('edit-profile')
+  // Check if user is super admin (role 0) - handle null/undefined cases
+  const isSuperAdmin = user?.profile?.role === 0
+
+  // Debug: Log user data
+  console.log('Settings - User:', user)
+  console.log('Settings - Profile:', user?.profile)
+  console.log('Settings - Role:', user?.profile?.role, 'Type:', typeof user?.profile?.role)
+  console.log('Settings - isSuperAdmin:', isSuperAdmin)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [emailVerified, setEmailVerified] = useState<boolean>(false)
   const [formData, setFormData] = useState<ProfileFormData>({
@@ -197,6 +206,23 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                 Account Settings
               </h2>
               <ul className="space-y-2">
+                {/* Profile Management - Super Admin Only (Feature 3) */}
+                {isSuperAdmin && (
+                  <li>
+                    <button
+                      onClick={() => setActiveSection('profile-management')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        activeSection === 'profile-management'
+                          ? 'bg-purple-100 text-purple-700'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>Profile Management</span>
+                    </button>
+                  </li>
+                )}
+
                 <li>
                   <button
                     onClick={() => setActiveSection('edit-profile')}
@@ -216,13 +242,16 @@ export default function SettingsClient({ user }: SettingsClientProps) {
 
           {/* Right Content Area */}
           <div className="flex-1">
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-6">
-                {activeSection === 'edit-profile' && (
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-6">
-                      Profile Information
-                    </h3>
+            {activeSection === 'profile-management' && isSuperAdmin ? (
+              <ProfileManagementClientOptimized />
+            ) : (
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  {activeSection === 'edit-profile' && (
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 mb-6">
+                        Profile Information
+                      </h3>
 
                     {message && (
                       <div className={`mb-4 p-4 rounded-md ${
@@ -325,8 +354,9 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                     </form>
                   </div>
                 )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

@@ -28,9 +28,14 @@ export function CallWindowTimer({ callWindows, businessTimezone = 'UTC' }: CallW
     return () => clearInterval(timer)
   }, [])
 
-  // Check if current time is within window range and calculate 30-minute countdown
+  // Check if current time is within window range and calculate 30-minute count-up timer
   const timerData = useMemo(() => {
     if (!callWindow1 || !callWindow1.window_start_at || !callWindow1.window_end_at) {
+      return { shouldShow: false, timeLeft: 0, formattedTime: '00:00' }
+    }
+
+    // NEW CONDITION: Timer only shows if call_window = 1 AND working_hours = true
+    if (callWindow1.working_hours !== true) {
       return { shouldShow: false, timeLeft: 0, formattedTime: '00:00' }
     }
 
@@ -58,33 +63,31 @@ export function CallWindowTimer({ callWindows, businessTimezone = 'UTC' }: CallW
         return { shouldShow: false, timeLeft: 0, formattedTime: '00:00' }
       }
 
-      // Calculate 30-minute timer from window_start_at
+      // Calculate elapsed time from window_start_at (COUNT UP from 00:00)
+      const elapsedMs = now.getTime() - startTime.getTime()
+
+      // Stop showing timer after 30 minutes
       const timerDurationMs = 30 * 60 * 1000 // 30 minutes in milliseconds
-      const timerEndTime = new Date(startTime.getTime() + timerDurationMs)
-
-      // Calculate time left in the 30-minute timer
-      const timeLeftMs = timerEndTime.getTime() - now.getTime()
-
-      if (timeLeftMs <= 0) {
-        return { shouldShow: false, timeLeft: 0, formattedTime: '00:00' }
+      if (elapsedMs >= timerDurationMs) {
+        return { shouldShow: false, timeLeft: 0, formattedTime: '30:00' }
       }
 
-      // Convert to minutes and seconds
-      const totalSeconds = Math.floor(timeLeftMs / 1000)
+      // Convert to minutes and seconds (count up from 00:00 to 30:00)
+      const totalSeconds = Math.floor(elapsedMs / 1000)
       const minutes = Math.floor(totalSeconds / 60)
       const seconds = totalSeconds % 60
 
       // Format as MM:SS
       const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 
-      logger.debug('Timer calculation (30-minute countdown)', {
+      logger.debug('Timer calculation (30-minute count-up)', {
         callWindow: callWindow1.callNumber,
+        working_hours: callWindow1.working_hours,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
-        timerEndTime: timerEndTime.toISOString(),
         currentTime: now.toISOString(),
         isWithinWindow,
-        timeLeftMs,
+        elapsedMs,
         minutes,
         seconds,
         formattedTime
@@ -92,7 +95,7 @@ export function CallWindowTimer({ callWindows, businessTimezone = 'UTC' }: CallW
 
       return {
         shouldShow: true,
-        timeLeft: timeLeftMs,
+        timeLeft: timerDurationMs - elapsedMs,
         formattedTime
       }
 

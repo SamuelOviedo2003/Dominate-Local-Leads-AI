@@ -209,16 +209,16 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
             )}
           </div>
 
-          {/* Received Date */}
+          {/* Received Date (Feature 5 - Format: Fri Oct 3, 3:50PM) */}
           <div className="hidden sm:block">
             <p className="text-sm text-gray-500">
               <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
                 minute: '2-digit',
-                hour12: false
+                hour12: true
               })}
             </p>
           </div>
@@ -251,16 +251,16 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
           </div>
         </div>
 
-        {/* Mobile: Show received date */}
+        {/* Mobile: Show received date (Feature 5 - Format: Fri Oct 3, 3:50PM) */}
         <div className="sm:hidden mt-2">
           <p className="text-sm text-gray-500">
             <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleString('en-US', {
-              month: '2-digit',
-              day: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+              hour: 'numeric',
               minute: '2-digit',
-              hour12: false
+              hour12: true
             })}
           </p>
         </div>

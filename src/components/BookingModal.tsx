@@ -124,13 +124,14 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
     })
   }
 
+  // Feature 6: Convert UTC times to business timezone for display
   const formatTime = (timeStr: string): string => {
     const date = new Date(timeStr)
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-      timeZone: businessTimezone
+      timeZone: businessTimezone // Converts from UTC to business client's timezone
     })
   }
 
@@ -142,6 +143,7 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
     })
   }
 
+  // Feature 6: Fetch business timezone from business_clients.time_zone
   const fetchBusinessTimezone = async (businessId: string) => {
     try {
       const response = await fetch(`/api/business/timezone?businessId=${businessId}`)

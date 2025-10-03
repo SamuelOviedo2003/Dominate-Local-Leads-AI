@@ -97,9 +97,10 @@ export const NAVIGATION_SECTIONS = [
 
 /**
  * Super admin only navigation sections
+ * NOTE: Profile Management has been moved to UserDropdown (Feature 3)
  */
 export const SUPER_ADMIN_SECTIONS = [
-  { name: 'Profile Management', section: 'profile-management' }
+  // Profile Management removed from navigation - now in dropdown menu
 ] as const
 
 /**

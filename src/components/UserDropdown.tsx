@@ -95,14 +95,26 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
 
           {/* Menu Options */}
           <div className="py-1">
-            {/* Settings Link */}
+            {/* Profile Management - Super Admin Only (Feature 3) */}
+            {user?.profile?.role === 0 && (
+              <Link
+                href="/settings"
+                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <Settings className="w-4 h-4" />
+                <span>Profile Management</span>
+              </Link>
+            )}
+
+            {/* Edit Profile Link (Feature 4 - renamed from Settings) */}
             <Link
               href="/settings"
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
               onClick={() => setIsOpen(false)}
             >
               <Settings className="w-4 h-4" />
-              <span>Settings</span>
+              <span>Edit Profile</span>
             </Link>
 
             {/* Logout Option */}

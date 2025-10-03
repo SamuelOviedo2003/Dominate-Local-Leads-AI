@@ -1,5 +1,5 @@
 import SettingsClient from './client'
-import { getAuthenticatedUser } from '@/lib/auth-helpers'
+import { getAuthenticatedUserFromRequest } from '@/lib/auth-helpers-simple'
 
 // Force dynamic rendering due to authentication requirements
 export const dynamic = 'force-dynamic'
@@ -14,8 +14,8 @@ export const metadata = {
  * Server component that fetches initial auth data
  */
 export default async function SettingsPage() {
-  // Ensure user is authenticated and get initial data
-  const user = await getAuthenticatedUser()
-  
+  // Ensure user is authenticated and get initial data with proper auth
+  const user = await getAuthenticatedUserFromRequest()
+
   return <SettingsClient user={user} />
 }

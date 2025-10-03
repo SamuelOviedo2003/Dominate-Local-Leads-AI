@@ -34,6 +34,17 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
   const isMetricsLoadingCoordinated = businessContextLoading || isMetricsLoading || !effectiveBusinessId
   const isRecentLeadsLoadingCoordinated = businessContextLoading || isRecentLeadsLoading || !effectiveBusinessId
 
+  // Calculate leads for each table
+  const callNowLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 1 && (lead.call_now_status === 1 || lead.call_now_status === 2)) : []
+  const followUpLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 2) : []
+  const waitingToCallLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 1 && lead.call_now_status === 3) : []
+
+  // Check if all tables are empty (only when NOT loading)
+  const allTablesEmpty = !isRecentLeadsLoadingCoordinated &&
+    callNowLeads.length === 0 &&
+    followUpLeads.length === 0 &&
+    waitingToCallLeads.length === 0
+
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto">
@@ -68,34 +79,53 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           error={metricsError}
         />
 
+        {/* Show "No Data" message only if ALL tables are empty */}
+        {allTablesEmpty && !recentLeadsError && (
+          <div className="flex items-center justify-center py-12">
+            <pre className="text-gray-400 text-base font-mono select-none pointer-events-none leading-relaxed">
+{`+------------------------------+
+|                              |
+|          NO DATA             |
+|                              |
++------------------------------+`}
+            </pre>
+          </div>
+        )}
+
         {/* Call now Table (Stage 1 AND call_now_status in [1,2]) */}
-        <div className="mb-8">
-          <LeadsTable
-            leads={recentLeads ? recentLeads.filter(lead => lead.stage === 1 && (lead.call_now_status === 1 || lead.call_now_status === 2)) : null}
-            isLoading={isRecentLeadsLoadingCoordinated}
-            error={recentLeadsError}
-            title="Call now"
-          />
-        </div>
+        {callNowLeads.length > 0 && (
+          <div className="mb-8">
+            <LeadsTable
+              leads={callNowLeads}
+              isLoading={isRecentLeadsLoadingCoordinated}
+              error={recentLeadsError}
+              title="Call now"
+            />
+          </div>
+        )}
 
         {/* Follow Up Table (Stage 2) */}
-        <div className="mb-8">
-          <LeadsTable
-            leads={recentLeads ? recentLeads.filter(lead => lead.stage === 2) : null}
-            isLoading={isRecentLeadsLoadingCoordinated}
-            error={recentLeadsError}
-            title="Follow Up"
-            navigationTarget="actions"
-          />
-        </div>
+        {followUpLeads.length > 0 && (
+          <div className="mb-8">
+            <LeadsTable
+              leads={followUpLeads}
+              isLoading={isRecentLeadsLoadingCoordinated}
+              error={recentLeadsError}
+              title="Follow Up"
+              navigationTarget="actions"
+            />
+          </div>
+        )}
 
         {/* Waiting to call Table (Stage 1 AND call_now_status = 3) */}
-        <LeadsTable
-          leads={recentLeads ? recentLeads.filter(lead => lead.stage === 1 && lead.call_now_status === 3) : null}
-          isLoading={isRecentLeadsLoadingCoordinated}
-          error={recentLeadsError}
-          title="Waiting to call"
-        />
+        {waitingToCallLeads.length > 0 && (
+          <LeadsTable
+            leads={waitingToCallLeads}
+            isLoading={isRecentLeadsLoadingCoordinated}
+            error={recentLeadsError}
+            title="Waiting to call"
+          />
+        )}
       </div>
     </div>
   )

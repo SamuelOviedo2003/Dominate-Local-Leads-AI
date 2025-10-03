@@ -25,6 +25,7 @@ interface UniversalHeaderProps {
 }
 
 // Legacy navigation items for non-permalink routes (fallback)
+// NOTE: Profile Management removed from navigation - now in UserDropdown (Feature 3)
 const legacyNavigationItems: NavigationItem[] = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'New Leads', href: '/new-leads' },
@@ -32,13 +33,9 @@ const legacyNavigationItems: NavigationItem[] = [
   { name: 'Incoming Calls', href: '/incoming-calls' },
 ]
 
-// Profile Management is only visible to super admins (legacy)
+// All users see the same navigation items now
 const getLegacyNavigationItemsForUser = (isSuperAdmin: boolean): NavigationItem[] => {
-  const items = [...legacyNavigationItems]
-  if (isSuperAdmin) {
-    items.push({ name: 'Profile Management', href: '/profile-management' })
-  }
-  return items
+  return [...legacyNavigationItems]
 }
 
 export default function UniversalHeader({ 
