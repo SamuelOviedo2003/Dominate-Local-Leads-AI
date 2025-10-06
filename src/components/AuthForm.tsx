@@ -67,7 +67,8 @@ export default function AuthForm() {
         const result = await response.json()
 
         if (result.success && result.redirectUrl) {
-          console.log('[AUTH_FORM] Post-login setup complete, redirecting to:', result.redirectUrl)
+          // Prefetch the dashboard route before redirecting for faster perceived load
+          router.prefetch(result.redirectUrl)
           router.push(result.redirectUrl)
         } else {
           setAuthError('Login setup failed. Please try again.')

@@ -79,6 +79,17 @@ const timePeriodMapping: Record<string, IncomingCallsTimePeriod> = {
   '90': '90'
 }
 
+// Move helper functions outside component to prevent recreation on every render
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleString()
+}
+
+const formatDuration = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+}
+
 // Simple bar chart component with hover support
 interface SimpleBarChartProps {
   data: Array<{name: string, value: number}>
@@ -129,16 +140,6 @@ function SimpleBarChart({ data, title, onItemHover, onItemLeave }: SimpleBarChar
 function RecentCallsTable({ calls, onCallClick }: { calls: any[], onCallClick: (callId: string) => void }) {
   if (!calls || calls.length === 0) {
     return <EmptyTableState tableName="Recent Calls" />
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString()
-  }
-
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
 
   return (

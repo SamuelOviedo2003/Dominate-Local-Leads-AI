@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   SourceDistribution,
   CallerTypeDistribution,
@@ -39,17 +39,18 @@ export function useIncomingCallsDataOptimized({ timePeriod, businessId }: UseInc
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const getStartDate = (period: IncomingCallsTimePeriod): string => {
+  // Memoize startDate calculation to prevent recalculation on every render
+  const startDate = useMemo(() => {
     const date = new Date()
-    date.setDate(date.getDate() - parseInt(period))
+    date.setDate(date.getDate() - parseInt(timePeriod))
     return date.toISOString()
-  }
+  }, [timePeriod])
 
-  const fetchSourceCallerTypes = async (source: string): Promise<CallerTypeDistribution[] | null> => {
+  // Memoize fetchSourceCallerTypes with useCallback to prevent recreation on every render
+  const fetchSourceCallerTypes = useCallback(async (source: string): Promise<CallerTypeDistribution[] | null> => {
     if (!businessId) return null
 
     try {
-      const startDate = getStartDate(timePeriod)
       const params = new URLSearchParams({
         startDate,
         businessId,
@@ -68,9 +69,10 @@ export function useIncomingCallsDataOptimized({ timePeriod, businessId }: UseInc
       console.error('Error fetching source caller types:', err)
       return null
     }
-  }
+  }, [startDate, businessId])
 
-  const fetchAllData = async () => {
+  // Memoize fetchAllData with useCallback to prevent recreation on every render
+  const fetchAllData = useCallback(async () => {
     if (!businessId) {
       setData(null)
       setIsLoading(false)
@@ -81,7 +83,6 @@ export function useIncomingCallsDataOptimized({ timePeriod, businessId }: UseInc
     setError(null)
 
     try {
-      const startDate = getStartDate(timePeriod)
       const params = new URLSearchParams({
         startDate,
         businessId
@@ -104,11 +105,11 @@ export function useIncomingCallsDataOptimized({ timePeriod, businessId }: UseInc
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [startDate, businessId])
 
   useEffect(() => {
     fetchAllData()
-  }, [timePeriod, businessId])
+  }, [fetchAllData])
 
   return {
     sourceDistribution: data?.sourceDistribution || null,

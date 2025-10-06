@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useLeadsData } from '@/hooks/useLeadsData'
 import { LeadsTable } from '@/components/features/leads'
 import { LeadsMetrics } from '@/components/features/metrics'
@@ -30,20 +31,38 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
     businessId: effectiveBusinessId
   })
 
-  // Coordinated loading states to prevent flash of empty content
-  const isMetricsLoadingCoordinated = businessContextLoading || isMetricsLoading || !effectiveBusinessId
-  const isRecentLeadsLoadingCoordinated = businessContextLoading || isRecentLeadsLoading || !effectiveBusinessId
+  // Memoize coordinated loading states
+  const isMetricsLoadingCoordinated = useMemo(
+    () => businessContextLoading || isMetricsLoading || !effectiveBusinessId,
+    [businessContextLoading, isMetricsLoading, effectiveBusinessId]
+  )
+  const isRecentLeadsLoadingCoordinated = useMemo(
+    () => businessContextLoading || isRecentLeadsLoading || !effectiveBusinessId,
+    [businessContextLoading, isRecentLeadsLoading, effectiveBusinessId]
+  )
 
-  // Calculate leads for each table
-  const callNowLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 1 && (lead.call_now_status === 1 || lead.call_now_status === 2)) : []
-  const followUpLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 2) : []
-  const waitingToCallLeads = recentLeads ? recentLeads.filter(lead => lead.stage === 1 && lead.call_now_status === 3) : []
+  // Memoize filtered leads for each table to prevent recalculation on every render
+  const callNowLeads = useMemo(
+    () => recentLeads ? recentLeads.filter(lead => lead.stage === 1 && (lead.call_now_status === 1 || lead.call_now_status === 2)) : [],
+    [recentLeads]
+  )
+  const followUpLeads = useMemo(
+    () => recentLeads ? recentLeads.filter(lead => lead.stage === 2) : [],
+    [recentLeads]
+  )
+  const waitingToCallLeads = useMemo(
+    () => recentLeads ? recentLeads.filter(lead => lead.stage === 1 && lead.call_now_status === 3) : [],
+    [recentLeads]
+  )
 
-  // Check if all tables are empty (only when NOT loading)
-  const allTablesEmpty = !isRecentLeadsLoadingCoordinated &&
-    callNowLeads.length === 0 &&
-    followUpLeads.length === 0 &&
-    waitingToCallLeads.length === 0
+  // Memoize allTablesEmpty check
+  const allTablesEmpty = useMemo(
+    () => !isRecentLeadsLoadingCoordinated &&
+      callNowLeads.length === 0 &&
+      followUpLeads.length === 0 &&
+      waitingToCallLeads.length === 0,
+    [isRecentLeadsLoadingCoordinated, callNowLeads.length, followUpLeads.length, waitingToCallLeads.length]
+  )
 
   return (
     <div className="p-6">

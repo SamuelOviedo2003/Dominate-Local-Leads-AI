@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { LeadMetrics, LeadWithClient, TimePeriod, ApiResponse } from '@/types/leads'
 import { authGet } from '@/lib/auth-fetch'
 
@@ -40,13 +40,15 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
   const [metricsError, setMetricsError] = useState<string | null>(null)
   const [recentLeadsError, setRecentLeadsError] = useState<string | null>(null)
 
-  const getStartDate = (period: TimePeriod): string => {
+  // Memoize startDate calculation to prevent recalculation on every render
+  const startDate = useMemo(() => {
     const date = new Date()
-    date.setDate(date.getDate() - parseInt(period))
+    date.setDate(date.getDate() - parseInt(timePeriod))
     return date.toISOString()
-  }
+  }, [timePeriod])
 
-  const fetchMetrics = async () => {
+  // Memoize fetchMetrics with useCallback to prevent recreation on every render
+  const fetchMetrics = useCallback(async () => {
     if (!businessId) {
       setIsMetricsLoading(false)
       return
@@ -56,7 +58,6 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
     setMetricsError(null)
 
     try {
-      const startDate = getStartDate(timePeriod)
       const params = new URLSearchParams({
         startDate,
         businessId
@@ -72,14 +73,13 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch metrics'
       setMetricsError(errorMessage)
-      // Error fetching metrics
     } finally {
       setIsMetricsLoading(false)
     }
-  }
+  }, [startDate, businessId])
 
-
-  const fetchRecentLeads = async () => {
+  // Memoize fetchRecentLeads with useCallback to prevent recreation on every render
+  const fetchRecentLeads = useCallback(async () => {
     if (!businessId) {
       setIsRecentLeadsLoading(false)
       return
@@ -103,13 +103,13 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch recent leads'
       setRecentLeadsError(errorMessage)
-      // Error fetching recent leads
     } finally {
       setIsRecentLeadsLoading(false)
     }
-  }
+  }, [businessId])
 
-  const fetchData = async () => {
+  // Memoize fetchData with useCallback to prevent recreation on every render
+  const fetchData = useCallback(async () => {
     if (!businessId) return
 
     // Clear any previous global error
@@ -123,7 +123,7 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
 
     // Wait for all to complete (they handle their own errors)
     await Promise.allSettled(promises)
-  }
+  }, [businessId, fetchMetrics, fetchRecentLeads])
 
   // Update overall loading state based on individual loading states
   useEffect(() => {
@@ -145,7 +145,7 @@ export function useLeadsData({ timePeriod, businessId }: UseLeadsDataProps): Use
 
   useEffect(() => {
     fetchData()
-  }, [timePeriod, businessId])
+  }, [fetchData])
 
   return {
     metrics,

@@ -79,13 +79,26 @@ export async function GET(request: NextRequest, context: RouteParams) {
 
     const { user, supabase, businessId } = authResult
 
-    // Fetch lead details using the cached business ID from middleware
-    const { data: leadData, error: leadError } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('lead_id', leadIdNumber)
-      .eq('business_id', businessId)
-      .single()
+    // OPTIMIZATION: Parallel queries for lead details and related data
+    const [
+      { data: leadData, error: leadError },
+      { data: businessData, error: businessError }
+    ] = await Promise.all([
+      // Fetch lead details
+      supabase
+        .from('leads')
+        .select('*')
+        .eq('lead_id', leadIdNumber)
+        .eq('business_id', businessId)
+        .single(),
+
+      // Fetch business timezone and dialpad phone
+      supabase
+        .from('business_clients')
+        .select('time_zone, dialpad_phone')
+        .eq('business_id', businessId)
+        .single()
+    ])
 
     if (leadError || !leadData) {
       logger.error('Lead fetch failed', { leadId: leadIdNumber, businessId: businessId, error: leadError })
@@ -97,59 +110,50 @@ export async function GET(request: NextRequest, context: RouteParams) {
 
     const lead: Lead = leadData
 
-    // Fetch business timezone and dialpad phone information
-    const { data: businessData, error: businessError } = await supabase
-      .from('business_clients')
-      .select('time_zone, dialpad_phone')
-      .eq('business_id', businessId)
-      .single()
-
-    let businessTimezone = 'UTC' // Default fallback
+    // Process business data
+    let businessTimezone = 'UTC'
     let dialpadPhone: string | null = null
     if (businessData && !businessError) {
       businessTimezone = businessData.time_zone || 'UTC'
       dialpadPhone = businessData.dialpad_phone || null
-      logger.dbDebug('Business data fetch', 'business_clients', { businessId: businessId, timezone: businessTimezone, dialpadPhone: dialpadPhone })
-    } else {
-      logger.warn('Business data fetch failed, using fallback', { businessId: businessId, error: businessError, fallback: businessTimezone })
     }
 
-    // Fetch property information using account_id from lead
-    const { data: propertyData, error: propertyError } = await supabase
-      .from('clients')
-      .select('house_value, distance_meters, house_url, full_address, duration_seconds')
-      .eq('account_id', lead.account_id)
-      .single()
+    // OPTIMIZATION: Parallel queries for property, communications, and call windows
+    const [
+      { data: propertyData },
+      { data: communicationsData, error: communicationsError },
+      { data: rawCallWindowsData, error: callWindowsError }
+    ] = await Promise.all([
+      // Fetch property information
+      supabase
+        .from('clients')
+        .select('house_value, distance_meters, house_url, full_address, duration_seconds')
+        .eq('account_id', lead.account_id)
+        .single(),
 
-    let property: PropertyInfo | null = null
-    if (propertyData && !propertyError) {
-      property = propertyData
-    }
+      // Fetch communications history
+      supabase
+        .from('communications')
+        .select('communication_id, created_at, message_type, summary, recording_url, call_window')
+        .eq('account_id', lead.account_id)
+        .order('created_at', { ascending: true }),
 
-    // Fetch communications history
-    const { data: communicationsData, error: communicationsError } = await supabase
-      .from('communications')
-      .select('communication_id, created_at, message_type, summary, recording_url, call_window')
-      .eq('account_id', lead.account_id)
-      .order('created_at', { ascending: true })
+      // Fetch call windows
+      supabase
+        .from('call_windows')
+        .select('call_window, window_start_at, window_end_at, created_at, called_at, business_id, account_id, active, status, working_hours')
+        .eq('account_id', lead.account_id)
+        .not('status', 'is', null)
+        .in('status', [1, 2, 3, 4, 10, 11, 12, 13])
+        .order('call_window', { ascending: true })
+    ])
 
+    const property: PropertyInfo | null = propertyData || null
     const communications: Communication[] = communicationsData || []
 
     if (communicationsError) {
       logger.warn('Communications fetch failed', { accountId: lead.account_id, error: communicationsError })
-      // Don't fail the entire request for communications errors
     }
-
-    // Fetch call windows with business logic implementation
-    
-    // Optimized query: Use numeric status column with filtering for valid statuses
-    const { data: rawCallWindowsData, error: callWindowsError } = await supabase
-      .from('call_windows')
-      .select('call_window, window_start_at, window_end_at, created_at, called_at, business_id, account_id, active, status, working_hours')
-      .eq('account_id', lead.account_id)
-      .not('status', 'is', null) // Filter for records with valid numeric status
-      .in('status', [1, 2, 3, 4, 10, 11, 12, 13]) // Only retrieve records with valid status values
-      .order('call_window', { ascending: true })
     
     let callWindows: CallWindow[] = []
     
@@ -252,22 +256,7 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       )
     }
 
-    // First verify the lead exists and belongs to the business
-    const { data: leadExists, error: leadCheckError } = await supabase
-      .from('leads')
-      .select('lead_id')
-      .eq('lead_id', leadIdNumber)
-      .eq('business_id', businessId)
-      .single()
-
-    if (leadCheckError || !leadExists) {
-      return NextResponse.json(
-        { error: 'Lead not found or access denied' },
-        { status: 404 }
-      )
-    }
-
-    // Update the caller_type
+    // OPTIMIZATION: Update directly, single query validates existence and updates
     const { data: updatedLead, error: updateError } = await supabase
       .from('leads')
       .update({ caller_type })
@@ -276,11 +265,11 @@ export async function PATCH(request: NextRequest, context: RouteParams) {
       .select('lead_id, caller_type')
       .single()
 
-    if (updateError) {
+    if (updateError || !updatedLead) {
       logger.error('Lead caller_type update failed', { leadId: leadIdNumber, businessId: businessId, error: updateError })
       return NextResponse.json(
-        { error: 'Failed to update lead caller_type' },
-        { status: 500 }
+        { error: updateError ? 'Failed to update lead caller_type' : 'Lead not found or access denied' },
+        { status: updateError ? 500 : 404 }
       )
     }
 

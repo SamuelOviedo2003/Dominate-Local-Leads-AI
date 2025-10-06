@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { ChevronDown, LogOut, Settings } from 'lucide-react'
 import { AuthUser } from '@/types/auth'
 import { useSecureLogout } from '@/hooks/useSecureLogout'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface UserDropdownProps {
   user: AuthUser | null | undefined
@@ -16,6 +17,9 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { logout: secureLogout } = useSecureLogout()
 
+  // Use shared click-outside hook
+  useClickOutside(dropdownRef, useCallback(() => setIsOpen(false), []))
+
   // Don't render if user is not available
   if (!user) {
     return (
@@ -24,20 +28,6 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
       </div>
     )
   }
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
 
   // Get user initials for avatar
   const getInitials = (email: string | undefined | null) => {

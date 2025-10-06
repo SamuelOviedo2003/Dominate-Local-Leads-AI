@@ -14,8 +14,6 @@ interface PermalinkDashboardPageProps {
 export default function PermalinkDashboardPage({
   params
 }: PermalinkDashboardPageProps) {
-  console.log('[DASHBOARD_PAGE_OPTIMIZED] Rendering dashboard with cached auth data')
-
   // No server-side auth calls needed - data comes from AuthDataProvider
   // All authentication and business validation is handled by parent layout
 

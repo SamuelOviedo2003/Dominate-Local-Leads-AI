@@ -7,8 +7,6 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    logger.debug('Recent leads API call started')
-
     // Extract query parameters
     const { searchParams } = new URL(request.url)
     const businessIdParam = searchParams.get('businessId')
@@ -20,8 +18,6 @@ export async function GET(request: NextRequest) {
     }
 
     const { user, supabase, businessId: requestedBusinessId } = authResult
-
-    logger.debug('Recent leads query params', { businessId: businessIdParam, userId: user.id })
 
     // Fetch recent leads with call windows - all leads for the business, ordered by creation date
     const { data: leads, error } = await supabase
@@ -57,11 +53,6 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    logger.debug('Recent leads fetched successfully', {
-      count: leads?.length || 0,
-      businessId: businessIdParam
-    })
 
     // Helper function to format datetime with hours and minutes
     const formatDateTimeWithTime = (dateString: string): string => {

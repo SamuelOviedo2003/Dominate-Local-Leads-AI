@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 
 /**
  * Request-scoped singleton Supabase client
@@ -8,8 +9,6 @@ import { cache } from 'react'
  * Dramatically reduces cookie.getAll() calls and client creation overhead
  */
 export const getSupabaseClient = cache(() => {
-  console.log('[SUPABASE_OPTIMIZED] Creating single request-scoped Supabase client')
-
   const cookieStore = cookies()
 
   return createServerClient(
@@ -18,19 +17,15 @@ export const getSupabaseClient = cache(() => {
     {
       cookies: {
         getAll() {
-          const allCookies = cookieStore.getAll()
-          console.log('[SUPABASE_OPTIMIZED] Cookie access - returning', allCookies.length, 'cookies')
-          return allCookies
+          return cookieStore.getAll()
         },
         setAll(cookiesToSet) {
-          console.log('[SUPABASE_OPTIMIZED] setAll() called with', cookiesToSet.length, 'cookies')
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
               cookieStore.set(name, value, options)
             })
           } catch (error) {
             // Server Components can't modify cookies - this is expected and can be ignored
-            console.log('[SUPABASE_OPTIMIZED] Cookie setAll warning (expected in Server Components):', error)
           }
         },
       },
@@ -43,7 +38,6 @@ export const getSupabaseClient = cache(() => {
  * @deprecated Use getSupabaseClient() instead for better performance
  */
 export function createCookieClient() {
-  console.warn('[SUPABASE_OPTIMIZED] createCookieClient() is deprecated, use getSupabaseClient() for better performance')
   return getSupabaseClient()
 }
 
@@ -53,15 +47,12 @@ export function createCookieClient() {
  * Eliminates redundant database calls across components
  */
 export const getRequestAuthUser = cache(async () => {
-  console.log('[SUPABASE_OPTIMIZED] Fetching authenticated user data (cached per request)')
-
   const supabase = getSupabaseClient()
 
   // Get user from Supabase using cookies
   const { data: { user }, error } = await supabase.auth.getUser()
 
   if (error || !user) {
-    console.log('[SUPABASE_OPTIMIZED] No authenticated user found')
     return null
   }
 
@@ -73,7 +64,6 @@ export const getRequestAuthUser = cache(async () => {
     .single()
 
   if (profileError || !profile) {
-    console.log('[SUPABASE_OPTIMIZED] Profile not found for user:', user.id)
     return null
   }
 
@@ -87,12 +77,6 @@ export const getRequestAuthUser = cache(async () => {
     accessibleBusinesses,
     currentBusinessId: profile.business_id?.toString() ?? undefined
   }
-
-  console.log('[SUPABASE_OPTIMIZED] Cached auth user data:', {
-    userId: authUser.id,
-    email: authUser.email,
-    businessCount: authUser.accessibleBusinesses?.length || 0
-  })
 
   return authUser
 })
@@ -158,8 +142,6 @@ async function getUserAccessibleBusinesses(
  * Caches business lookups to prevent redundant database calls
  */
 export const getBusinessByPermalinkCached = cache(async (permalink: string) => {
-  console.log('[SUPABASE_OPTIMIZED] Resolving business for permalink (cached):', permalink)
-
   const supabase = getSupabaseClient()
 
   const { data: business, error } = await supabase
@@ -169,10 +151,8 @@ export const getBusinessByPermalinkCached = cache(async (permalink: string) => {
     .single()
 
   if (error || !business) {
-    console.log('[SUPABASE_OPTIMIZED] Business not found for permalink:', permalink)
     return null
   }
 
-  console.log('[SUPABASE_OPTIMIZED] Business resolved:', business.company_name)
   return business
 })

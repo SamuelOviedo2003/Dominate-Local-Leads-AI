@@ -10,8 +10,6 @@ import { DashboardClient } from '@/app/(dashboard)/dashboard/client'
 export function DashboardClientOptimized() {
   const { user } = useAuthData()
 
-  console.log('[DASHBOARD_CLIENT_OPTIMIZED] Using cached auth data from context')
-
   // Validate user data (should always be available due to parent layout validation)
   if (!user || !user.accessibleBusinesses || user.accessibleBusinesses.length === 0) {
     return (

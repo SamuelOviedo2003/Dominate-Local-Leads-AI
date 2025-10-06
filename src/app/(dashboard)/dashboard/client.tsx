@@ -56,14 +56,14 @@ export function DashboardClient({ userRole, accessibleBusinesses }: DashboardCli
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header - Always render immediately for better perceived performance */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           </div>
-          
+
           {/* Time Period Filter */}
-          <TimePeriodFilter 
+          <TimePeriodFilter
             selectedPeriod={timePeriod}
             onPeriodChange={setTimePeriod}
           />
@@ -86,7 +86,7 @@ export function DashboardClient({ userRole, accessibleBusinesses }: DashboardCli
           </div>
         )}
 
-        {/* Platform Spend Cards */}
+        {/* Platform Spend Cards - Progressive loading with optimized skeleton */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {[...Array(2)].map((_, i) => (

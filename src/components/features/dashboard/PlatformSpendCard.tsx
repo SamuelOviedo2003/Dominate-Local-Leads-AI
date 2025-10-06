@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { EnhancedDashboardMetrics, TimePeriod } from '@/types/leads'
 
 interface PlatformSpendCardProps {
@@ -7,20 +8,16 @@ interface PlatformSpendCardProps {
   timePeriod: TimePeriod
 }
 
-export function PlatformSpendCard({ platformSpendMetrics, timePeriod }: PlatformSpendCardProps) {
-  const hasPlatformBreakdown = platformSpendMetrics.platformSpends &&
-    platformSpendMetrics.platformSpends.length > 0
+// Memoize formatCurrency outside component to prevent recreation
+const formatCurrency = (amount: number): string => {
+  return `$${amount.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })}`
+}
 
-  // Format currency value without cents for cleaner display
-  const formatCurrency = (amount: number): string => {
-    return `$${amount.toLocaleString('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    })}`
-  }
-
-  // Platform icon components - styled like metrics cards
-  const getPlatformIcon = (platformName: string) => {
+// Memoize platform icon function outside component
+const getPlatformIcon = (platformName: string) => {
     const platform = platformName.toLowerCase()
 
     if (platform.includes('facebook') || platform.includes('meta')) {
@@ -42,13 +39,19 @@ export function PlatformSpendCard({ platformSpendMetrics, timePeriod }: Platform
       )
     }
 
-    // Default icon for other platforms
-    return (
-      <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-      </svg>
-    )
-  }
+  // Default icon for other platforms
+  return (
+    <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  )
+}
+
+export function PlatformSpendCard({ platformSpendMetrics, timePeriod }: PlatformSpendCardProps) {
+  const hasPlatformBreakdown = useMemo(
+    () => platformSpendMetrics.platformSpends && platformSpendMetrics.platformSpends.length > 0,
+    [platformSpendMetrics.platformSpends]
+  )
 
   if (!hasPlatformBreakdown) {
     return (

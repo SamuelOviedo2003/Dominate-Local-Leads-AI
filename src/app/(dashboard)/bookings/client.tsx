@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useBookingsData } from '@/hooks/useBookingsData'
 import { RecentLeadsTable } from '@/components/features/leads/RecentLeadsTable'
 import { BookingsMetrics } from '@/components/features/metrics'
@@ -30,8 +31,11 @@ export function BookingsClient({ businessId, userRole }: BookingsClientProps) {
     businessId: effectiveBusinessId
   })
 
-  // Coordinated loading state to prevent flash of empty content
-  const isLoadingCoordinated = businessContextLoading || isLoading || !effectiveBusinessId
+  // Memoize coordinated loading state
+  const isLoadingCoordinated = useMemo(
+    () => businessContextLoading || isLoading || !effectiveBusinessId,
+    [businessContextLoading, isLoading, effectiveBusinessId]
+  )
 
   return (
     <div className="p-6">

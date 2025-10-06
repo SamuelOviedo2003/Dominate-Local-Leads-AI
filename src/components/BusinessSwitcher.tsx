@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { ChevronDown, Building2, Check } from 'lucide-react'
 import { BusinessSwitcherData } from '@/types/auth'
 import ImageWithFallback from './ImageWithFallback'
 import { useBusinessContext, useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useDynamicTheme } from '@/contexts/DynamicThemeContext'
 import { ExtractedColors, invalidateColorCache } from '@/lib/color-extraction'
+import { useClickOutside } from '@/hooks/useClickOutside'
 
 interface BusinessSwitcherProps {
   isMobile?: boolean
@@ -25,19 +26,8 @@ export default function BusinessSwitcher({
   const currentBusiness = useCurrentBusiness()
   const { extractColors } = useDynamicTheme()
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
+  // Use shared click-outside hook
+  useClickOutside(dropdownRef, useCallback(() => setIsOpen(false), []))
 
   // currentBusiness is now provided by useCurrentBusiness() hook
 

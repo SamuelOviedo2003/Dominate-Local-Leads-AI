@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Menu, X, ChevronDown } from 'lucide-react'
@@ -10,12 +10,11 @@ import UserDropdown from './UserDropdown'
 import BusinessSwitcher from './BusinessSwitcher'
 import { useDynamicTheme, useThemeStyles } from '@/contexts/DynamicThemeContext'
 import { ExtractedColors } from '@/lib/color-extraction'
-import { logNavigation, logColorExtraction } from '@/lib/logger'
-import { 
-  generatePermalinkNavigation, 
-  extractPermalinkFromPath, 
-  isPermalinkPath, 
-  extractCurrentSection 
+import {
+  generatePermalinkNavigation,
+  extractPermalinkFromPath,
+  isPermalinkPath,
+  extractCurrentSection
 } from '@/lib/permalink-utils'
 
 interface UniversalHeaderProps {
@@ -49,16 +48,19 @@ export default function UniversalHeader({
   const { state: themeState, extractColors } = useDynamicTheme()
   const themeStyles = useThemeStyles()
 
-  // Detect if we're in a permalink-based route and extract current context
-  const isUsingPermalink = isPermalinkPath(pathname)
-  const currentPermalink = extractPermalinkFromPath(pathname)
-  const currentSection = extractCurrentSection(pathname)
-  
-  // Generate navigation items based on current context
+  // Memoize permalink detection to prevent recalculation on every render
+  const isUsingPermalink = useMemo(() => isPermalinkPath(pathname), [pathname])
+  const currentPermalink = useMemo(() => extractPermalinkFromPath(pathname), [pathname])
+  const currentSection = useMemo(() => extractCurrentSection(pathname), [pathname])
+
+  // Memoize navigation items generation
   const isSuperAdmin = user?.profile?.role === 0
-  const navigationItems = isUsingPermalink && currentPermalink
-    ? generatePermalinkNavigation(currentPermalink, isSuperAdmin)
-    : getLegacyNavigationItemsForUser(isSuperAdmin)
+  const navigationItems = useMemo(
+    () => isUsingPermalink && currentPermalink
+      ? generatePermalinkNavigation(currentPermalink, isSuperAdmin)
+      : getLegacyNavigationItemsForUser(isSuperAdmin),
+    [isUsingPermalink, currentPermalink, isSuperAdmin]
+  )
 
   // Close mobile menu when pathname changes
   useEffect(() => {
@@ -86,16 +88,26 @@ export default function UniversalHeader({
     }
   }, [isMobileMenuOpen])
 
-  const isActiveLink = (href: string) => {
-    // For permalink-aware links, check if we're on the correct section
+
+  const hasMultipleBusinesses = availableBusinesses.length > 1
+
+  // Memoize navigation handler to prevent recreation on every render
+  const handleNavigation = useCallback((href: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    router.push(href)
+  }, [router])
+
+  // Memoize active link checker
+  const isActiveLinkMemo = useCallback((href: string) => {
     if (isUsingPermalink && currentPermalink) {
-      // Extract section from href (e.g., '/houston-custom-renovations/dashboard' -> 'dashboard')
       const hrefParts = href.split('/')
       const hrefSection = hrefParts[hrefParts.length - 1] || 'dashboard'
       return currentSection === hrefSection
     }
-    
-    // Legacy behavior for non-permalink routes
+
     if (href === '/dashboard') {
       return pathname === '/dashboard' || pathname === '/'
     }
@@ -103,54 +115,24 @@ export default function UniversalHeader({
       return pathname === '/new-leads'
     }
     return pathname.startsWith(href)
-  }
+  }, [isUsingPermalink, currentPermalink, currentSection, pathname])
 
-  const hasMultipleBusinesses = availableBusinesses.length > 1
-
-  // Handle navigation with explicit routing to ensure navigation works
-  const handleNavigation = (href: string, event?: React.MouseEvent) => {
-    logNavigation('Button clicked', href, { from: pathname })
-    
-    // Prevent any default behavior
-    if (event) {
-      event.preventDefault()
-      event.stopPropagation()
-      logNavigation('Event prevented and stopped')
-    }
-    
-    logNavigation('Executing navigation', href)
-    
-    // Try multiple navigation methods for maximum compatibility
-    try {
-      // Method 1: Next.js router
-      router.push(href)
-    } catch (routerError) {
-      try {
-        // Method 2: Direct window navigation
-        window.location.href = href
-      } catch (windowError) {
-        // Method 3: Force page reload with new URL
-        window.location.replace(href)
-      }
-    }
-  }
-
-  // Initialize fallback color extraction when no accessible businesses
+  // Initialize fallback color extraction only once
   useEffect(() => {
     if (availableBusinesses.length === 0) {
       extractColors('/images/DominateLocalLeadsLogo.png', 'main-logo')
     }
-  }, [availableBusinesses.length]) // Removed extractColors to prevent infinite loop
+  }, [availableBusinesses.length, extractColors])
 
   // Handle color extraction from fallback main logo
-  const handleFallbackColorsExtracted = (colors: ExtractedColors) => {
+  const handleFallbackColorsExtracted = useCallback((colors: ExtractedColors) => {
     // Colors are automatically handled by the ImageWithFallback component
-  }
+  }, [])
 
-  // Generate dynamic header style
-  const headerStyle = {
+  // Memoize dynamic header style
+  const headerStyle = useMemo(() => ({
     background: `linear-gradient(to right, ${themeState.colors.primaryDark}e6, ${themeState.colors.accent}e6, ${themeState.colors.primary}e6)`
-  }
+  }), [themeState.colors.primaryDark, themeState.colors.accent, themeState.colors.primary])
 
   return (
     <>
@@ -197,7 +179,7 @@ export default function UniversalHeader({
                   key={item.name}
                   onClick={(e) => handleNavigation(item.href, e)}
                   className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 backdrop-blur-sm touch-target cursor-pointer inline-block relative z-10 ${
-                    isActiveLink(item.href)
+                    isActiveLinkMemo(item.href)
                       ? 'bg-white/25 text-white shadow-lg border border-white/40 scale-105'
                       : 'text-white/85 hover:text-white hover:bg-white/15 hover:border-white/30 hover:scale-105 border border-transparent'
                   }`}
@@ -275,7 +257,7 @@ export default function UniversalHeader({
                     setIsMobileMenuOpen(false)
                   }}
                   className={`block w-full text-left px-5 py-4 rounded-xl text-base font-semibold transition-all duration-300 backdrop-blur-sm touch-target cursor-pointer relative z-10 ${
-                    isActiveLink(item.href)
+                    isActiveLinkMemo(item.href)
                       ? 'bg-white/25 text-white shadow-lg border border-white/40'
                       : 'text-white/85 hover:text-white hover:bg-white/15 hover:border-white/30 border border-transparent'
                   }`}

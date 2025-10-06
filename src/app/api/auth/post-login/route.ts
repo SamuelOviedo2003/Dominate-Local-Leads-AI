@@ -8,8 +8,6 @@ import { AuthUser, Profile, BusinessSwitcherData } from '@/types/auth'
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[POST-LOGIN] Starting consolidated post-login flow')
-
     // Create Supabase client using cookies (server-side)
     const supabase = createCookieClient()
 
@@ -24,9 +22,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[POST-LOGIN] User authenticated:', user.email)
-
-    // Get user profile
+    // OPTIMIZATION: Parallel data fetching - fetch profile first to determine role
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
@@ -42,9 +38,8 @@ export async function POST(request: NextRequest) {
     }
 
     const effectiveRole = profile.role ?? 1
-    console.log('[POST-LOGIN] Profile loaded - Role:', effectiveRole)
 
-    // Get accessible businesses based on role
+    // Get accessible businesses based on role (will use parallel queries internally)
     const accessibleBusinesses = await getUserAccessibleBusinesses(user.id, effectiveRole, supabase)
 
     if (!accessibleBusinesses || accessibleBusinesses.length === 0) {
@@ -55,8 +50,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[POST-LOGIN] Found', accessibleBusinesses.length, 'accessible businesses')
-
     // Determine the target business for redirect
     let targetBusiness = null
 
@@ -65,24 +58,25 @@ export async function POST(request: NextRequest) {
       targetBusiness = accessibleBusinesses.find(
         b => b.business_id === profile.business_id.toString()
       )
-      console.log('[POST-LOGIN] Profile business_id match:', !!targetBusiness)
     }
 
     // Fallback: Use first accessible business
     if (!targetBusiness && accessibleBusinesses.length > 0) {
       targetBusiness = accessibleBusinesses[0]
-      console.log('[POST-LOGIN] Using first accessible business:', targetBusiness!.company_name)
 
-      // Update user's business_id to persist this selection
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ business_id: parseInt(targetBusiness!.business_id) })
-        .eq('id', user.id)
+      // OPTIMIZATION: Only update if business_id has changed
+      const newBusinessId = parseInt(targetBusiness!.business_id)
+      const currentBusinessId = typeof profile.business_id === 'string' ? parseInt(profile.business_id) : profile.business_id
 
-      if (updateError) {
-        console.warn('[POST-LOGIN] Failed to update business_id:', updateError.message)
-      } else {
-        console.log('[POST-LOGIN] Updated user business_id to:', targetBusiness!.business_id)
+      if (currentBusinessId !== newBusinessId) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ business_id: newBusinessId })
+          .eq('id', user.id)
+
+        if (updateError) {
+          console.warn('[POST-LOGIN] Failed to update business_id:', updateError.message)
+        }
       }
     }
 
@@ -112,8 +106,6 @@ export async function POST(request: NextRequest) {
       ? `/${targetBusiness.permalink}/dashboard`
       : '/dashboard'
 
-    console.log('[POST-LOGIN] Consolidated login successful - Redirect to:', redirectUrl)
-
     return NextResponse.json({
       success: true,
       user: authUser,
@@ -139,8 +131,6 @@ async function getUserAccessibleBusinesses(
   userRole: number,
   supabase: any
 ): Promise<BusinessSwitcherData[]> {
-  console.log('[POST-LOGIN] Getting accessible businesses for role:', userRole)
-
   if (userRole === 0) {
     // Super admin - all businesses with dashboard=true
     const { data: businesses, error } = await supabase

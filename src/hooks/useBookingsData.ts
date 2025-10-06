@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BookingsMetrics, LeadWithClient, ApiResponse } from '@/types/leads'
 import { authGet } from '@/lib/auth-fetch'
 
@@ -39,7 +39,8 @@ export function useBookingsData({ businessId }: UseBookingsDataProps): UseBookin
   const [metricsError, setMetricsError] = useState<string | null>(null)
   const [bookingsLeadsError, setBookingsLeadsError] = useState<string | null>(null)
 
-  const fetchMetrics = async () => {
+  // Memoize fetchMetrics with useCallback to prevent recreation on every render
+  const fetchMetrics = useCallback(async () => {
     if (!businessId) return
 
     setIsMetricsLoading(true)
@@ -60,13 +61,13 @@ export function useBookingsData({ businessId }: UseBookingsDataProps): UseBookin
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch metrics'
       setMetricsError(errorMessage)
-      // Error fetching metrics
     } finally {
       setIsMetricsLoading(false)
     }
-  }
+  }, [businessId])
 
-  const fetchBookingsLeads = async () => {
+  // Memoize fetchBookingsLeads with useCallback to prevent recreation on every render
+  const fetchBookingsLeads = useCallback(async () => {
     if (!businessId) return
 
     setIsBookingsLeadsLoading(true)
@@ -87,13 +88,13 @@ export function useBookingsData({ businessId }: UseBookingsDataProps): UseBookin
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch bookings leads'
       setBookingsLeadsError(errorMessage)
-      // Error fetching bookings leads
     } finally {
       setIsBookingsLeadsLoading(false)
     }
-  }
+  }, [businessId])
 
-  const fetchData = async () => {
+  // Memoize fetchData with useCallback to prevent recreation on every render
+  const fetchData = useCallback(async () => {
     if (!businessId) return
 
     // Clear any previous global error
@@ -107,7 +108,7 @@ export function useBookingsData({ businessId }: UseBookingsDataProps): UseBookin
 
     // Wait for all to complete (they handle their own errors)
     await Promise.allSettled(promises)
-  }
+  }, [businessId, fetchMetrics, fetchBookingsLeads])
 
   // Update overall loading state based on individual loading states
   useEffect(() => {
@@ -129,7 +130,7 @@ export function useBookingsData({ businessId }: UseBookingsDataProps): UseBookin
 
   useEffect(() => {
     fetchData()
-  }, [businessId])
+  }, [fetchData])
 
   return {
     metrics,

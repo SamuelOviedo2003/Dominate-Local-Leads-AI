@@ -88,13 +88,12 @@ export async function GET(request: NextRequest) {
     // TypeScript safety: startDate is guaranteed to be non-null after the check above
     const validStartDate: string = startDate
 
-    // Fetch ad spends data aggregated by platform
+    // Fetch ad spends data - using standard query for reliability
     const { data: platformSpends, error } = await supabase
       .from('ad_spends')
       .select('platform, spend')
       .gte('created_at', validStartDate)
       .eq('business_id', requestedBusinessId)
-      .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Database error fetching platform spends:', error)
@@ -105,12 +104,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (!platformSpends || platformSpends.length === 0) {
-      // Return empty data structure when no spends found
       const currentDate = new Date().toISOString().split('T')[0] as string
       const days = calculateDaysDifference(validStartDate, currentDate)
-      
+
       const emptyMetrics: EnhancedDashboardMetrics = {
-        platformSpend: 0, // Legacy field
+        platformSpend: 0,
         totalSpend: 0,
         platformSpends: [],
         timeRange: {
@@ -133,7 +131,7 @@ export async function GET(request: NextRequest) {
     platformSpends.forEach((spend) => {
       const platform = normalizePlatformName(spend.platform || 'Unknown Platform')
       const amount = parseFloat(spend.spend || '0')
-      
+
       platformAggregation.set(platform, (platformAggregation.get(platform) || 0) + amount)
       totalSpend += amount
     })
@@ -142,7 +140,7 @@ export async function GET(request: NextRequest) {
     const platformSpendsArray: PlatformSpend[] = Array.from(platformAggregation.entries())
       .map(([platform, spend]) => ({
         platform,
-        spend: Math.round(spend * 100) / 100 // Round to 2 decimal places
+        spend: Math.round(spend * 100) / 100
       }))
       .sort((a, b) => b.spend - a.spend)
 

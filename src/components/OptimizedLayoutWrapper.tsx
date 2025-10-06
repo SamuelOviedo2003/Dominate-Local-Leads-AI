@@ -18,8 +18,6 @@ interface OptimizedLayoutWrapperProps {
 export default function OptimizedLayoutWrapper({ children }: OptimizedLayoutWrapperProps) {
   const { user, business } = useAuthData()
 
-  console.log('[OPTIMIZED_LAYOUT] Using cached auth data - no API calls needed')
-
   return (
     <DynamicThemeProvider>
       <BusinessContextProvider

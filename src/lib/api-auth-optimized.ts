@@ -11,8 +11,6 @@ export async function authenticateApiRequest(request: NextRequest): Promise<{
   supabase: ReturnType<typeof getSupabaseClient>
 }> {
   try {
-    console.log('[API_AUTH_OPTIMIZED] Using cached authentication data')
-
     // Get user from request-scoped cache (same instance used by layout)
     const user = await getRequestAuthUser()
 

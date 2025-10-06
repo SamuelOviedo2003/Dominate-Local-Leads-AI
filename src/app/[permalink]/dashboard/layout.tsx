@@ -15,8 +15,6 @@ export default function PermalinkDashboardLayout({
   children,
   params
 }: PermalinkDashboardLayoutProps) {
-  console.log('[DASHBOARD_LAYOUT_OPTIMIZED] Rendering with cached data from parent context')
-
   return (
     <OptimizedLayoutWrapper>
       {children}
