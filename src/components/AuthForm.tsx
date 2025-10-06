@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { InlineLoading } from '@/components/LoadingSystem'
 import { createClient } from '@/lib/supabase/client'
 
-type AuthMode = 'login' | 'signup'
+type AuthMode = 'login' | 'signup' | 'forgot-password'
 
 export default function AuthForm() {
   const searchParams = useSearchParams()
@@ -125,11 +125,65 @@ export default function AuthForm() {
     }
   }
 
+  const handleForgotPassword = async (formData: FormData) => {
+    const email = formData.get('email') as string
+
+    if (!email || !email.includes('@') || email.length < 5) {
+      setAuthError('Please enter a valid email address')
+      return
+    }
+
+    setIsLoading(true)
+    setAuthError(null)
+
+    try {
+      const supabase = createClient()
+
+      // Detect current environment URL - use actual window.location.origin
+      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : ''
+      const isLocalhost = currentOrigin.includes('localhost') || currentOrigin.includes('127.0.0.1')
+
+      // Use current origin if localhost, otherwise use production URL
+      const siteUrl = isLocalhost
+        ? currentOrigin // Use actual localhost URL with correct port
+        : (process.env.NEXT_PUBLIC_SITE_URL || 'https://dominatelocalleadsai.sliplane.app')
+
+      console.log('[FORGOT PASSWORD] Environment:', {
+        isLocalhost,
+        currentOrigin,
+        siteUrl,
+        redirectTo: `${siteUrl}/auth/reset-password`
+      })
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${siteUrl}/auth/reset-password`
+      })
+
+      if (error) {
+        console.error('[FORGOT PASSWORD] Error:', error)
+        // Show neutral message for security
+        router.push('/login?success=If an account with that email exists, you will receive a password reset link&mode=login')
+        return
+      }
+
+      console.log('[FORGOT PASSWORD] Success - Email sent to:', email)
+      // Success - show neutral message
+      router.push('/login?success=If an account with that email exists, you will receive a password reset link&mode=login')
+    } catch (resetError) {
+      console.error('[FORGOT PASSWORD] Unexpected error:', resetError)
+      setAuthError('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleSubmit = async (formData: FormData) => {
     if (authMode === 'login') {
       await handleClientLogin(formData)
     } else if (authMode === 'signup') {
       await handleClientSignup(formData)
+    } else if (authMode === 'forgot-password') {
+      await handleForgotPassword(formData)
     }
   }
 
@@ -153,6 +207,15 @@ export default function AuthForm() {
     setShowPassword(false)
     setShowConfirmPassword(false)
     setFocusedField(null)
+    setAuthError(null)
+  }
+
+  const switchToForgotPassword = () => {
+    setAuthMode('forgot-password')
+    setShowPassword(false)
+    setShowConfirmPassword(false)
+    setFocusedField(null)
+    setAuthError(null)
   }
 
   return (
@@ -160,13 +223,14 @@ export default function AuthForm() {
       {/* Header Section */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-white mb-4 animate-slide-up">
-          {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
+          {authMode === 'login' && 'Welcome Back'}
+          {authMode === 'signup' && 'Create Account'}
+          {authMode === 'forgot-password' && 'Reset Password'}
         </h1>
         <p className="text-white/80 animate-fade-in">
-          {authMode === 'login' 
-            ? 'Sign in to your account to continue'
-            : 'Join us to start dominating local leads'
-          }
+          {authMode === 'login' && 'Sign in to your account to continue'}
+          {authMode === 'signup' && 'Join us to start dominating local leads'}
+          {authMode === 'forgot-password' && 'Enter your email address and we\'ll send you a link to reset your password'}
         </p>
       </div>
 
@@ -280,63 +344,65 @@ export default function AuthForm() {
             </div>
           </div>
 
-          {/* Password Field */}
-          <div className="relative group">
-            <div className="relative">
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                required
-                disabled={isLoading}
-                onFocus={() => setFocusedField('password')}
-                onBlur={() => setFocusedField(null)}
-                className={`peer w-full px-4 py-3 pl-11 pr-11 bg-white/10 border border-white/20 rounded-xl text-white placeholder-transparent 
-                  focus:outline-none focus:ring-2 focus:ring-brand-orange-400/50 focus:border-brand-orange-400/50 focus:bg-white/15
-                  backdrop-blur-sm transition-all duration-300 transform
-                  ${focusedField === 'password' ? 'scale-[1.02] shadow-lg shadow-brand-orange-500/20' : ''}
-                  ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
-                  disabled:opacity-50 disabled:cursor-not-allowed`}
-                placeholder="Password"
-              />
-              <label 
-                htmlFor="password" 
-                className={`absolute left-11 top-3 text-white/60 text-sm transition-all duration-300 pointer-events-none
-                  peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm peer-placeholder-shown:text-white/60
-                  peer-focus:-top-2 peer-focus:left-3 peer-focus:text-xs peer-focus:text-brand-orange-400
-                  peer-focus:bg-brand-slate-800/80 peer-focus:px-2 peer-focus:rounded
-                  peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 
-                  peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-white/90
-                  peer-[:not(:placeholder-shown)]:bg-brand-slate-800/80 peer-[:not(:placeholder-shown)]:px-2 
-                  peer-[:not(:placeholder-shown)]:rounded`}
-              >
-                Password
-              </label>
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className={`w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-brand-orange-400' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+          {/* Password Field - Hidden for forgot password mode */}
+          {authMode !== 'forgot-password' && (
+            <div className="relative group">
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  disabled={isLoading}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField(null)}
+                  className={`peer w-full px-4 py-3 pl-11 pr-11 bg-white/10 border border-white/20 rounded-xl text-white placeholder-transparent
+                    focus:outline-none focus:ring-2 focus:ring-brand-orange-400/50 focus:border-brand-orange-400/50 focus:bg-white/15
+                    backdrop-blur-sm transition-all duration-300 transform
+                    ${focusedField === 'password' ? 'scale-[1.02] shadow-lg shadow-brand-orange-500/20' : ''}
+                    ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/15'}
+                    disabled:opacity-50 disabled:cursor-not-allowed`}
+                  placeholder="Password"
+                />
+                <label
+                  htmlFor="password"
+                  className={`absolute left-11 top-3 text-white/60 text-sm transition-all duration-300 pointer-events-none
+                    peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm peer-placeholder-shown:text-white/60
+                    peer-focus:-top-2 peer-focus:left-3 peer-focus:text-xs peer-focus:text-brand-orange-400
+                    peer-focus:bg-brand-slate-800/80 peer-focus:px-2 peer-focus:rounded
+                    peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3
+                    peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:text-white/90
+                    peer-[:not(:placeholder-shown)]:bg-brand-slate-800/80 peer-[:not(:placeholder-shown)]:px-2
+                    peer-[:not(:placeholder-shown)]:rounded`}
+                >
+                  Password
+                </label>
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className={`w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-brand-orange-400' : 'text-white/60'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  disabled={isLoading}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/60 hover:text-white transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed z-10"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={togglePasswordVisibility}
-                disabled={isLoading}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/60 hover:text-white transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed z-10"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
-              </button>
             </div>
-          </div>
+          )}
 
           {/* Confirm Password Field - Only for Signup */}
           {authMode === 'signup' && (
@@ -421,14 +487,15 @@ export default function AuthForm() {
           <div className="absolute inset-0 -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
           
           <span className={`relative z-10 flex items-center justify-center ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
-            {authMode === 'login' ? (
+            {authMode === 'login' && (
               <>
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                 </svg>
                 Sign In to Continue
               </>
-            ) : (
+            )}
+            {authMode === 'signup' && (
               <>
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -436,25 +503,35 @@ export default function AuthForm() {
                 Create Account
               </>
             )}
+            {authMode === 'forgot-password' && (
+              <>
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Send Reset Link
+              </>
+            )}
           </span>
         </button>
 
         {/* Mode Switch and Additional Links */}
         <div className="text-center pt-4 space-y-3">
-          {/* Forgot Password Link - Temporarily disabled */}
-          {/* {authMode === 'login' && (
+          {/* Forgot Password Link - Only show in login mode */}
+          {authMode === 'login' && (
             <div>
-              <Link
-                href="/forgot-password"
-                className="text-brand-orange-400 hover:text-brand-orange-300 font-medium transition-colors duration-300 underline decoration-transparent hover:decoration-current text-sm"
+              <button
+                type="button"
+                onClick={switchToForgotPassword}
+                disabled={isLoading}
+                className="text-brand-orange-400 hover:text-brand-orange-300 font-medium transition-colors duration-300 underline decoration-transparent hover:decoration-current text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Forgot your password?
-              </Link>
+              </button>
             </div>
-          )} */}
+          )}
 
           {/* Mode Switch */}
-          {authMode === 'login' ? (
+          {authMode === 'login' && (
             <p className="text-white/70 text-sm">
               Don't have an account?{' '}
               <button
@@ -466,9 +543,25 @@ export default function AuthForm() {
                 Create Account
               </button>
             </p>
-          ) : (
+          )}
+
+          {authMode === 'signup' && (
             <p className="text-white/70 text-sm">
               Already have an account?{' '}
+              <button
+                type="button"
+                onClick={switchToLogin}
+                disabled={isLoading}
+                className="text-brand-orange-400 hover:text-brand-orange-300 font-medium transition-colors duration-300 underline decoration-transparent hover:decoration-current disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Back to Sign In
+              </button>
+            </p>
+          )}
+
+          {authMode === 'forgot-password' && (
+            <p className="text-white/70 text-sm">
+              Remember your password?{' '}
               <button
                 type="button"
                 onClick={switchToLogin}
