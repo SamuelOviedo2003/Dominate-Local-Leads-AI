@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useIncomingCallsDataOptimized } from '@/hooks/useIncomingCallsDataOptimized'
 import { IncomingCallsTimePeriod, CallerTypeDistribution } from '@/types/leads'
 import { Phone, Users, Calendar } from 'lucide-react'
-import { ComponentLoading } from '@/components/LoadingSystem'
 import { HoverCallerTypePopup } from '@/components/HoverCallerTypePopup'
 import RecentCallsPopup from '@/components/RecentCallsPopup'
 import { useBusinessContext } from '@/contexts/BusinessContext'
@@ -15,42 +14,11 @@ interface IncomingCallsClientProps {
   userRole?: number | null
 }
 
-// Unified loading component
-function UnifiedLoadingState() {
+// Component loading spinner (consistent with other pages)
+function ComponentLoadingSpinner() {
   return (
-    <div className="p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Incoming Calls Analytics</h1>
-          </div>
-          <div className="mt-4 sm:mt-0">
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              {[
-                { value: '7', label: '7 days' },
-                { value: '15', label: '15 days' },
-                { value: '30', label: '30 days' },
-                { value: '60', label: '60 days' },
-                { value: '90', label: '90 days' }
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  disabled
-                  className="px-4 py-2 text-sm font-medium rounded-md bg-white text-indigo-600 shadow-sm opacity-50"
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Unified Loading Display */}
-        <div className="py-12">
-          <ComponentLoading message="Loading incoming calls analytics..." />
-        </div>
-      </div>
+    <div className="flex items-center justify-center py-8">
+      <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin-smooth" />
     </div>
   )
 }
@@ -96,9 +64,14 @@ interface SimpleBarChartProps {
   title: string
   onItemHover?: (item: {name: string, value: number}, event: React.MouseEvent) => void
   onItemLeave?: () => void
+  isLoading?: boolean
 }
 
-function SimpleBarChart({ data, title, onItemHover, onItemLeave }: SimpleBarChartProps) {
+function SimpleBarChart({ data, title, onItemHover, onItemLeave, isLoading = false }: SimpleBarChartProps) {
+  if (isLoading) {
+    return <ComponentLoadingSpinner />
+  }
+
   if (!data || data.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -137,7 +110,11 @@ function SimpleBarChart({ data, title, onItemHover, onItemLeave }: SimpleBarChar
 }
 
 // Recent calls table component
-function RecentCallsTable({ calls, onCallClick }: { calls: any[], onCallClick: (callId: string) => void }) {
+function RecentCallsTable({ calls, onCallClick, isLoading = false }: { calls: any[], onCallClick: (callId: string) => void, isLoading?: boolean }) {
+  if (isLoading) {
+    return <ComponentLoadingSpinner />
+  }
+
   if (!calls || calls.length === 0) {
     return <EmptyTableState tableName="Recent Calls" />
   }
@@ -199,7 +176,7 @@ function RecentCallsTable({ calls, onCallClick }: { calls: any[], onCallClick: (
 }
 
 export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingCallsClientProps) {
-  // Get the effective business ID from BusinessContext (like NewLeadsClient)
+  // Get the effective business ID from BusinessContext
   const { currentBusinessId, isLoading: businessContextLoading } = useBusinessContext()
   const effectiveBusinessId = currentBusinessId || ''
 
@@ -231,8 +208,9 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
     fetchSourceCallerTypes
   } = useIncomingCallsDataOptimized({ timePeriod, businessId: effectiveBusinessId })
 
-  // Coordinated loading states to prevent flash of empty content (like NewLeadsClient)
-  const isDataLoadingCoordinated = businessContextLoading || isLoading || !effectiveBusinessId
+  // Individual loading states for component-level loading
+  const isChartsLoading = businessContextLoading || isLoading || !effectiveBusinessId
+  const isTableLoading = businessContextLoading || isLoading || !effectiveBusinessId
 
   const handleTimePeriodChange = (newPeriod: string) => {
     const mappedPeriod = timePeriodMapping[newPeriod]
@@ -244,8 +222,8 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
   const handleSourceHover = async (item: {name: string, value: number}, event: React.MouseEvent) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const position = {
-      x: rect.right + 10, // Position to the right of the bar
-      y: rect.top + rect.height / 2 // Center vertically
+      x: rect.right + 10,
+      y: rect.top + rect.height / 2
     }
 
     setPopupState({
@@ -256,7 +234,6 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
       position
     })
 
-    // Fetch source-specific caller type data
     const data = await fetchSourceCallerTypes(item.name)
 
     setPopupState(prev => ({
@@ -276,7 +253,6 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
     })
   }
 
-  // Recent Calls Popup Handlers
   const handleCallClick = (callId: string) => {
     setSelectedCallId(callId)
   }
@@ -285,25 +261,9 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
     setSelectedCallId(null)
   }
 
-  // Show unified loading state while data is loading (coordinated like NewLeadsClient)
-  if (isDataLoadingCoordinated) {
-    return <UnifiedLoadingState />
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="max-w-7xl mx-auto">
-          <ErrorDisplay message={error} onRetry={refetch} />
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Incoming Calls Analytics</h1>
@@ -320,11 +280,12 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
                 <button
                   key={option.value}
                   onClick={() => handleTimePeriodChange(option.value)}
+                  disabled={isLoading}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                     timePeriod === option.value
                       ? 'bg-white text-indigo-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                  } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {option.label}
                 </button>
@@ -333,9 +294,13 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
           </div>
         </div>
 
-        {/* Charts Section */}
+        {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <ErrorDisplay message={error} onRetry={refetch} />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Source Distribution Chart with Hover Popup */}
           <div className="bg-white rounded-lg shadow-sm border p-6 relative">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Phone className="w-5 h-5 mr-2 text-indigo-600" />
@@ -346,10 +311,10 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
               title="Source Distribution"
               onItemHover={handleSourceHover}
               onItemLeave={handleSourceLeave}
+              isLoading={isChartsLoading}
             />
           </div>
 
-          {/* Caller Type Distribution Chart */}
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <Users className="w-5 h-5 mr-2 text-indigo-600" />
@@ -358,25 +323,30 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
             <SimpleBarChart
               data={callerTypeDistribution ? callerTypeDistribution.map(item => ({ name: item.caller_type, value: item.count })) : []}
               title="Caller Type Distribution"
+              isLoading={isChartsLoading}
             />
           </div>
         </div>
 
-        {/* Recent Calls Table */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
               <h3 className="text-lg font-semibold text-gray-900">Recent Calls</h3>
             </div>
-            <span className="text-sm text-gray-500">
-              Last {recentCalls?.length || 0} calls
-            </span>
+            {!isTableLoading && (
+              <span className="text-sm text-gray-500">
+                Last {recentCalls?.length || 0} calls
+              </span>
+            )}
           </div>
-          <RecentCallsTable calls={recentCalls || []} onCallClick={handleCallClick} />
+          <RecentCallsTable
+            calls={recentCalls || []}
+            onCallClick={handleCallClick}
+            isLoading={isTableLoading}
+          />
         </div>
 
-        {/* Hover Popup */}
         {popupState.show && (
           <HoverCallerTypePopup
             source={popupState.source}
@@ -387,7 +357,6 @@ export function IncomingCallsClientOptimized({ businessId, userRole }: IncomingC
           />
         )}
 
-        {/* Recent Calls Popup */}
         {selectedCallId && (
           <RecentCallsPopup
             callId={selectedCallId}

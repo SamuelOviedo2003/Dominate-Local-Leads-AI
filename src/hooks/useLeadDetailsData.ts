@@ -32,19 +32,19 @@ interface UseLeadDetailsDataReturn {
 
 export function useLeadDetailsData({ leadId, businessId }: UseLeadDetailsDataProps): UseLeadDetailsDataReturn {
   const [leadDetails, setLeadDetails] = useState<LeadDetails | null>(null)
-  
-  // Individual loading states
-  const [isLeadInfoLoading, setIsLeadInfoLoading] = useState(false)
-  const [isCallWindowsLoading, setIsCallWindowsLoading] = useState(false)
-  const [isCommunicationsLoading, setIsCommunicationsLoading] = useState(false)
-  
+
+  // Individual loading states - start as true to prevent empty state flicker
+  const [isLeadInfoLoading, setIsLeadInfoLoading] = useState(true)
+  const [isCallWindowsLoading, setIsCallWindowsLoading] = useState(true)
+  const [isCommunicationsLoading, setIsCommunicationsLoading] = useState(true)
+
   // Individual error states
   const [leadInfoError, setLeadInfoError] = useState<string | null>(null)
   const [callWindowsError, setCallWindowsError] = useState<string | null>(null)
   const [communicationsError, setCommunicationsError] = useState<string | null>(null)
-  
-  // Overall states
-  const [isLoading, setIsLoading] = useState(false)
+
+  // Overall states - start as true to prevent empty state flicker
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Fetch all data

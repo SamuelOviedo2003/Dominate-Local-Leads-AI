@@ -33,7 +33,7 @@ export function useIncomingCallsData({ timePeriod, businessId }: UseIncomingCall
   const [callerTypeDistribution, setCallerTypeDistribution] = useState<CallerTypeDistribution[] | null>(null)
   const [sankeyData, setSankeyData] = useState<SankeyData[] | null>(null)
   const [recentCalls, setRecentCalls] = useState<IncomingCall[] | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // Start as true to prevent empty state flicker
   const [error, setError] = useState<string | null>(null)
 
   const getStartDate = (period: IncomingCallsTimePeriod): string => {

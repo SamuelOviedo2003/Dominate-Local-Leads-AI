@@ -24,7 +24,7 @@ interface UseLeadDetailsDataOptimizedReturn {
 
 export function useLeadDetailsDataOptimized({ leadId, businessId }: UseLeadDetailsDataOptimizedProps): UseLeadDetailsDataOptimizedReturn {
   const [leadDetails, setLeadDetails] = useState<LeadDetails | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true) // Start as true to prevent empty state flicker
   const [error, setError] = useState<string | null>(null)
 
   // Optimized fetch function with unified loading state

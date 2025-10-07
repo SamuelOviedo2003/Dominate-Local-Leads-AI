@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuthData } from '@/contexts/AuthDataContext'
-import PropertyDetailsPageOptimized from '@/app/[permalink]/property-details/[leadId]/client-optimized'
+import PropertyDetailsPageOptimized from '@/app/[business_id]/[permalink]/property-details/[leadId]/client-optimized'
 
 /**
  * Optimized wrapper for PropertyDetailsPageOptimized that uses cached authentication data

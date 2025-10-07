@@ -11,8 +11,11 @@ import BusinessSwitcher from './BusinessSwitcher'
 import { useDynamicTheme, useThemeStyles } from '@/contexts/DynamicThemeContext'
 import { ExtractedColors } from '@/lib/color-extraction'
 import {
+  generateBusinessNavigation,
   generatePermalinkNavigation,
+  extractBusinessFromPath,
   extractPermalinkFromPath,
+  isBusinessPath,
   isPermalinkPath,
   extractCurrentSection
 } from '@/lib/permalink-utils'
@@ -48,18 +51,18 @@ export default function UniversalHeader({
   const { state: themeState, extractColors } = useDynamicTheme()
   const themeStyles = useThemeStyles()
 
-  // Memoize permalink detection to prevent recalculation on every render
-  const isUsingPermalink = useMemo(() => isPermalinkPath(pathname), [pathname])
-  const currentPermalink = useMemo(() => extractPermalinkFromPath(pathname), [pathname])
+  // NEW: Memoize business detection to prevent recalculation on every render
+  const isUsingBusiness = useMemo(() => isBusinessPath(pathname), [pathname])
+  const { businessId, permalink: currentPermalink } = useMemo(() => extractBusinessFromPath(pathname), [pathname])
   const currentSection = useMemo(() => extractCurrentSection(pathname), [pathname])
 
   // Memoize navigation items generation
   const isSuperAdmin = user?.profile?.role === 0
   const navigationItems = useMemo(
-    () => isUsingPermalink && currentPermalink
-      ? generatePermalinkNavigation(currentPermalink, isSuperAdmin)
+    () => isUsingBusiness && businessId && currentPermalink
+      ? generateBusinessNavigation(businessId, currentPermalink, isSuperAdmin)
       : getLegacyNavigationItemsForUser(isSuperAdmin),
-    [isUsingPermalink, currentPermalink, isSuperAdmin]
+    [isUsingBusiness, businessId, currentPermalink, isSuperAdmin]
   )
 
   // Close mobile menu when pathname changes
@@ -102,7 +105,7 @@ export default function UniversalHeader({
 
   // Memoize active link checker
   const isActiveLinkMemo = useCallback((href: string) => {
-    if (isUsingPermalink && currentPermalink) {
+    if (isUsingBusiness && currentPermalink) {
       const hrefParts = href.split('/')
       const hrefSection = hrefParts[hrefParts.length - 1] || 'dashboard'
       return currentSection === hrefSection
@@ -115,7 +118,7 @@ export default function UniversalHeader({
       return pathname === '/new-leads'
     }
     return pathname.startsWith(href)
-  }, [isUsingPermalink, currentPermalink, currentSection, pathname])
+  }, [isUsingBusiness, currentPermalink, currentSection, pathname])
 
   // Initialize fallback color extraction only once
   useEffect(() => {

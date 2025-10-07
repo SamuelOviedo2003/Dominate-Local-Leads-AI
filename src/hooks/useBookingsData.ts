@@ -26,13 +26,13 @@ interface UseBookingsDataReturn {
 export function useBookingsData({ businessId }: UseBookingsDataProps): UseBookingsDataReturn {
   const [metrics, setMetrics] = useState<BookingsMetrics | null>(null)
   const [bookingsLeads, setBookingsLeads] = useState<LeadWithClient[] | null>(null)
-  
-  // Overall loading state (true when any component is loading)
-  const [isLoading, setIsLoading] = useState(false)
-  
-  // Individual component loading states
-  const [isMetricsLoading, setIsMetricsLoading] = useState(false)
-  const [isBookingsLeadsLoading, setIsBookingsLeadsLoading] = useState(false)
+
+  // Overall loading state (true when any component is loading) - start as true
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Individual component loading states - start as true to prevent empty state flicker
+  const [isMetricsLoading, setIsMetricsLoading] = useState(true)
+  const [isBookingsLeadsLoading, setIsBookingsLeadsLoading] = useState(true)
   
   // Individual component errors
   const [error, setError] = useState<string | null>(null)

@@ -1,7 +1,8 @@
 /**
- * Client-side permalink navigation helpers
- * Ensures all internal navigation preserves the current business permalink
- * Provides utilities for building permalink-aware URLs and navigation
+ * Client-side business navigation helpers
+ * NEW: Supports business_id + permalink URL structure
+ * Ensures all internal navigation preserves the current business context
+ * Provides utilities for building business-aware URLs and navigation
  */
 
 'use client'
@@ -10,30 +11,48 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 
 /**
- * Extract permalink from current pathname
+ * NEW: Extract business_id AND permalink from current pathname
+ * URL structure: /business_id/permalink/section
  */
-export function useCurrentPermalink(): string | null {
+export function useCurrentBusiness(): { businessId: string | null, permalink: string | null } {
   const pathname = usePathname()
-  
-  return useMemo((): string | null => {
-    if (!pathname) return null
-    
+
+  return useMemo(() => {
+    if (!pathname) return { businessId: null, permalink: null }
+
     const segments = pathname.split('/').filter(Boolean)
-    if (segments.length === 0) return null
-    
-    // First segment should be the permalink (unless it's a special route)
-    const firstSegment = segments[0]
-    
-    if (!firstSegment) return null
-    
-    // Skip special routes that aren't permalinks
+    if (segments.length < 2) return { businessId: null, permalink: null }
+
+    const [firstSegment, secondSegment] = segments
+
+    if (!firstSegment) return { businessId: null, permalink: null }
+
+    // Skip special routes that aren't business routes
     const specialRoutes = ['login', 'signup', 'auth', 'forgot-password', 'super-admin', 'profile-management', 'api', '_next']
     if (specialRoutes.includes(firstSegment)) {
-      return null
+      return { businessId: null, permalink: null }
     }
-    
-    return firstSegment
+
+    // Validate business_id is numeric
+    if (/^\d+$/.test(firstSegment)) {
+      return {
+        businessId: firstSegment,
+        permalink: secondSegment || null
+      }
+    }
+
+    // Old URL format detected (no business_id) - return null to trigger redirect
+    return { businessId: null, permalink: null }
   }, [pathname])
+}
+
+/**
+ * LEGACY: Extract permalink from current pathname
+ * @deprecated Use useCurrentBusiness() instead for better performance
+ */
+export function useCurrentPermalink(): string | null {
+  const { permalink } = useCurrentBusiness()
+  return permalink
 }
 
 /**
@@ -41,73 +60,82 @@ export function useCurrentPermalink(): string | null {
  */
 export function useCurrentSection(): string {
   const pathname = usePathname()
-  
+
   return useMemo(() => {
     if (!pathname) return 'dashboard'
-    
+
     const segments = pathname.split('/').filter(Boolean)
-    if (segments.length >= 2) {
-      return segments[1] || 'dashboard'
+    // NEW: Account for business_id (segment 0), permalink (segment 1), section (segment 2)
+    if (segments.length >= 3) {
+      return segments[2] || 'dashboard'
     }
-    
+
     return 'dashboard'
   }, [pathname])
 }
 
 /**
- * Build a permalink-aware URL
+ * NEW: Build a business-aware URL with business_id + permalink
  */
-export function usePermalinkUrl() {
-  const currentPermalink = useCurrentPermalink()
-  
-  return useCallback((path: string, permalink?: string) => {
-    const targetPermalink = permalink || currentPermalink
-    
-    if (!targetPermalink) {
-      // No permalink available for URL generation
+export function useBusinessUrl() {
+  const { businessId, permalink } = useCurrentBusiness()
+
+  return useCallback((path: string, options?: { businessId?: string, permalink?: string }) => {
+    const targetBusinessId = options?.businessId || businessId
+    const targetPermalink = options?.permalink || permalink
+
+    if (!targetBusinessId || !targetPermalink) {
+      // No business context available for URL generation
       return path
     }
-    
+
     // Ensure path starts with /
     const cleanPath = path.startsWith('/') ? path : `/${path}`
-    
-    // If path already includes the permalink, don't double it
-    if (cleanPath.startsWith(`/${targetPermalink}/`)) {
+
+    // If path already includes the business_id/permalink, don't double it
+    if (cleanPath.startsWith(`/${targetBusinessId}/${targetPermalink}/`)) {
       return cleanPath
     }
-    
-    return `/${targetPermalink}${cleanPath}`
-  }, [currentPermalink])
+
+    return `/${targetBusinessId}/${targetPermalink}${cleanPath}`
+  }, [businessId, permalink])
 }
 
 /**
- * Navigate while preserving current permalink
+ * LEGACY: Build a permalink-aware URL
+ * @deprecated Use useBusinessUrl() instead for new code
  */
-export function usePermalinkNavigation() {
+export function usePermalinkUrl() {
+  const buildUrl = useBusinessUrl()
+  return buildUrl
+}
+
+/**
+ * NEW: Navigate while preserving current business context
+ */
+export function useBusinessNavigation() {
   const router = useRouter()
-  const buildUrl = usePermalinkUrl()
-  
-  const navigate = useCallback((path: string, options?: { permalink?: string; replace?: boolean }) => {
-    const { permalink, replace = false } = options || {}
-    const url = buildUrl(path, permalink)
-    
-    // Navigating to URL
-    
+  const buildUrl = useBusinessUrl()
+
+  const navigate = useCallback((path: string, options?: { businessId?: string; permalink?: string; replace?: boolean }) => {
+    const { businessId, permalink, replace = false } = options || {}
+    const url = buildUrl(path, { businessId, permalink })
+
     if (replace) {
       router.replace(url)
     } else {
       router.push(url)
     }
   }, [router, buildUrl])
-  
-  const navigateToSection = useCallback((section: string, options?: { permalink?: string; replace?: boolean }) => {
+
+  const navigateToSection = useCallback((section: string, options?: { businessId?: string; permalink?: string; replace?: boolean }) => {
     navigate(`/${section}`, options)
   }, [navigate])
-  
-  const navigateToDashboard = useCallback((options?: { permalink?: string; replace?: boolean }) => {
+
+  const navigateToDashboard = useCallback((options?: { businessId?: string; permalink?: string; replace?: boolean }) => {
     navigateToSection('dashboard', options)
   }, [navigateToSection])
-  
+
   return {
     navigate,
     navigateToSection,
@@ -117,52 +145,73 @@ export function usePermalinkNavigation() {
 }
 
 /**
- * Generate navigation items with current permalink
+ * LEGACY: Navigate while preserving current permalink
+ * @deprecated Use useBusinessNavigation() instead
  */
-export function usePermalinkNavItems() {
-  const currentPermalink = useCurrentPermalink()
+export function usePermalinkNavigation() {
+  return useBusinessNavigation()
+}
+
+/**
+ * NEW: Generate navigation items with current business context
+ */
+export function useBusinessNavItems() {
+  const { businessId, permalink } = useCurrentBusiness()
   const currentSection = useCurrentSection()
-  const buildUrl = usePermalinkUrl()
-  
+  const buildUrl = useBusinessUrl()
+
   return useMemo(() => {
-    if (!currentPermalink) {
+    if (!businessId || !permalink) {
       return []
     }
-    
+
     const baseItems = [
       { name: 'Dashboard', section: 'dashboard', href: buildUrl('/dashboard') },
       { name: 'New Leads', section: 'new-leads', href: buildUrl('/new-leads') },
       { name: 'Bookings', section: 'bookings', href: buildUrl('/bookings') },
       { name: 'Incoming Calls', section: 'incoming-calls', href: buildUrl('/incoming-calls') }
     ]
-    
+
     return baseItems.map(item => ({
       ...item,
       isActive: item.section === currentSection,
-      permalink: currentPermalink
+      businessId,
+      permalink
     }))
-  }, [currentPermalink, currentSection, buildUrl])
+  }, [businessId, permalink, currentSection, buildUrl])
 }
 
 /**
- * Business switcher helper - navigate to different business
+ * LEGACY: Generate navigation items with current permalink
+ * @deprecated Use useBusinessNavItems() instead
+ */
+export function usePermalinkNavItems() {
+  return useBusinessNavItems()
+}
+
+/**
+ * NEW: Business switcher helper - navigate to different business
+ * Supports both business_id and permalink for flexibility
  */
 export function useBusinessSwitcher() {
   const router = useRouter()
   const currentSection = useCurrentSection()
-  
-  const switchToBusiness = useCallback((permalink: string, section?: string) => {
+
+  const switchToBusiness = useCallback((
+    businessId: string,
+    permalink: string,
+    section?: string
+  ) => {
     const targetSection = section || currentSection || 'dashboard'
-    const url = `/${permalink}/${targetSection}`
-    
-    // Switching to business
+    const url = `/${businessId}/${permalink}/${targetSection}`
+
     router.push(url)
   }, [router, currentSection])
-  
-  const switchToBusinessDashboard = useCallback((permalink: string) => {
-    switchToBusiness(permalink, 'dashboard')
+
+  const switchToBusinessDashboard = useCallback((businessId: string, permalink: string) => {
+    switchToBusiness(businessId, permalink, 'dashboard')
   }, [switchToBusiness])
-  
+
   return {
     switchToBusiness,
     switchToBusinessDashboard,
@@ -171,37 +220,48 @@ export function useBusinessSwitcher() {
 }
 
 /**
- * Permalink-aware Link component props helper
+ * NEW: Business-aware Link component props helper
  */
-export function usePermalinkLinkProps(path: string, options?: { permalink?: string }) {
-  const buildUrl = usePermalinkUrl()
-  
+export function useBusinessLinkProps(path: string, options?: { businessId?: string; permalink?: string }) {
+  const buildUrl = useBusinessUrl()
+
   return useMemo(() => {
-    const href = buildUrl(path, options?.permalink)
-    
+    const href = buildUrl(path, options)
+
     return {
       href,
       onClick: (e: React.MouseEvent) => {
-        // Log navigation for debugging
-        // Navigating to link
+        // Reserved for future navigation tracking
       }
     }
-  }, [buildUrl, path, options?.permalink])
+  }, [buildUrl, path, options?.businessId, options?.permalink])
 }
 
 /**
- * Get breadcrumb data for current location
+ * LEGACY: Permalink-aware Link component props helper
+ * @deprecated Use useBusinessLinkProps() instead
  */
-export function usePermalinkBreadcrumbs() {
-  const currentPermalink = useCurrentPermalink()
+export function usePermalinkLinkProps(path: string, options?: { permalink?: string }) {
+  const buildUrl = useBusinessUrl()
+  return useMemo(() => ({
+    href: buildUrl(path, options),
+    onClick: (e: React.MouseEvent) => {}
+  }), [buildUrl, path, options?.permalink])
+}
+
+/**
+ * NEW: Get breadcrumb data for current location
+ */
+export function useBusinessBreadcrumbs() {
+  const { businessId, permalink } = useCurrentBusiness()
   const currentSection = useCurrentSection()
-  const buildUrl = usePermalinkUrl()
-  
+  const buildUrl = useBusinessUrl()
+
   return useMemo(() => {
-    if (!currentPermalink) {
+    if (!businessId || !permalink) {
       return []
     }
-    
+
     const breadcrumbs = [
       {
         name: 'Business',
@@ -209,7 +269,7 @@ export function usePermalinkBreadcrumbs() {
         isActive: false
       }
     ]
-    
+
     // Add current section if not dashboard
     if (currentSection && currentSection !== 'dashboard') {
       const sectionNames = {
@@ -218,7 +278,7 @@ export function usePermalinkBreadcrumbs() {
         'incoming-calls': 'Incoming Calls',
         'lead-details': 'Lead Details'
       } as const
-      
+
       breadcrumbs.push({
         name: sectionNames[currentSection as keyof typeof sectionNames] || currentSection,
         href: buildUrl(`/${currentSection}`),
@@ -227,23 +287,31 @@ export function usePermalinkBreadcrumbs() {
     } else if (breadcrumbs.length > 0 && breadcrumbs[0]) {
       breadcrumbs[0].isActive = true
     }
-    
+
     return breadcrumbs
-  }, [currentPermalink, currentSection, buildUrl])
+  }, [businessId, permalink, currentSection, buildUrl])
 }
 
 /**
- * Check if a URL is internal to the current business
+ * LEGACY: Get breadcrumb data for current location
+ * @deprecated Use useBusinessBreadcrumbs() instead
+ */
+export function usePermalinkBreadcrumbs() {
+  return useBusinessBreadcrumbs()
+}
+
+/**
+ * NEW: Check if a URL is internal to the current business
  */
 export function useIsInternalUrl() {
-  const currentPermalink = useCurrentPermalink()
-  
+  const { businessId, permalink } = useCurrentBusiness()
+
   return useCallback((url: string) => {
-    if (!currentPermalink) return false
-    
-    // Check if URL starts with current permalink
-    return url.startsWith(`/${currentPermalink}/`) || url === `/${currentPermalink}`
-  }, [currentPermalink])
+    if (!businessId || !permalink) return false
+
+    // Check if URL starts with current business context
+    return url.startsWith(`/${businessId}/${permalink}/`) || url === `/${businessId}/${permalink}`
+  }, [businessId, permalink])
 }
 
 /**
@@ -266,41 +334,42 @@ export function determineTargetPageForBusinessSwitch(pathname: string): string {
     // Redirect from Property Details to Bookings section in the new business
     return 'bookings'
   }
-  
+
   // For non-detail pages, try to maintain the same section
   const pathSegments = pathname.split('/').filter(Boolean)
-  
-  // Skip the permalink (first segment) and get the section
-  const currentSection = pathSegments[1] || 'dashboard'
-  
+
+  // NEW: Skip business_id (segment 0) and permalink (segment 1), get section (segment 2)
+  const currentSection = pathSegments[2] || 'dashboard'
+
   // List of valid sections that can be preserved across business switches
   const validSections = [
-    'dashboard', 
-    'new-leads', 
-    'incoming-calls', 
-    'bookings', 
+    'dashboard',
+    'new-leads',
+    'incoming-calls',
+    'bookings',
     'profile-management'
   ]
-  
+
   // If current section is valid, preserve it; otherwise default to dashboard
   return validSections.includes(currentSection) ? currentSection : 'dashboard'
 }
 
 /**
- * Get permalink context for child components
+ * NEW: Get business context for child components
  */
-export function usePermalinkContext() {
-  const currentPermalink = useCurrentPermalink()
+export function useBusinessContext() {
+  const { businessId, permalink } = useCurrentBusiness()
   const currentSection = useCurrentSection()
-  const buildUrl = usePermalinkUrl()
-  const navigation = usePermalinkNavigation()
-  const navItems = usePermalinkNavItems()
-  const breadcrumbs = usePermalinkBreadcrumbs()
+  const buildUrl = useBusinessUrl()
+  const navigation = useBusinessNavigation()
+  const navItems = useBusinessNavItems()
+  const breadcrumbs = useBusinessBreadcrumbs()
   const businessSwitcher = useBusinessSwitcher()
   const isInternalUrl = useIsInternalUrl()
-  
+
   return {
-    permalink: currentPermalink,
+    businessId,
+    permalink,
     section: currentSection,
     buildUrl,
     navigation,
@@ -308,13 +377,21 @@ export function usePermalinkContext() {
     breadcrumbs,
     businessSwitcher,
     isInternalUrl,
-    
+
     // Utility functions
     utils: {
-      buildPermalinkUrl: (path: string, permalink?: string) => buildUrl(path, permalink),
+      buildBusinessUrl: (path: string, options?: { businessId?: string; permalink?: string }) => buildUrl(path, options),
       navigateToSection: navigation.navigateToSection,
       switchBusiness: businessSwitcher.switchToBusiness,
       determineBusinessSwitchTarget: determineTargetPageForBusinessSwitch
     }
   }
+}
+
+/**
+ * LEGACY: Get permalink context for child components
+ * @deprecated Use useBusinessContext() instead
+ */
+export function usePermalinkContext() {
+  return useBusinessContext()
 }

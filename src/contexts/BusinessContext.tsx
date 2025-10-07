@@ -177,8 +177,8 @@ export function BusinessProvider({ children, initialUser, currentBusiness }: Bus
       const currentPath = window.location.pathname
       const targetSection = determineTargetPageForBusinessSwitch(currentPath)
 
-      // Navigate to new business URL while preserving appropriate section
-      window.location.href = `/${company.permalink}/${targetSection}`
+      // Navigate to new business URL with business_id while preserving appropriate section
+      window.location.href = `/${company.business_id}/${company.permalink}/${targetSection}`
     } else if (!result.success) {
       console.error('Business switch failed:', result.error)
     }

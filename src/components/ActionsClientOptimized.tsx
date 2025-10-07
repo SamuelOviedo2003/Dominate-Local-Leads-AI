@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuthData } from '@/contexts/AuthDataContext'
-import ActionsPageOptimized from '@/app/[permalink]/actions/[leadId]/client-optimized'
+import ActionsPageOptimized from '@/app/[business_id]/[permalink]/actions/[leadId]/client-optimized'
 
 /**
  * Optimized wrapper for ActionsPageOptimized that uses cached authentication data

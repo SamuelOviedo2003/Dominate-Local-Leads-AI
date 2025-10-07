@@ -101,9 +101,9 @@ export async function POST(request: NextRequest) {
       currentBusinessId: targetBusiness.business_id
     }
 
-    // Return consolidated data for client
+    // Return consolidated data for client with new business_id URL structure
     const redirectUrl = targetBusiness.permalink
-      ? `/${targetBusiness.permalink}/dashboard`
+      ? `/${targetBusiness.business_id}/${targetBusiness.permalink}/dashboard`
       : '/dashboard'
 
     return NextResponse.json({
