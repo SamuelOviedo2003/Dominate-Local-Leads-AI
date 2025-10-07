@@ -106,6 +106,7 @@ temp/
 test-results/
 playwright-report/
 playwright/.cache/
+.playwright-mcp/
 
 # Local development files
 .claude/
