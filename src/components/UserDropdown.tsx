@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { ChevronDown, LogOut, Settings } from 'lucide-react'
 import { AuthUser } from '@/types/auth'
 import { useSecureLogout } from '@/hooks/useSecureLogout'
 import { useClickOutside } from '@/hooks/useClickOutside'
+import { extractBusinessFromPath } from '@/lib/permalink-utils'
 
 interface UserDropdownProps {
   user: AuthUser | null | undefined
@@ -16,9 +18,21 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { logout: secureLogout } = useSecureLogout()
+  const pathname = usePathname()
 
   // Use shared click-outside hook
   useClickOutside(dropdownRef, useCallback(() => setIsOpen(false), []))
+
+  // Extract current business context from URL to preserve it when navigating to settings
+  const settingsUrl = useMemo(() => {
+    const { businessId, permalink } = extractBusinessFromPath(pathname)
+
+    if (businessId && permalink) {
+      return `/settings?from=${businessId}/${permalink}`
+    }
+
+    return '/settings'
+  }, [pathname])
 
   // Don't render if user is not available
   if (!user) {
@@ -88,7 +102,7 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
             {/* Profile Management - Super Admin Only (Feature 3) */}
             {user?.profile?.role === 0 && (
               <Link
-                href="/settings"
+                href={settingsUrl}
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
@@ -99,7 +113,7 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
 
             {/* Edit Profile Link (Feature 4 - renamed from Settings) */}
             <Link
-              href="/settings"
+              href={settingsUrl}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
               onClick={() => setIsOpen(false)}
             >

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthUser, Profile } from '@/types/auth'
 import { ArrowLeft, User, Check, X, Users, Eye, EyeOff } from 'lucide-react'
 import ProfileManagementClientNew from '@/app/(dashboard)/profile-management/client-new'
@@ -45,9 +45,13 @@ interface UpdateResponse {
  */
 export default function SettingsClient({ user }: SettingsClientProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [activeSection, setActiveSection] = useState<'edit-profile' | 'profile-management'>('edit-profile')
   // Check if user is super admin (role 0) - handle null/undefined cases
   const isSuperAdmin = user?.profile?.role === 0
+
+  // Get the "from" parameter to know which business to return to
+  const fromParam = searchParams.get('from') // e.g., "11/hard-roof"
 
   // Debug: Log user data
   console.log('Settings - User:', user)
@@ -182,7 +186,21 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   }
 
   const handleReturnToDashboard = () => {
-    router.push('/dashboard')
+    // If we have a "from" parameter, use it to return to the same business
+    if (fromParam) {
+      router.push(`/${fromParam}/dashboard`)
+      return
+    }
+
+    // Otherwise, use the first accessible business
+    const firstBusiness = user.accessibleBusinesses?.[0]
+
+    if (firstBusiness?.business_id && firstBusiness?.permalink) {
+      router.push(`/${firstBusiness.business_id}/${firstBusiness.permalink}/dashboard`)
+    } else {
+      // Fallback to old dashboard if no business found
+      router.push('/dashboard')
+    }
   }
 
   const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
