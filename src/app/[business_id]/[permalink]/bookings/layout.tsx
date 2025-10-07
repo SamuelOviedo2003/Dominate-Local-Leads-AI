@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { getHeaderData } from '@/lib/auth-helpers'
 import UniversalHeader from '@/components/UniversalHeader'
-import { logout } from '@/app/home/actions'
+import { logout } from '@/app/auth/actions'
 import { BusinessContextProvider } from '@/contexts/BusinessContext'
 import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
 import { createServerClient } from '@supabase/ssr'

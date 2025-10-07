@@ -3,7 +3,7 @@
 import { ReactNode } from 'react'
 import { useAuthData } from '@/contexts/AuthDataContext'
 import UniversalHeader from '@/components/UniversalHeader'
-import { logout } from '@/app/home/actions'
+import { useSecureLogout } from '@/hooks/useSecureLogout'
 import { BusinessContextProvider } from '@/contexts/BusinessContext'
 import { DynamicThemeProvider } from '@/contexts/DynamicThemeContext'
 
@@ -17,6 +17,7 @@ interface OptimizedLayoutWrapperProps {
  */
 export default function OptimizedLayoutWrapper({ children }: OptimizedLayoutWrapperProps) {
   const { user, business } = useAuthData()
+  const { logout } = useSecureLogout()
 
   return (
     <DynamicThemeProvider>
