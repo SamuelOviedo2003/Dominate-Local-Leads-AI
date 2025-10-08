@@ -107,9 +107,20 @@ test-results/
 playwright-report/
 playwright/.cache/
 .playwright-mcp/
+playwright.config.ts
+tests/
 
 # Local development files
 .claude/
 .mcp.json
 *.log
 .env.local
+.agent/
+
+# Credentials and secrets
+credentials.txt
+*.env.production.session-secure
+
+# Debug files
+webpack.config.debug.js
+performance-metrics.log
