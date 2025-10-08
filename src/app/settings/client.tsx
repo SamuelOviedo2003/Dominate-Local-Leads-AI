@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthUser, Profile } from '@/types/auth'
-import { ArrowLeft, User, Check, X, Users, Eye, EyeOff } from 'lucide-react'
-import ProfileManagementClientNew from '@/app/(dashboard)/profile-management/client-new'
+import { ArrowLeft, User, Check, X, Eye, EyeOff, Key } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface SettingsClientProps {
@@ -46,18 +45,11 @@ interface UpdateResponse {
 export default function SettingsClient({ user }: SettingsClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [activeSection, setActiveSection] = useState<'edit-profile' | 'profile-management'>('edit-profile')
-  // Check if user is super admin (role 0) - handle null/undefined cases
-  const isSuperAdmin = user?.profile?.role === 0
+  const [activeSection, setActiveSection] = useState<'edit-profile' | 'change-password'>('edit-profile')
 
   // Get the "from" parameter to know which business to return to
   const fromParam = searchParams.get('from') // e.g., "11/hard-roof"
 
-  // Debug: Log user data
-  console.log('Settings - User:', user)
-  console.log('Settings - Profile:', user?.profile)
-  console.log('Settings - Role:', user?.profile?.role, 'Type:', typeof user?.profile?.role)
-  console.log('Settings - isSuperAdmin:', isSuperAdmin)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [emailVerified, setEmailVerified] = useState<boolean>(false)
   const [formData, setFormData] = useState<ProfileFormData>({
@@ -336,23 +328,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                 Account Settings
               </h2>
               <ul className="space-y-2">
-                {/* Profile Management - Super Admin Only (Feature 3) */}
-                {isSuperAdmin && (
-                  <li>
-                    <button
-                      onClick={() => setActiveSection('profile-management')}
-                      className={`w-full flex items-center space-x-2 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                        activeSection === 'profile-management'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Users className="w-4 h-4" />
-                      <span>Profile Management</span>
-                    </button>
-                  </li>
-                )}
-
                 <li>
                   <button
                     onClick={() => setActiveSection('edit-profile')}
@@ -366,27 +341,37 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                     <span>Edit Profile</span>
                   </button>
                 </li>
+                <li>
+                  <button
+                    onClick={() => setActiveSection('change-password')}
+                    className={`w-full flex items-center space-x-2 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeSection === 'change-password'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Key className="w-4 h-4" />
+                    <span>Change Password</span>
+                  </button>
+                </li>
               </ul>
             </nav>
           </div>
 
           {/* Right Content Area */}
           <div className="flex-1 mr-4">
-            {activeSection === 'profile-management' && isSuperAdmin ? (
-              <ProfileManagementClientNew />
-            ) : (
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-6">
-                  {activeSection === 'edit-profile' && (
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-6">
-                        Profile Information
-                      </h3>
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-6">
+                {activeSection === 'edit-profile' ? (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-6">
+                      Profile Information
+                    </h3>
 
                     {message && (
                       <div className={`mb-4 p-4 rounded-md ${
-                        message.type === 'success' 
-                          ? 'bg-green-50 text-green-800' 
+                        message.type === 'success'
+                          ? 'bg-green-50 text-green-800'
                           : 'bg-red-50 text-red-800'
                       }`}>
                         {message.text}
@@ -482,25 +467,22 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                         </button>
                       </div>
                     </form>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-6">
+                      Change Password
+                    </h3>
 
-                    {/* Divider */}
-                    <div className="my-8 border-t border-gray-200"></div>
-
-                    {/* Password Change Section */}
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-6">
-                        Change Password
-                      </h3>
-
-                      {passwordMessage && (
-                        <div className={`mb-4 p-4 rounded-md ${
-                          passwordMessage.type === 'success'
-                            ? 'bg-green-50 text-green-800'
-                            : 'bg-red-50 text-red-800'
-                        }`}>
-                          {passwordMessage.text}
-                        </div>
-                      )}
+                    {passwordMessage && (
+                      <div className={`mb-4 p-4 rounded-md ${
+                        passwordMessage.type === 'success'
+                          ? 'bg-green-50 text-green-800'
+                          : 'bg-red-50 text-red-800'
+                      }`}>
+                        {passwordMessage.text}
+                      </div>
+                    )}
 
                       <form onSubmit={handlePasswordSubmit} className="space-y-6">
                         {/* Current Password Field */}
@@ -607,12 +589,10 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                           </button>
                         </div>
                       </form>
-                    </div>
                   </div>
                 )}
-                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

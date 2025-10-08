@@ -34,6 +34,17 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
     return '/settings'
   }, [pathname])
 
+  // Admin URL for super admins only
+  const adminUrl = useMemo(() => {
+    const { businessId, permalink } = extractBusinessFromPath(pathname)
+
+    if (businessId && permalink) {
+      return `/admin?from=${businessId}/${permalink}`
+    }
+
+    return '/admin'
+  }, [pathname])
+
   // Don't render if user is not available
   if (!user) {
     return (
@@ -99,19 +110,19 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
 
           {/* Menu Options */}
           <div className="py-1">
-            {/* Profile Management - Super Admin Only (Feature 3) */}
+            {/* Admin - Super Admin Only */}
             {user?.profile?.role === 0 && (
               <Link
-                href={settingsUrl}
+                href={adminUrl}
                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
                 <Settings className="w-4 h-4" />
-                <span>Profile Management</span>
+                <span>Admin</span>
               </Link>
             )}
 
-            {/* Edit Profile Link (Feature 4 - renamed from Settings) */}
+            {/* Edit Profile Link */}
             <Link
               href={settingsUrl}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2 transition-colors"
