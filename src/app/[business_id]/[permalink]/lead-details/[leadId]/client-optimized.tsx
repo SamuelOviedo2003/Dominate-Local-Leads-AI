@@ -6,6 +6,7 @@ import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { CallWindows } from '@/components/features/leads/CallWindows'
 import { CallNowButton } from '@/components/CallNowButton'
+import { CallNextLeadButton } from '@/components/CallNextLeadButton'
 import { LeadStageDropdown } from '@/components/LeadStageDropdown'
 import { BookingButton } from '@/components/BookingButton'
 import { CircularTimer } from '@/components/features/leads/CircularTimer'
@@ -142,7 +143,7 @@ const LeadDetailsPageOptimized = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header with Back Navigation, Circular Timer, Stage Dropdown, and Call Now Button */}
+        {/* Header with Back Navigation, Call Next Lead, Circular Timer, Stage Dropdown, and Call Now Button */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -155,7 +156,15 @@ const LeadDetailsPageOptimized = () => {
               Back to New Leads
             </button>
 
-            {/* Circular Timer - centered between Back button and Stage dropdown */}
+            {/* Call Next Lead Button */}
+            {businessId && (
+              <CallNextLeadButton
+                businessId={businessId}
+                currentLeadId={leadId}
+              />
+            )}
+
+            {/* Circular Timer - centered between buttons and Stage dropdown */}
             <CircularTimer
               callWindows={leadDetails?.callWindows || null}
               businessTimezone={leadDetails?.businessTimezone}
