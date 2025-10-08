@@ -8,6 +8,7 @@ import { CallWindows } from '@/components/features/leads/CallWindows'
 import { CallNowButton } from '@/components/CallNowButton'
 import { LeadStageDropdown } from '@/components/LeadStageDropdown'
 import { BookingButton } from '@/components/BookingButton'
+import { CircularTimer } from '@/components/features/leads/CircularTimer'
 import { useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useLeadDetailsDataOptimized } from '@/hooks/useLeadDetailsDataOptimized'
 import { usePermalinkNavigation } from '@/lib/permalink-navigation'
@@ -141,17 +142,26 @@ const LeadDetailsPageOptimized = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header with Back Navigation, Stage Dropdown, and Call Now Button */}
+        {/* Header with Back Navigation, Circular Timer, Stage Dropdown, and Call Now Button */}
         <div className="mb-6 flex items-center justify-between">
-          <button
-            onClick={handleGoBack}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to New Leads
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleGoBack}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to New Leads
+            </button>
+
+            {/* Circular Timer - centered between Back button and Stage dropdown */}
+            <CircularTimer
+              callWindows={leadDetails?.callWindows || null}
+              businessTimezone={leadDetails?.businessTimezone}
+              size="lg"
+            />
+          </div>
 
           <div className="flex items-center gap-4">
             {leadDetails?.lead && (

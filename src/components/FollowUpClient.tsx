@@ -6,12 +6,7 @@ import { LeadsTable } from '@/components/features/leads'
 import { LeadsMetrics } from '@/components/features/metrics'
 import { useBusinessContext } from '@/contexts/BusinessContext'
 
-interface NewLeadsClientProps {
-  businessId?: string
-  userRole?: number | null
-}
-
-export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
+export function FollowUpClient() {
   // Get the effective business ID (user's own or selected company for superadmin)
   const { currentBusinessId, isLoading: businessContextLoading } = useBusinessContext()
   const effectiveBusinessId = currentBusinessId || ''
@@ -41,22 +36,16 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
     [businessContextLoading, isRecentLeadsLoading, effectiveBusinessId]
   )
 
-  // Memoize filtered leads for each table to prevent recalculation on every render
-  const callNowLeads = useMemo(
-    () => recentLeads ? recentLeads.filter(lead => lead.stage === 1 && (lead.call_now_status === 1 || lead.call_now_status === 2)) : [],
-    [recentLeads]
-  )
-  const waitingToCallLeads = useMemo(
-    () => recentLeads ? recentLeads.filter(lead => lead.stage === 1 && lead.call_now_status === 3) : [],
+  // Memoize filtered leads for Follow Up table (Stage 2)
+  const followUpLeads = useMemo(
+    () => recentLeads ? recentLeads.filter(lead => lead.stage === 2) : [],
     [recentLeads]
   )
 
-  // Memoize allTablesEmpty check - only for Call Now and Waiting to Call
-  const allTablesEmpty = useMemo(
-    () => !isRecentLeadsLoadingCoordinated &&
-      callNowLeads.length === 0 &&
-      waitingToCallLeads.length === 0,
-    [isRecentLeadsLoadingCoordinated, callNowLeads.length, waitingToCallLeads.length]
+  // Memoize empty check
+  const isEmpty = useMemo(
+    () => !isRecentLeadsLoadingCoordinated && followUpLeads.length === 0,
+    [isRecentLeadsLoadingCoordinated, followUpLeads.length]
   )
 
   return (
@@ -93,8 +82,8 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           error={metricsError}
         />
 
-        {/* Show "No Data" message only if ALL tables are empty */}
-        {allTablesEmpty && !recentLeadsError && (
+        {/* Show "No Data" message if empty */}
+        {isEmpty && !recentLeadsError && (
           <div className="flex items-center justify-center py-12">
             <pre className="text-gray-400 text-base font-mono select-none pointer-events-none leading-relaxed">
 {`+------------------------------+
@@ -106,26 +95,17 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           </div>
         )}
 
-        {/* Call now Table (Stage 1 AND call_now_status in [1,2]) */}
-        {callNowLeads.length > 0 && (
+        {/* Follow Up Table (Stage 2) */}
+        {followUpLeads.length > 0 && (
           <div className="mb-8">
             <LeadsTable
-              leads={callNowLeads}
+              leads={followUpLeads}
               isLoading={isRecentLeadsLoadingCoordinated}
               error={recentLeadsError}
-              title="Call now"
+              title="Follow Up"
+              navigationTarget="actions"
             />
           </div>
-        )}
-
-        {/* Waiting to call Table (Stage 1 AND call_now_status = 3) */}
-        {waitingToCallLeads.length > 0 && (
-          <LeadsTable
-            leads={waitingToCallLeads}
-            isLoading={isRecentLeadsLoadingCoordinated}
-            error={recentLeadsError}
-            title="Waiting to call"
-          />
         )}
       </div>
     </div>

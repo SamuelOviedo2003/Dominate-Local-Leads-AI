@@ -6,6 +6,8 @@ import { Sun, Moon } from 'lucide-react'
 import { LeadWithClient } from '@/types/leads'
 import { usePermalinkNavigation, usePermalinkUrl } from '@/lib/permalink-navigation'
 import { CallWindowHistoryIcons } from '@/components/ui/CallWindowHistoryIcons'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import { CircularTimer } from './CircularTimer'
 
 interface LeadsTableProps {
   leads: LeadWithClient[] | null
@@ -19,6 +21,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
   const { navigate } = usePermalinkNavigation()
   const buildUrl = usePermalinkUrl()
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; leadId: string } | null>(null)
 
   // Removed getScoreColor function - no longer needed for calls count circle
 
@@ -162,13 +165,30 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
     if (e.ctrlKey || e.metaKey || e.button === 1 || e.button === 2) {
       return
     }
-    
+
     e.preventDefault()
     setNavigatingId(leadId)
     try {
       navigate(`/${navigationTarget}/${leadId}`)
     } catch (error) {
       setNavigatingId(null)
+    }
+  }
+
+  const handleContextMenu = (e: React.MouseEvent, leadId: string) => {
+    e.preventDefault()
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      leadId
+    })
+  }
+
+  const handleOpenInNewTab = () => {
+    if (contextMenu) {
+      const leadUrl = buildUrl(`/${navigationTarget}/${contextMenu.leadId}`)
+      window.open(leadUrl, '_blank')
+      setContextMenu(null)
     }
   }
 
@@ -209,12 +229,13 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
 
   // Otherwise render the full table
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+    <>
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -225,6 +246,9 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* Timer column - no label */}
                 </th>
               </tr>
             </thead>
@@ -237,6 +261,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                     <tr
                       key={lead.lead_id}
                       onClick={(e) => handleRowClick(e, lead.lead_id)}
+                      onContextMenu={(e) => handleContextMenu(e, lead.lead_id)}
                       className={`cursor-pointer transition-all duration-200 ${
                         rowBackground
                       } ${
@@ -304,13 +329,33 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                         )}
                       </div>
                     </td>
+
+                    {/* Timer Column - shows circular timer if conditions are met */}
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <div className="flex justify-end">
+                        <CircularTimer
+                          callWindows={lead.callWindows}
+                          size="sm"
+                        />
+                      </div>
+                    </td>
                     </tr>
                 )
               })}
             </tbody>
           </table>
         </div>
-    </div>
+      </div>
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onOpenInNewTab={handleOpenInNewTab}
+        />
+      )}
+    </>
   )
 }
 

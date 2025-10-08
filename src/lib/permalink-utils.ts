@@ -151,6 +151,7 @@ export function isPermalinkRoute(pathname: string): boolean {
 export const NAVIGATION_SECTIONS = [
   { name: 'Dashboard', section: 'dashboard' },
   { name: 'New Leads', section: 'new-leads' },
+  { name: 'Follow Up', section: 'follow-up' },
   { name: 'Bookings', section: 'bookings' },
   { name: 'Incoming Calls', section: 'incoming-calls' }
 ] as const

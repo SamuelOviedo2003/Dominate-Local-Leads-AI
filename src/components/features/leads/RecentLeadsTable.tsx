@@ -6,6 +6,8 @@ import { Sun, Moon } from 'lucide-react'
 import { LeadWithClient } from '@/types/leads'
 import { usePermalinkNavigation, usePermalinkUrl } from '@/lib/permalink-navigation'
 import { EmptyTableState } from '@/components/ui/EmptyTableState'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import { CircularTimer } from './CircularTimer'
 
 interface RecentLeadsTableProps {
   leads: LeadWithClient[] | null
@@ -23,6 +25,7 @@ function RecentLeadsTableComponent({
   const { navigate } = usePermalinkNavigation()
   const buildUrl = usePermalinkUrl()
   const [navigatingId, setNavigatingId] = useState<string | null>(null)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; leadId: string } | null>(null)
 
   const truncateService = useCallback((service: string | null | undefined, maxLength: number = 25) => {
     if (!service) return ''
@@ -165,6 +168,23 @@ function RecentLeadsTableComponent({
     }
   }
 
+  const handleContextMenu = (e: React.MouseEvent, leadId: string) => {
+    e.preventDefault()
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      leadId
+    })
+  }
+
+  const handleOpenInNewTab = () => {
+    if (contextMenu) {
+      const leadUrl = buildUrl(`/${navigationTarget}/${contextMenu.leadId}`)
+      window.open(leadUrl, '_blank')
+      setContextMenu(null)
+    }
+  }
+
   if (error) {
     return (
       <div className="bg-white rounded-lg shadow">
@@ -201,12 +221,13 @@ function RecentLeadsTableComponent({
 
   // Otherwise render the full table
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Recent Leads</h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+    <>
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Recent Leads</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -218,6 +239,9 @@ function RecentLeadsTableComponent({
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* Timer column - no label */}
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -228,6 +252,7 @@ function RecentLeadsTableComponent({
                     <tr
                       key={lead.lead_id}
                       onClick={(e) => handleRowClick(e, lead.lead_id)}
+                      onContextMenu={(e) => handleContextMenu(e, lead.lead_id)}
                       className={`cursor-pointer transition-all duration-200 hover:bg-gray-50 ${
                         navigatingId === lead.lead_id ? 'bg-purple-50 border-l-4 border-purple-500' : ''
                       }`}
@@ -288,13 +313,33 @@ function RecentLeadsTableComponent({
                           )}
                         </div>
                       </td>
+
+                      {/* Timer Column - shows circular timer if conditions are met */}
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex justify-end">
+                          <CircularTimer
+                            callWindows={lead.callWindows}
+                            size="sm"
+                          />
+                        </div>
+                      </td>
                     </tr>
                 )
               })}
             </tbody>
           </table>
         </div>
-    </div>
+      </div>
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onOpenInNewTab={handleOpenInNewTab}
+        />
+      )}
+    </>
   )
 }
 
