@@ -193,11 +193,11 @@ export default function ResetPasswordForm() {
         }
 
         // Password updated successfully
-        setSuccess('Password updated successfully! Redirecting to dashboard...')
-        
-        // Redirect to dashboard after a brief delay
+        setSuccess('Password updated successfully! Redirecting to login...')
+
+        // Redirect to login page after a brief delay
         setTimeout(() => {
-          router.push('/dashboard')
+          router.push('/login')
         }, 2000)
         
       } catch (error) {
