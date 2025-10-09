@@ -308,22 +308,6 @@ export default function ProfileManagementClientNew() {
         <div className="p-6">
           {/* Main content */}
           <div className="max-w-4xl mx-auto">
-              {/* Profile Image */}
-              <div className="mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 rounded-full border-2 border-gray-300 flex items-center justify-center bg-gray-100 relative group">
-                    <Users className="w-12 h-12 text-gray-400" />
-                    <button className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50">
-                      <Camera className="w-4 h-4 text-gray-600" />
-                    </button>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Profile Image</p>
-                    <p className="text-xs text-gray-500">The proposed size is 512×512 px no bigger than 2.5 MB</p>
-                  </div>
-                </div>
-              </div>
-
               {/* Form Fields */}
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
