@@ -42,12 +42,8 @@ export async function GET(request: NextRequest) {
     const { data: countdownLeads, error: countdownError } = await supabase
       .from('call_windows')
       .select(`
-        lead_id,
-        window_start_at,
-        window_end_at,
-        working_hours,
-        call_window,
-        leads!inner (
+        *,
+        leads:lead_id (
           lead_id,
           first_name,
           last_name,

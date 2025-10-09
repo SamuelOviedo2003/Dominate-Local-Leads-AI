@@ -24,16 +24,7 @@ export async function GET(request: NextRequest) {
       .from('leads')
       .select(`
         *,
-        clients!inner (
-          account_id,
-          business_id,
-          full_address,
-          house_value,
-          house_url,
-          distance_meters,
-          duration_seconds
-        ),
-        call_windows!left (
+        call_windows (
           call_window,
           window_start_at,
           window_end_at,
@@ -45,6 +36,25 @@ export async function GET(request: NextRequest) {
       .eq('business_id', requestedBusinessId)
       .order('created_at', { ascending: false })
       .limit(100)
+
+    // Manually fetch clients data for leads that have account_id
+    const leadAccountIds = leads?.filter(l => l.account_id).map(l => l.account_id) || []
+    let clientsMap: Record<string, any> = {}
+
+    if (leadAccountIds.length > 0) {
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('account_id, business_id, full_address, house_value, house_url, distance_meters, duration_seconds')
+        .in('account_id', leadAccountIds)
+        .eq('business_id', requestedBusinessId)
+
+      // Create a map of account_id -> client data
+      clientsData?.forEach(client => {
+        if (client.account_id) {
+          clientsMap[client.account_id] = client
+        }
+      })
+    }
 
     if (error) {
       console.error('Database error:', error)
@@ -62,7 +72,10 @@ export async function GET(request: NextRequest) {
 
     // Transform the data to match the expected LeadWithClient structure with call windows
     const transformedLeads = leads?.map(leadData => {
-      const { clients, call_windows, ...lead } = leadData
+      const { call_windows, ...lead } = leadData
+
+      // Get client data from the map if lead has account_id
+      const clientData = lead.account_id ? clientsMap[lead.account_id] : null
 
       // Process call windows - filter for non-null status and transform to CallWindow interface
       const processedCallWindows: CallWindow[] = (call_windows || [])
@@ -82,7 +95,7 @@ export async function GET(request: NextRequest) {
       return {
         ...lead,
         created_at: formatDateTimeWithTime(lead.created_at),
-        client: Array.isArray(clients) ? clients[0] : clients,
+        client: clientData || null,
         callWindows: processedCallWindows
       }
     }) || []
