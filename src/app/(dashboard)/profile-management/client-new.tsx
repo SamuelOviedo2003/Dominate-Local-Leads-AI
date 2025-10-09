@@ -532,45 +532,6 @@ export default function ProfileManagementClientNew() {
                   </div>
                 </div>
 
-                {/* Password Reset Section */}
-                <div className="border-t border-gray-200 pt-4 mt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Password Reset</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Send a password reset email to {selectedUser.email}
-                      </p>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        try {
-                          setIsUpdating(true)
-                          const response = await authPost('/api/admin/reset-password', {
-                            userId: selectedUser.id,
-                            email: selectedUser.email
-                          })
-                          if (response.success) {
-                            setSuccess('Password reset email sent successfully')
-                            setTimeout(() => setSuccess(null), 3000)
-                          } else {
-                            setError(response.error || 'Failed to send password reset email')
-                            setTimeout(() => setError(null), 3000)
-                          }
-                        } catch (err) {
-                          setError('Failed to send password reset email')
-                          setTimeout(() => setError(null), 3000)
-                        } finally {
-                          setIsUpdating(false)
-                        }
-                      }}
-                      disabled={isUpdating}
-                      className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Send Reset Email
-                    </button>
-                  </div>
-                </div>
-
                 {/* Action Buttons */}
                 <div className="flex items-center gap-3 pt-4">
                   <button
