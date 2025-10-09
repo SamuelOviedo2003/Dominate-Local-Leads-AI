@@ -557,7 +557,7 @@ export default function ProfileManagementClientNew() {
                           setTimeout(() => {
                             setSuccess(null)
                             closeEditPanel()
-                            fetchUsers()
+                            loadData()
                           }, 2000)
                         } else {
                           setError(response.error || 'Failed to update user')
