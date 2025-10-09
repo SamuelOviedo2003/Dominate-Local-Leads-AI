@@ -541,9 +541,39 @@ export default function ProfileManagementClientNew() {
                     Cancel
                   </button>
                   <button
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                    onClick={async () => {
+                      try {
+                        setIsUpdating(true)
+                        const response = await authPatch('/api/admin/users', {
+                          userId: selectedUser.id,
+                          firstName: editUserForm.firstName,
+                          lastName: editUserForm.lastName,
+                          email: editUserForm.email,
+                          phone: editUserForm.phone
+                        })
+
+                        if (response.success) {
+                          setSuccess('User updated successfully')
+                          setTimeout(() => {
+                            setSuccess(null)
+                            closeEditPanel()
+                            fetchUsers()
+                          }, 2000)
+                        } else {
+                          setError(response.error || 'Failed to update user')
+                          setTimeout(() => setError(null), 3000)
+                        }
+                      } catch (err) {
+                        setError('Failed to update user')
+                        setTimeout(() => setError(null), 3000)
+                      } finally {
+                        setIsUpdating(false)
+                      }
+                    }}
+                    disabled={isUpdating}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save Changes
+                    {isUpdating ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </div>

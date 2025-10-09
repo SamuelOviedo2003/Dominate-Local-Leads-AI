@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * PATCH /api/admin/users
- * Update user role - allows Super Admins to change roles of other users
+ * Update user information (name, email, phone) or role
  * Only accessible to super admins (role = 0)
  */
 export async function PATCH(request: NextRequest) {
@@ -188,26 +188,27 @@ export async function PATCH(request: NextRequest) {
     // Check authentication and authorization using JWT tokens
     const { user } = await authenticateRequest(request)
 
-    // Only super admins can modify user roles
+    // Only super admins can modify users
     if (user.profile?.role !== 0) {
       return NextResponse.json(
-        { error: 'Forbidden - Only super admins can modify user roles' },
+        { error: 'Forbidden - Only super admins can modify users' },
         { status: 403 }
       )
     }
 
-    const { userId, role } = await request.json()
+    const body = await request.json()
+    const { userId, role, firstName, lastName, email, phone } = body
 
-    // Validate input parameters
-    if (!userId || role === undefined) {
+    // Validate userId is present
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Missing required parameters: userId and role' },
+        { error: 'Missing required parameter: userId' },
         { status: 400 }
       )
     }
 
-    // Validate role value (0 = super admin, 1+ = regular user, null = regular user)
-    if (typeof role !== 'number' || role < 0 || role > 10) {
+    // Validate role if provided
+    if (role !== undefined && (typeof role !== 'number' || role < 0 || role > 10)) {
       return NextResponse.json(
         { error: 'Invalid role value. Must be a number between 0 and 10' },
         { status: 400 }
@@ -215,7 +216,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Prevent super admin from downgrading their own role
-    if (userId === user.id && role !== 0) {
+    if (role !== undefined && userId === user.id && role !== 0) {
       return NextResponse.json(
         { error: 'Cannot downgrade your own super admin role' },
         { status: 400 }
@@ -248,23 +249,44 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Update the user's role
+    // Build update object with provided fields
+    const updates: any = {}
+
+    if (role !== undefined) {
+      updates.role = role
+    }
+
+    if (firstName !== undefined || lastName !== undefined) {
+      const fullName = `${firstName || ''} ${lastName || ''}`.trim()
+      if (fullName) {
+        updates.full_name = fullName
+      }
+    }
+
+    if (email !== undefined) {
+      updates.email = email
+    }
+
+    // Note: phone is not stored in profiles table currently
+    // If needed, it should be added to the profiles table schema
+
+    // Update the user's profile
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ role })
+      .update(updates)
       .eq('id', userId)
 
     if (updateError) {
-      console.error('Error updating user role:', updateError)
+      console.error('Error updating user profile:', updateError)
       return NextResponse.json(
-        { error: 'Failed to update user role' },
+        { error: 'Failed to update user profile' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      message: `User role updated successfully to ${role === 0 ? 'Super Admin' : 'Regular User'}`
+      message: 'User profile updated successfully'
     })
 
   } catch (error) {
