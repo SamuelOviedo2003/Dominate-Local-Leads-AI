@@ -24,19 +24,12 @@ export async function GET(request: NextRequest) {
 
     const { user, supabase, businessId } = authResult
 
-    // Fetch leads with clients and call windows data - only show stage 3 leads (bookings) from all time periods
+    // Fetch leads with call windows data - only show stage 3 leads (bookings) from all time periods
     const { data: leadsData, error: leadsError } = await supabase
       .from('leads')
       .select(`
         *,
-        clients!inner(
-          full_address,
-          house_value,
-          house_url,
-          distance_meters,
-          duration_seconds
-        ),
-        call_windows!left (
+        call_windows (
           call_window,
           window_start_at,
           window_end_at,
@@ -57,6 +50,28 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Manually fetch clients data for leads that have account_id
+    const leadAccountIds = leadsData?.filter(l => l.account_id).map(l => l.account_id) || []
+    let clientsMap: Record<string, any> = {}
+
+    if (leadAccountIds.length > 0) {
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select('account_id, business_id, full_address, house_value, house_url, distance_meters, duration_seconds')
+        .in('account_id', leadAccountIds)
+        .eq('business_id', businessId)
+
+      if (clientsError) {
+        console.error('Error fetching clients:', clientsError)
+      } else {
+        clientsData?.forEach(client => {
+          if (client.account_id) {
+            clientsMap[client.account_id] = client
+          }
+        })
+      }
+    }
+
     // No need to fetch calls data since next_step comes directly from leads table
 
     // Helper function to format datetime with hours and minutes
@@ -68,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     // Transform the data to match our expected structure with call windows
     const leads: LeadWithClient[] = leadsData.map(leadData => {
-      const { clients, call_windows, ...lead } = leadData
+      const { call_windows, ...lead } = leadData
 
       // Process call windows - filter for non-null status and transform to CallWindow interface
       const processedCallWindows: CallWindow[] = (call_windows || [])
@@ -85,11 +100,14 @@ export async function GET(request: NextRequest) {
         }))
         .sort((a: CallWindow, b: CallWindow) => a.callNumber - b.callNumber)
 
+      // Get client data from the manually fetched clientsMap
+      const clientData = lead.account_id ? clientsMap[lead.account_id] : null
+
       return {
         ...lead,
         // next_step comes directly from leads table, no need to override
         created_at: formatDateTimeWithTime(lead.created_at),
-        client: Array.isArray(clients) ? clients[0] : clients,
+        client: clientData,
         callWindows: processedCallWindows
       }
     })

@@ -13,6 +13,9 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: 'Dominate Local Leads AI',
   description: 'Lead management system for roofing businesses',
+  icons: {
+    apple: [],
+  },
 }
 
 export default function RootLayout({

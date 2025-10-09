@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Search, ChevronDown, Edit, Trash, X, ArrowLeft, Plus, Camera } from 'lucide-react'
+import { Users, Search, ChevronDown, Edit, Trash, X, ArrowLeft, Plus } from 'lucide-react'
 import { ComponentLoading } from '@/components/LoadingSystem'
 import { authGet, authPost, authDelete, authPatch } from '@/lib/auth-fetch'
 import { createClient } from '@/lib/supabase/client'
@@ -50,6 +50,16 @@ export default function ProfileManagementClientNew() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+
+  // Edit User Panel
+  const [showEditPanel, setShowEditPanel] = useState(false)
+  const [activeTab, setActiveTab] = useState<'info' | 'permissions'>('info')
+  const [editUserForm, setEditUserForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: ''
+  })
 
   // Create User Panel
   const [showCreatePanel, setShowCreatePanel] = useState(false)
@@ -197,6 +207,27 @@ export default function ProfileManagementClientNew() {
 
   const isBusinessAssigned = (user: User, businessId: number): boolean => {
     return user.assigned_businesses.some(b => b.business_id === businessId)
+  }
+
+  const openEditPanel = (user: User) => {
+    setSelectedUser(user)
+    const [firstName, ...lastNameParts] = (user.full_name || '').split(' ')
+    setEditUserForm({
+      firstName: firstName || '',
+      lastName: lastNameParts.join(' ') || '',
+      email: user.email,
+      phone: '' // Phone not in current User interface
+    })
+    setActiveTab('info')
+    setShowEditPanel(true)
+  }
+
+  const closeEditPanel = () => {
+    setShowEditPanel(false)
+    setSelectedUser(null)
+    setBusinessSearch('')
+    setError(null)
+    setSuccess(null)
   }
 
   // Get unique companies for filter
@@ -398,8 +429,8 @@ export default function ProfileManagementClientNew() {
     )
   }
 
-  // Business Access View
-  if (selectedUser) {
+  // Edit User Panel with Tabs
+  if (showEditPanel && selectedUser) {
     return (
       <div className="bg-white rounded-lg shadow">
         {/* Header */}
@@ -407,16 +438,42 @@ export default function ProfileManagementClientNew() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <button
-                onClick={() => setSelectedUser(null)}
+                onClick={closeEditPanel}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <h3 className="text-lg font-medium text-gray-900">
-                Business Access: {selectedUser.full_name || selectedUser.email}
+                Edit User: {selectedUser.full_name || selectedUser.email}
               </h3>
             </div>
           </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="flex px-6 -mb-px">
+            <button
+              onClick={() => setActiveTab('info')}
+              className={`py-4 px-4 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'info'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Edit Info
+            </button>
+            <button
+              onClick={() => setActiveTab('permissions')}
+              className={`py-4 px-4 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'permissions'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Assign Permissions
+            </button>
+          </nav>
         </div>
 
         {/* Messages */}
@@ -432,8 +489,125 @@ export default function ProfileManagementClientNew() {
           </div>
         )}
 
-        {/* Business List */}
+        {/* Tab Content */}
         <div className="p-6">
+          {/* Edit Info Tab */}
+          {activeTab === 'info' && (
+            <div className="max-w-4xl mx-auto">
+              {/* Form Fields */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editUserForm.firstName}
+                      onChange={(e) => setEditUserForm({ ...editUserForm, firstName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="First Name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editUserForm.lastName}
+                      onChange={(e) => setEditUserForm({ ...editUserForm, lastName: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Last Name"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={editUserForm.email}
+                      onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Email"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      value={editUserForm.phone}
+                      onChange={(e) => setEditUserForm({ ...editUserForm, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Phone"
+                    />
+                  </div>
+                </div>
+
+                {/* Password Reset Section */}
+                <div className="border-t border-gray-200 pt-4 mt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Password Reset</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Send a password reset email to {selectedUser.email}
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          setIsUpdating(true)
+                          const response = await authPost('/api/admin/reset-password', {
+                            userId: selectedUser.id,
+                            email: selectedUser.email
+                          })
+                          if (response.success) {
+                            setSuccess('Password reset email sent successfully')
+                            setTimeout(() => setSuccess(null), 3000)
+                          } else {
+                            setError(response.error || 'Failed to send password reset email')
+                            setTimeout(() => setError(null), 3000)
+                          }
+                        } catch (err) {
+                          setError('Failed to send password reset email')
+                          setTimeout(() => setError(null), 3000)
+                        } finally {
+                          setIsUpdating(false)
+                        }
+                      }}
+                      disabled={isUpdating}
+                      className="px-4 py-2 border border-blue-600 text-blue-600 rounded-md text-sm font-medium hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Send Reset Email
+                    </button>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-3 pt-4">
+                  <button
+                    onClick={closeEditPanel}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Assign Permissions Tab */}
+          {activeTab === 'permissions' && (
+            <div>
           {selectedUser.role === 0 ? (
             <div className="text-center py-8">
               <div className="w-12 h-12 mx-auto bg-purple-100 rounded-full flex items-center justify-center">
@@ -540,6 +714,8 @@ export default function ProfileManagementClientNew() {
                   )}
                 </div>
               </div>
+            </div>
+          )}
             </div>
           )}
         </div>
@@ -718,8 +894,7 @@ export default function ProfileManagementClientNew() {
               filteredUsers.map((user) => (
                 <tr
                   key={user.id}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedUser(user)}
+                  className="hover:bg-gray-50"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -745,11 +920,9 @@ export default function ProfileManagementClientNew() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          // Edit functionality
-                        }}
-                        className="text-gray-400 hover:text-gray-600"
+                        onClick={() => openEditPanel(user)}
+                        className="text-gray-400 hover:text-blue-600"
+                        title="Edit user"
                       >
                         <Edit className="w-4 h-4" />
                       </button>

@@ -8,7 +8,7 @@ import { PropertyInformation } from '@/components/features/leads/PropertyInforma
 import { ActionsChecklist } from '@/components/features/leads/ActionsChecklist'
 import { CallNowButton } from '@/components/CallNowButton'
 import { LeadStageDropdown } from '@/components/LeadStageDropdown'
-import { BookingButton } from '@/components/BookingButton'
+import { ManageAppointmentButton } from '@/components/ManageAppointmentButton'
 import { useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useLeadDetailsDataOptimized } from '@/hooks/useLeadDetailsDataOptimized'
 import { usePermalinkNavigation } from '@/lib/permalink-navigation'
@@ -161,10 +161,11 @@ const PropertyDetailsPageOptimized = () => {
                 currentStage={leadDetails.lead.stage}
               />
             )}
-            {leadDetails?.lead && (
-              <BookingButton
+            {leadDetails?.lead && businessId && (
+              <ManageAppointmentButton
                 leadId={leadId}
                 accountId={leadDetails.lead.account_id}
+                businessId={businessId.toString()}
               />
             )}
             <CallNowButton
