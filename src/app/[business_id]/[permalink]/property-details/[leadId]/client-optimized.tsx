@@ -192,6 +192,9 @@ const PropertyDetailsPageOptimized = () => {
             property={leadDetails?.property || null}
             isLoading={false} // No individual loading since we have unified loading
             error={null} // No individual errors since we handle errors globally
+            leadId={leadId}
+            accountId={leadDetails?.lead?.account_id}
+            businessId={businessId}
           />
         </div>
 

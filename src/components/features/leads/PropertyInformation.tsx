@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useMemo, useCallback, memo } from 'react'
+import React, { useMemo, useCallback, memo, useState } from 'react'
 import { PropertyInfo } from '@/types/leads'
-import { Home, MapPin, DollarSign, Clock, Route } from 'lucide-react'
+import { Home, MapPin, DollarSign, Clock, Route, Edit3, X } from 'lucide-react'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import ImageWithFallback from '@/components/ImageWithFallback'
 
@@ -10,6 +10,9 @@ interface PropertyInformationProps {
   property?: PropertyInfo | null
   isLoading?: boolean
   error?: string | null
+  leadId?: string
+  accountId?: string
+  businessId?: string | number
 }
 
 interface InfoCardProps {
@@ -36,7 +39,68 @@ const InfoCard = ({ icon, title, value }: InfoCardProps) => (
   </div>
 )
 
-const PropertyInformationComponent = ({ property, isLoading = false, error = null }: PropertyInformationProps) => {
+const PropertyInformationComponent = ({ property, isLoading = false, error = null, leadId, accountId, businessId }: PropertyInformationProps) => {
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [streetName, setStreetName] = useState('')
+  const [postalCode, setPostalCode] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+
+  const handleEditAddress = () => {
+    // Pre-fill current values if available
+    if (property?.full_address) {
+      setStreetName(property.full_address.split(',')[0] || '')
+    }
+    setPostalCode('')
+    setShowEditModal(true)
+  }
+
+  const handleUpdateAddress = async () => {
+    if (!streetName || !postalCode) {
+      setUpdateMessage({ type: 'error', text: 'Please fill in all fields' })
+      setTimeout(() => setUpdateMessage(null), 3000)
+      return
+    }
+
+    setIsUpdating(true)
+    setUpdateMessage(null)
+
+    try {
+      const webhookUrl = 'https://n8nio-n8n-pbq4r3.sliplane.app/webhook/update-address'
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          lead_id: leadId,
+          account_id: accountId,
+          street_name: streetName,
+          postal_code: postalCode,
+          business_id: businessId
+        })
+      })
+
+      if (response.ok) {
+        setUpdateMessage({ type: 'success', text: 'Address updated successfully!' })
+        setTimeout(() => {
+          setShowEditModal(false)
+          setUpdateMessage(null)
+          setStreetName('')
+          setPostalCode('')
+        }, 2000)
+      } else {
+        throw new Error('Failed to update address')
+      }
+    } catch (error) {
+      setUpdateMessage({ type: 'error', text: 'Failed to update address. Please try again.' })
+      setTimeout(() => setUpdateMessage(null), 3000)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   const formatDistance = useCallback((meters: number | null) => {
     if (!meters) return 'N/A'
 
@@ -133,7 +197,18 @@ const PropertyInformationComponent = ({ property, isLoading = false, error = nul
             <div className="flex flex-col space-y-4">
               {/* Address */}
               <div className="rounded-lg bg-gray-50 p-3">
-                <span className="text-xs text-gray-500">Address</span>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500">Address</span>
+                  {leadId && accountId && businessId && (
+                    <button
+                      onClick={handleEditAddress}
+                      className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-xs font-medium transition-colors"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      Edit
+                    </button>
+                  )}
+                </div>
                 <p className="font-medium text-gray-900 text-sm">
                   {property.full_address || 'Address not available'}
                 </p>
@@ -202,6 +277,105 @@ const PropertyInformationComponent = ({ property, isLoading = false, error = nul
           </div>
         )}
       </div>
+
+      {/* Edit Address Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900">Edit Address</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setStreetName('')
+                  setPostalCode('')
+                  setUpdateMessage(null)
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Success/Error Messages */}
+              {updateMessage && (
+                <div className={`p-3 rounded-md ${
+                  updateMessage.type === 'success'
+                    ? 'bg-green-50 border border-green-200'
+                    : 'bg-red-50 border border-red-200'
+                }`}>
+                  <p className={`text-sm ${
+                    updateMessage.type === 'success' ? 'text-green-800' : 'text-red-800'
+                  }`}>
+                    {updateMessage.text}
+                  </p>
+                </div>
+              )}
+
+              {/* Street Name Field */}
+              <div>
+                <label htmlFor="streetName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Street Name *
+                </label>
+                <input
+                  type="text"
+                  id="streetName"
+                  value={streetName}
+                  onChange={(e) => setStreetName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter street name"
+                  disabled={isUpdating}
+                />
+              </div>
+
+              {/* Postal Code Field */}
+              <div>
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  Postal Code *
+                </label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter postal code"
+                  disabled={isUpdating}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setStreetName('')
+                  setPostalCode('')
+                  setUpdateMessage(null)
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                disabled={isUpdating}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateAddress}
+                disabled={isUpdating || !streetName || !postalCode}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isUpdating && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
+                <span>{isUpdating ? 'Updating...' : 'Update'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
