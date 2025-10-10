@@ -1,15 +1,16 @@
-'use server'
-
-import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 /**
- * Server action to handle user logout
- * Clears the Supabase session and ALL cookies, then redirects to login page
+ * POST /api/auth/logout
+ *
+ * Logout API endpoint that ensures complete session cleanup:
+ * - Signs out from Supabase
+ * - Deletes all auth-related cookies
+ * - Clears server-side session state
  */
-export async function logout() {
+export async function POST(request: NextRequest) {
   const cookieStore = cookies()
 
   const supabase = createServerClient(
@@ -29,18 +30,19 @@ export async function logout() {
     }
   )
 
-  // Sign out from Supabase (this should set cookies to expire)
+  // Sign out from Supabase
   await supabase.auth.signOut()
 
-  // Explicitly delete all Supabase auth cookies
+  // Get all cookies and delete Supabase auth-related ones
   const allCookies = cookieStore.getAll()
   allCookies.forEach((cookie) => {
-    // Delete any Supabase auth-related cookies
     if (cookie.name.startsWith('sb-') || cookie.name.includes('auth-token')) {
       cookieStore.delete(cookie.name)
     }
   })
 
-  revalidatePath('/', 'layout')
-  redirect('/login')
+  return NextResponse.json(
+    { success: true, message: 'Logged out successfully' },
+    { status: 200 }
+  )
 }
