@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Search, ChevronDown, Edit, Trash, X, ArrowLeft, Plus } from 'lucide-react'
+import { Users, Search, ChevronDown, Edit, Trash, X, ArrowLeft, Plus, Key, Eye, EyeOff } from 'lucide-react'
 import { ComponentLoading } from '@/components/LoadingSystem'
 import { authGet, authPost, authDelete, authPatch } from '@/lib/auth-fetch'
 import { createClient } from '@/lib/supabase/client'
@@ -53,13 +53,20 @@ export default function ProfileManagementClientNew() {
 
   // Edit User Panel
   const [showEditPanel, setShowEditPanel] = useState(false)
-  const [activeTab, setActiveTab] = useState<'info' | 'permissions'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'permissions' | 'reset-password'>('info')
   const [editUserForm, setEditUserForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: ''
   })
+
+  // Password Reset State
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false)
+  const [resettingPassword, setResettingPassword] = useState(false)
 
   // Create User Panel
   const [showCreatePanel, setShowCreatePanel] = useState(false)
@@ -226,8 +233,56 @@ export default function ProfileManagementClientNew() {
     setShowEditPanel(false)
     setSelectedUser(null)
     setBusinessSearch('')
+    setNewPassword('')
+    setConfirmNewPassword('')
     setError(null)
     setSuccess(null)
+  }
+
+  const handleResetPassword = async () => {
+    if (!selectedUser) return
+
+    // Validation
+    if (!newPassword || newPassword.length < 6) {
+      setError('Password must be at least 6 characters long')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setError('Passwords do not match')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+
+    try {
+      setResettingPassword(true)
+      setError(null)
+      setSuccess(null)
+
+      const response = await authPost('/api/admin/users/reset-password', {
+        userId: selectedUser.id,
+        newPassword
+      })
+
+      if (response.success) {
+        setSuccess('Password reset successfully!')
+        setNewPassword('')
+        setConfirmNewPassword('')
+        setTimeout(() => {
+          setSuccess(null)
+          setActiveTab('info')
+        }, 2000)
+      } else {
+        setError(response.error || 'Failed to reset password')
+        setTimeout(() => setError(null), 3000)
+      }
+    } catch (err) {
+      setError('Failed to reset password')
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setResettingPassword(false)
+    }
   }
 
   // Get unique companies for filter
@@ -457,6 +512,18 @@ export default function ProfileManagementClientNew() {
             >
               Assign Permissions
             </button>
+            {selectedUser.role !== 0 && (
+              <button
+                onClick={() => setActiveTab('reset-password')}
+                className={`py-4 px-4 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === 'reset-password'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Reset Password
+              </button>
+            )}
           </nav>
         </div>
 
@@ -691,6 +758,106 @@ export default function ProfileManagementClientNew() {
               </div>
             </div>
           )}
+            </div>
+          )}
+
+          {/* Reset Password Tab */}
+          {activeTab === 'reset-password' && (
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-start space-x-3">
+                  <Key className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">Super Admin Password Reset</h4>
+                    <p className="text-sm text-blue-700">
+                      As a super admin, you can reset this user's password without knowing their current password.
+                      The user will be able to log in immediately with the new password.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* New Password Field */}
+                <div>
+                  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                    New Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      id="newPassword"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter new password (min. 6 characters)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm New Password Field */}
+                <div>
+                  <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                    Confirm New Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmNewPassword ? 'text' : 'password'}
+                      id="confirmNewPassword"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Confirm new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      {showConfirmNewPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setNewPassword('')
+                      setConfirmNewPassword('')
+                      setActiveTab('info')
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleResetPassword}
+                    disabled={resettingPassword || !newPassword || !confirmNewPassword}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {resettingPassword && (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                    <span>{resettingPassword ? 'Resetting...' : 'Reset Password'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

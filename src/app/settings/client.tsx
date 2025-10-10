@@ -513,6 +513,35 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                               )}
                             </button>
                           </div>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const supabase = createClient()
+                                const { error } = await supabase.auth.resetPasswordForEmail(
+                                  profile?.email || '',
+                                  {
+                                    redirectTo: `${window.location.origin}/auth/reset-password`
+                                  }
+                                )
+
+                                if (error) throw error
+
+                                setPasswordMessage({
+                                  type: 'success',
+                                  text: 'Password reset email sent! Please check your inbox.'
+                                })
+                              } catch (error) {
+                                setPasswordMessage({
+                                  type: 'error',
+                                  text: 'Failed to send password reset email'
+                                })
+                              }
+                            }}
+                            className="mt-2 text-sm text-purple-600 hover:text-purple-700 underline"
+                          >
+                            Forgot your current password?
+                          </button>
                         </div>
 
                         {/* New Password Field */}
