@@ -82,6 +82,11 @@ export async function authFetch(url: string, options: AuthFetchOptions = {}): Pr
       authTokenPrefix: session.access_token.substring(0, 30) + '...'
     })
 
+    // Check if already aborted before making the request
+    if (options.signal?.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError')
+    }
+
     const fetchOptions: RequestInit = {
       ...options,
       headers: fetchHeaders
@@ -113,6 +118,19 @@ export async function authFetch(url: string, options: AuthFetchOptions = {}): Pr
 
     return response
   } catch (error) {
+    // Don't log abort errors - these are expected during component unmount/navigation
+    const isAbortError =
+      (error instanceof Error && error.name === 'AbortError') ||
+      (error instanceof Error && error.message === 'Load failed') || // Fetch abort in some browsers
+      (error instanceof DOMException && error.name === 'AbortError') ||
+      options.signal?.aborted
+
+    if (isAbortError) {
+      // Silently re-throw abort errors without logging
+      throw error
+    }
+
+    // Only log real errors, not abort errors
     console.error('[AUTH_DEBUG] AuthFetch error:', {
       url,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -141,6 +159,19 @@ export async function authFetchJson<T = any>(url: string, options: AuthFetchOpti
 
     return await response.json()
   } catch (error) {
+    // Don't log abort errors - these are expected during component unmount/navigation
+    const isAbortError =
+      (error instanceof Error && error.name === 'AbortError') ||
+      (error instanceof Error && error.message === 'Load failed') || // Fetch abort in some browsers
+      (error instanceof DOMException && error.name === 'AbortError') ||
+      options.signal?.aborted
+
+    if (isAbortError) {
+      // Silently re-throw abort errors without logging
+      throw error
+    }
+
+    // Only log real errors, not abort errors
     console.error('AuthFetchJson error:', error)
     throw error
   }
@@ -149,33 +180,35 @@ export async function authFetchJson<T = any>(url: string, options: AuthFetchOpti
 /**
  * Authenticated GET request
  */
-export async function authGet<T = any>(url: string): Promise<T> {
-  return authFetchJson<T>(url, { method: 'GET' })
+export async function authGet<T = any>(url: string, signal?: AbortSignal): Promise<T> {
+  return authFetchJson<T>(url, { method: 'GET', signal })
 }
 
 /**
  * Authenticated POST request
  */
-export async function authPost<T = any>(url: string, data?: any): Promise<T> {
+export async function authPost<T = any>(url: string, data?: any, signal?: AbortSignal): Promise<T> {
   return authFetchJson<T>(url, {
     method: 'POST',
-    body: data ? JSON.stringify(data) : undefined
+    body: data ? JSON.stringify(data) : undefined,
+    signal
   })
 }
 
 /**
  * Authenticated PATCH request
  */
-export async function authPatch<T = any>(url: string, data?: any): Promise<T> {
+export async function authPatch<T = any>(url: string, data?: any, signal?: AbortSignal): Promise<T> {
   return authFetchJson<T>(url, {
     method: 'PATCH',
-    body: data ? JSON.stringify(data) : undefined
+    body: data ? JSON.stringify(data) : undefined,
+    signal
   })
 }
 
 /**
  * Authenticated DELETE request
  */
-export async function authDelete<T = any>(url: string): Promise<T> {
-  return authFetchJson<T>(url, { method: 'DELETE' })
+export async function authDelete<T = any>(url: string, signal?: AbortSignal): Promise<T> {
+  return authFetchJson<T>(url, { method: 'DELETE', signal })
 }
