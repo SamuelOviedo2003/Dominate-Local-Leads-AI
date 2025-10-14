@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Building2, Search, ChevronDown, ChevronUp, Edit, Trash, X, ArrowLeft, Plus, AlertTriangle } from 'lucide-react'
+import { Building2, Search, ChevronDown, ChevronUp, Edit, X, ArrowLeft, Plus } from 'lucide-react'
 import { ComponentLoading } from '@/components/LoadingSystem'
-import { authGet, authPost, authDelete, authPatch } from '@/lib/auth-fetch'
+import { authGet, authPost, authPatch } from '@/lib/auth-fetch'
 
 interface Business {
   business_id: number
@@ -28,7 +28,6 @@ interface Business {
   owners: string | null
   callers_intent: string | null
   intent_actions: string | null
-  calendar_id_2: string | null
   avatar_url: string | null
   dashboard: boolean | null
   area_codes: string | null
@@ -42,6 +41,7 @@ interface Business {
   dialpad_phone: string | null
   va_saturday: boolean | null
   va_sunday: boolean | null
+  dialpad_department_id: bigint | null
 }
 
 interface BusinessFormData {
@@ -58,7 +58,6 @@ interface BusinessFormData {
   api_key: string
   location_id: string
   calendar_id: string
-  calendar_id_2: string
   retell_phone: string
   dialpad_phone: string
   owners: string
@@ -77,6 +76,7 @@ interface BusinessFormData {
   permalink: string
   va_saturday: boolean
   va_sunday: boolean
+  dialpad_department_id: string
 }
 
 export default function BusinessManagement() {
@@ -101,7 +101,6 @@ export default function BusinessManagement() {
     api_key: '',
     location_id: '',
     calendar_id: '',
-    calendar_id_2: '',
     retell_phone: '',
     dialpad_phone: '',
     owners: '',
@@ -119,7 +118,8 @@ export default function BusinessManagement() {
     customer_cid: '',
     permalink: '',
     va_saturday: false,
-    va_sunday: false
+    va_sunday: false,
+    dialpad_department_id: ''
   })
 
   // Create Business Panel
@@ -138,7 +138,6 @@ export default function BusinessManagement() {
     api_key: '',
     location_id: '',
     calendar_id: '',
-    calendar_id_2: '',
     retell_phone: '',
     dialpad_phone: '',
     owners: '',
@@ -156,13 +155,9 @@ export default function BusinessManagement() {
     customer_cid: '',
     permalink: '',
     va_saturday: false,
-    va_sunday: false
+    va_sunday: false,
+    dialpad_department_id: ''
   })
-
-  // Delete confirmation
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   // Optional attributes toggle
   const [showOptionalCreate, setShowOptionalCreate] = useState(false)
@@ -246,7 +241,6 @@ export default function BusinessManagement() {
           api_key: '',
           location_id: '',
           calendar_id: '',
-          calendar_id_2: '',
           retell_phone: '',
           dialpad_phone: '',
           owners: '',
@@ -264,7 +258,8 @@ export default function BusinessManagement() {
           customer_cid: '',
           permalink: '',
           va_saturday: false,
-          va_sunday: false
+          va_sunday: false,
+          dialpad_department_id: ''
         })
         setShowOptionalCreate(false)
         await loadData()
@@ -308,31 +303,6 @@ export default function BusinessManagement() {
     }
   }
 
-  const deleteBusiness = async () => {
-    if (!businessToDelete) return
-
-    try {
-      setIsDeleting(true)
-      setError(null)
-      setSuccess(null)
-
-      const response = await authDelete(`/api/admin/businesses?businessId=${businessToDelete.business_id}`)
-
-      if (response.success) {
-        setSuccess(`Business "${businessToDelete.company_name}" deleted successfully`)
-        setShowDeleteConfirm(false)
-        setBusinessToDelete(null)
-        await loadData()
-      } else {
-        throw new Error(response.error || 'Failed to delete business')
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete business')
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
   const openEditPanel = (business: Business) => {
     setSelectedBusiness(business)
     setEditBusinessForm({
@@ -348,7 +318,6 @@ export default function BusinessManagement() {
       api_key: business.api_key || '',
       location_id: business.location_id || '',
       calendar_id: business.calendar_id || '',
-      calendar_id_2: business.calendar_id_2 || '',
       retell_phone: business.retell_phone || '',
       dialpad_phone: business.dialpad_phone || '',
       owners: business.owners || '',
@@ -366,7 +335,8 @@ export default function BusinessManagement() {
       customer_cid: business.customer_cid || '',
       permalink: business.permalink || '',
       va_saturday: business.va_saturday || false,
-      va_sunday: business.va_sunday || false
+      va_sunday: business.va_sunday || false,
+      dialpad_department_id: business.dialpad_department_id?.toString() || ''
     })
     setShowOptionalEdit(false)
     setShowEditPanel(true)
@@ -378,16 +348,6 @@ export default function BusinessManagement() {
     setShowOptionalEdit(false)
     setError(null)
     setSuccess(null)
-  }
-
-  const openDeleteConfirm = (business: Business) => {
-    setBusinessToDelete(business)
-    setShowDeleteConfirm(true)
-  }
-
-  const closeDeleteConfirm = () => {
-    setShowDeleteConfirm(false)
-    setBusinessToDelete(null)
   }
 
   // Get unique states and types for filters
@@ -428,56 +388,6 @@ export default function BusinessManagement() {
         >
           Retry
         </button>
-      </div>
-    )
-  }
-
-  // Delete Confirmation Modal
-  if (showDeleteConfirm && businessToDelete) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Delete Business</h3>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="px-6 py-4">
-            <p className="text-sm text-gray-700">
-              Are you sure you want to delete <span className="font-semibold">{businessToDelete.company_name}</span>?
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              This action cannot be undone. All data associated with this business will be permanently removed.
-            </p>
-          </div>
-
-          {/* Footer */}
-          <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
-            <button
-              onClick={closeDeleteConfirm}
-              disabled={isDeleting}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={deleteBusiness}
-              disabled={isDeleting}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
-            >
-              {isDeleting && (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              )}
-              <span>{isDeleting ? 'Deleting...' : 'Delete Business'}</span>
-            </button>
-          </div>
-        </div>
       </div>
     )
   }
@@ -667,13 +577,13 @@ export default function BusinessManagement() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Calendar ID 2</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Dialpad Department ID</label>
                     <input
                       type="text"
-                      value={newBusinessForm.calendar_id_2}
-                      onChange={(e) => setNewBusinessForm({ ...newBusinessForm, calendar_id_2: e.target.value })}
+                      value={newBusinessForm.dialpad_department_id}
+                      onChange={(e) => setNewBusinessForm({ ...newBusinessForm, dialpad_department_id: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Calendar ID 2"
+                      placeholder="Dialpad Department ID"
                     />
                   </div>
                 </div>
@@ -1109,13 +1019,13 @@ export default function BusinessManagement() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Calendar ID 2</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Dialpad Department ID</label>
                     <input
                       type="text"
-                      value={editBusinessForm.calendar_id_2}
-                      onChange={(e) => setEditBusinessForm({ ...editBusinessForm, calendar_id_2: e.target.value })}
+                      value={editBusinessForm.dialpad_department_id}
+                      onChange={(e) => setEditBusinessForm({ ...editBusinessForm, dialpad_department_id: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Calendar ID 2"
+                      placeholder="Dialpad Department ID"
                     />
                   </div>
                 </div>
@@ -1551,13 +1461,6 @@ export default function BusinessManagement() {
                         title="Edit business"
                       >
                         <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => openDeleteConfirm(business)}
-                        className="text-gray-400 hover:text-red-600"
-                        title="Delete business"
-                      >
-                        <Trash className="w-4 h-4" />
                       </button>
                     </div>
                   </td>

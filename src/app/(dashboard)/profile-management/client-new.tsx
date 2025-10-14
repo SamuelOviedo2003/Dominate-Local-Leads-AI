@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Search, ChevronDown, Edit, Trash, X, ArrowLeft, Plus, Key, Eye, EyeOff } from 'lucide-react'
+import { Users, Search, ChevronDown, Edit, Trash, X, ArrowLeft, Plus, Key, Eye, EyeOff, AlertTriangle } from 'lucide-react'
 import { ComponentLoading } from '@/components/LoadingSystem'
 import { authGet, authPost, authDelete, authPatch } from '@/lib/auth-fetch'
 import { createClient } from '@/lib/supabase/client'
@@ -84,6 +84,11 @@ export default function ProfileManagementClientNew() {
   // Business Assignment
   const [businessSearch, setBusinessSearch] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
+
+  // Delete confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
@@ -289,6 +294,41 @@ export default function ProfileManagementClientNew() {
     }
   }
 
+  const deleteUser = async () => {
+    if (!userToDelete) return
+
+    try {
+      setIsDeleting(true)
+      setError(null)
+      setSuccess(null)
+
+      const response = await authDelete(`/api/admin/users?userId=${userToDelete.id}`)
+
+      if (response.success) {
+        setSuccess(`User "${userToDelete.full_name || userToDelete.email}" deleted successfully`)
+        setShowDeleteConfirm(false)
+        setUserToDelete(null)
+        await loadData()
+      } else {
+        throw new Error(response.error || 'Failed to delete user')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete user')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const openDeleteConfirm = (user: User) => {
+    setUserToDelete(user)
+    setShowDeleteConfirm(true)
+  }
+
+  const closeDeleteConfirm = () => {
+    setShowDeleteConfirm(false)
+    setUserToDelete(null)
+  }
+
 
   // Get unique companies for filter
   const companies = data?.businesses || []
@@ -343,6 +383,56 @@ export default function ProfileManagementClientNew() {
         >
           Retry
         </button>
+      </div>
+    )
+  }
+
+  // Delete Confirmation Modal
+  if (showDeleteConfirm && userToDelete) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900">Delete User</h3>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-4">
+            <p className="text-sm text-gray-700">
+              Are you sure you want to delete <span className="font-semibold">{userToDelete.full_name || userToDelete.email}</span>?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              This action cannot be undone. The user will be permanently removed from the system and will lose access to all assigned businesses.
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 bg-gray-50 rounded-b-lg flex justify-end gap-3">
+            <button
+              onClick={closeDeleteConfirm}
+              disabled={isDeleting}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={deleteUser}
+              disabled={isDeleting}
+              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              {isDeleting && (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              )}
+              <span>{isDeleting ? 'Deleting...' : 'Delete User'}</span>
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -1052,16 +1142,11 @@ export default function ProfileManagementClientNew() {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          // Delete functionality
-                        }}
+                        onClick={() => openDeleteConfirm(user)}
                         className="text-gray-400 hover:text-red-600"
+                        title="Delete user"
                       >
                         <Trash className="w-4 h-4" />
-                      </button>
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <span className="text-lg">@</span>
                       </button>
                     </div>
                   </td>

@@ -179,6 +179,113 @@ export async function GET(request: NextRequest) {
 }
 
 /**
+ * DELETE /api/admin/users
+ * Delete a user profile and associated auth user
+ * Only accessible to super admins (role = 0)
+ * Requires service role key for deleting auth users
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    // Check authentication and authorization using JWT tokens
+    const { user } = await authenticateRequest(request)
+
+    // Only super admins can delete users
+    if (user.profile?.role !== 0) {
+      return NextResponse.json(
+        { error: 'Forbidden - Only super admins can delete users' },
+        { status: 403 }
+      )
+    }
+
+    // Get userId from query params
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get('userId')
+
+    // Validate userId is present
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Missing required parameter: userId' },
+        { status: 400 }
+      )
+    }
+
+    // Prevent super admin from deleting themselves
+    if (userId === user.id) {
+      return NextResponse.json(
+        { error: 'Cannot delete your own super admin account' },
+        { status: 400 }
+      )
+    }
+
+    // Create Supabase admin client using service role key
+    // This is required to delete auth users
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase configuration for service role')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createAdminClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
+
+    // Verify the target user exists and get their role
+    const { data: targetUser, error: targetError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, role, email')
+      .eq('id', userId)
+      .single()
+
+    if (targetError || !targetUser) {
+      return NextResponse.json(
+        { error: 'Target user not found' },
+        { status: 404 }
+      )
+    }
+
+    // Prevent deletion of other super admins
+    if (targetUser.role === 0) {
+      return NextResponse.json(
+        { error: 'Cannot delete other super admin accounts' },
+        { status: 400 }
+      )
+    }
+
+    // Delete the user from auth.users (this will cascade delete the profile via trigger/policy)
+    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+
+    if (deleteAuthError) {
+      console.error('Error deleting auth user:', deleteAuthError)
+      return NextResponse.json(
+        { error: 'Failed to delete user from authentication system' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'User deleted successfully'
+    })
+
+  } catch (error) {
+    console.error('Unexpected error in DELETE /api/admin/users:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
  * PATCH /api/admin/users
  * Update user information (name, email, phone) or role
  * Only accessible to super admins (role = 0)
