@@ -104,14 +104,16 @@ export function createBusinessDialpadUrl(
     return null
   }
 
-  // Build the URL with the specific format requested
+  // Build the URL - first number keeps the + sign
   let url = `dialpad://${formattedPhone}`
 
   // Add fromNumber if dialpadPhone is provided
+  // Replace + with %20 for the fromNumber parameter
   if (dialpadPhone) {
     const formattedDialpadPhone = formatPhoneForDialpad(dialpadPhone)
     if (formattedDialpadPhone) {
-      url += `?fromNumber=${formattedDialpadPhone}`
+      const encodedDialpadPhone = formattedDialpadPhone.replace(/\+/g, '%20')
+      url += `?fromNumber=${encodedDialpadPhone}`
     }
   }
 

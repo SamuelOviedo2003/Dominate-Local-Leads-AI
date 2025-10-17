@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { authenticateRequest } from '@/lib/api-auth'
 import { createCookieClient } from '@/lib/supabase/server'
+import { sendDepartmentCheckWebhook } from '@/lib/utils/departmentWebhook'
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +38,30 @@ export async function POST(request: NextRequest) {
     if (error) {
       throw new Error('Failed to update business context')
     }
+
+    // Send department check webhook after successful switch
+    // Fetch user's dialpad_id and the business dialpad_phone
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('dialpad_id')
+      .eq('id', user.id)
+      .single()
+
+    const { data: businessData } = await supabase
+      .from('business_clients')
+      .select('dialpad_phone')
+      .eq('business_id', businessIdInt)
+      .single()
+
+    console.log('[SWITCH-BUSINESS] Webhook check:', {
+      has_dialpad_id: !!profileData?.dialpad_id,
+      dialpad_id: profileData?.dialpad_id,
+      has_dialpad_phone: !!businessData?.dialpad_phone,
+      dialpad_phone: businessData?.dialpad_phone
+    })
+
+    // Always call webhook function - it handles validation internally
+    await sendDepartmentCheckWebhook(profileData?.dialpad_id, businessData?.dialpad_phone)
 
     return Response.json({ success: true })
   } catch (error) {

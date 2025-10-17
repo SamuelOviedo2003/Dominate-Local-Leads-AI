@@ -24,7 +24,7 @@ export async function GET() {
     // Fetch complete profile data with latest information
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .select('id, email, full_name, avatar_url, role, business_id, telegram_id, ghl_id, created_at, updated_at')
+      .select('id, email, full_name, avatar_url, role, business_id, telegram_id, ghl_id, dialpad_id, created_at, updated_at')
       .eq('id', user.id)
       .single()
 
@@ -124,7 +124,7 @@ export async function PATCH(request: NextRequest) {
       .from('profiles')
       .update(updateData)
       .eq('id', user.id)
-      .select('id, email, full_name, avatar_url, role, business_id, telegram_id, ghl_id, created_at, updated_at')
+      .select('id, email, full_name, avatar_url, role, business_id, telegram_id, ghl_id, dialpad_id, created_at, updated_at')
       .single()
 
     if (updateError) {

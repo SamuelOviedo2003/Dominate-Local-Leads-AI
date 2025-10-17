@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCookieClient } from '@/lib/supabase/server'
 import { AuthUser, Profile, BusinessSwitcherData } from '@/types/auth'
+import { sendDepartmentCheckWebhook } from '@/lib/utils/departmentWebhook'
 
 /**
  * Consolidated post-login endpoint that handles all authentication setup
@@ -88,6 +89,24 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       )
     }
+
+    // Send department check webhook
+    // Fetch dialpad_phone from business_clients for the target business
+    const { data: businessData } = await supabase
+      .from('business_clients')
+      .select('dialpad_phone')
+      .eq('business_id', parseInt(targetBusiness.business_id))
+      .single()
+
+    console.log('[POST-LOGIN] Webhook check:', {
+      has_dialpad_phone: !!businessData?.dialpad_phone,
+      dialpad_phone: businessData?.dialpad_phone,
+      has_profile_dialpad_id: !!profile.dialpad_id,
+      profile_dialpad_id: profile.dialpad_id
+    })
+
+    // Always call webhook function - it handles validation internally
+    await sendDepartmentCheckWebhook(profile.dialpad_id, businessData?.dialpad_phone)
 
     // Build complete user object
     const authUser: AuthUser = {

@@ -7,6 +7,7 @@ export interface Profile {
   business_id: string // Auth system returns as string
   telegram_id: string | null
   ghl_id: string | null
+  dialpad_id: string | null
   created_at: string
   updated_at: string
 }
@@ -21,6 +22,7 @@ export interface ProfileNormalized {
   business_id: number // Converted to number for database operations
   telegram_id: string | null
   ghl_id: string | null
+  dialpad_id: string | null
   created_at: string
   updated_at: string
 }
