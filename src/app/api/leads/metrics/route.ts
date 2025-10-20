@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     // Fetch all leads for metrics calculation
     const { data: leads, error } = await supabase
       .from('leads')
-      .select('lead_id, contacted, start_time, created_at')
+      .select('lead_id, start_time, created_at')
       .gte('created_at', startDate)
       .eq('business_id', requestedBusinessId)
       .order('created_at', { ascending: false })
@@ -43,17 +43,13 @@ export async function GET(request: NextRequest) {
 
     // Calculate metrics
     const total = leads.length
-    const contacted = leads.filter(lead => lead.contacted).length
     const booked = leads.filter(lead => lead.start_time !== null).length
-    
-    const contactRate = total > 0 ? (contacted / total) * 100 : 0
-    const bookingRate = contacted > 0 ? (booked / contacted) * 100 : 0
+
+    const bookingRate = total > 0 ? (booked / total) * 100 : 0
 
     const metrics: LeadMetrics = {
       total,
-      contacted,
       booked,
-      contactRate: Math.round(contactRate * 100) / 100,
       bookingRate: Math.round(bookingRate * 100) / 100
     }
 

@@ -92,7 +92,6 @@ export const updateLeadSchema = z.object({
   leadId: leadIdSchema,
   businessId: businessIdSchema,
   callerType: z.enum(CALLER_TYPE_OPTIONS).nullable().optional(),
-  contacted: z.boolean().optional(),
   startTime: z.string().datetime().optional().nullable(),
   show: z.boolean().optional(),
   closedAmount: z.number().min(0).optional().nullable()

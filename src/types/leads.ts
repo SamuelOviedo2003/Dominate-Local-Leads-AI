@@ -9,14 +9,11 @@ export interface Lead {
   service: string
   source?: string | null // Lead source information
   how_soon?: string | null // How soon the customer needs the service
-  status: string
-  contacted: boolean
   start_time: string | null
   show: boolean
   closed_amount: number | null
   created_at: string
   working_hours?: boolean
-  next_step?: string
   payment_type?: string | null
   roof_age?: string | null
   homeowner?: boolean | null
@@ -30,6 +27,15 @@ export interface Lead {
   score_summary?: string | null // Score-based summary field
   caller_type?: 'Client' | 'Sales person' | 'Other' | 'Looking for job' | null // Type of caller classification
   ai_recap_purposes?: string | null // Text field for purposes from AI recap
+  form_count?: number
+  phone_2?: string | null
+  area_code?: boolean | null
+  self_booked?: boolean | null
+  ai_recap_outcome?: string | null
+  assigned?: string | null
+  assigned_id?: string | null
+  client_id?: number | null
+  sales_id?: string | null
 }
 
 export interface Client {
@@ -49,7 +55,6 @@ export interface LeadCall {
   duration: number
   time_speed: number
   created_at: string
-  next_step?: string
 }
 
 export interface LeadWithClient extends Lead {
@@ -59,18 +64,14 @@ export interface LeadWithClient extends Lead {
 
 export interface LeadMetrics {
   total: number
-  contacted: number
   booked: number
-  contactRate: number
   bookingRate: number
 }
 
 export interface AppointmentSetter {
   name: string
   totalLeads: number
-  contacted: number
   booked: number
-  contactRate: number
   bookingRate: number
   totalCallTime: number
   avgResponseSpeed: number
