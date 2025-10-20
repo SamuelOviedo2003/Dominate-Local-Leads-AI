@@ -31,6 +31,25 @@ function copyRecursively(source, target) {
   }
 }
 
+function sleep(ms) {
+  const start = Date.now();
+  while (Date.now() - start < ms) {
+    // Busy wait - not ideal but works everywhere
+  }
+}
+
+function waitForStandaloneBuild(standalonePath, maxRetries = 10, delayMs = 500) {
+  for (let i = 0; i < maxRetries; i++) {
+    if (fs.existsSync(standalonePath)) {
+      console.log('✅ Standalone build directory found');
+      return true;
+    }
+    console.log(`⏳ Waiting for standalone build... (attempt ${i + 1}/${maxRetries})`);
+    sleep(delayMs);
+  }
+  return false;
+}
+
 function main() {
   console.log('🚀 Starting post-build asset copy for standalone deployment...');
 
@@ -43,10 +62,10 @@ function main() {
     process.exit(1);
   }
 
-  // Verify standalone build exists
+  // Verify standalone build exists (with retries)
   const standalonePath = path.join(__dirname, '..', '.next', 'standalone');
-  if (!fs.existsSync(standalonePath)) {
-    console.error('❌ Error: standalone build not found. Run `npm run build` first.');
+  if (!waitForStandaloneBuild(standalonePath)) {
+    console.error('❌ Error: standalone build not found after waiting. Run `npm run build` first.');
     process.exit(1);
   }
 
