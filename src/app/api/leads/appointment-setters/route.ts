@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Step 1: Get base leads data using cached business ID
     const { data: leads, error: leadsError } = await supabase
       .from('leads')
-      .select('lead_id, start_time, created_at, working_hours')
+      .select('lead_id, contacted, start_time, created_at, working_hours')
       .gte('created_at', startDate)
       .eq('business_id', businessId)
 
@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
     // Group data by appointment setter
     const setterData = new Map<string, {
       leadIds: Set<string>
+      contacted: number
       booked: number
       totalCallTime: number
       responseSpeeds: number[]
@@ -92,6 +93,7 @@ export async function GET(request: NextRequest) {
       if (!setterData.has(call.assigned)) {
         setterData.set(call.assigned, {
           leadIds: new Set(),
+          contacted: 0,
           booked: 0,
           totalCallTime: 0,
           responseSpeeds: []
@@ -105,6 +107,10 @@ export async function GET(request: NextRequest) {
       const setterCall = calls.find(call => call.lead_id === lead.lead_id)
       if (setterCall) {
         const setterStats = setterData.get(setterCall.assigned)!
+
+        if (lead.contacted) {
+          setterStats.contacted++
+        }
 
         if (lead.start_time) {
           setterStats.booked++
@@ -123,8 +129,10 @@ export async function GET(request: NextRequest) {
     const appointmentSetters: AppointmentSetter[] = Array.from(setterData.entries())
       .map(([name, stats]) => {
         const totalLeads = stats.leadIds.size
+        const contacted = stats.contacted
         const booked = stats.booked
-        const bookingRate = totalLeads > 0 ? (booked / totalLeads) * 100 : 0
+        const contactRate = totalLeads > 0 ? (contacted / totalLeads) * 100 : 0
+        const bookingRate = contacted > 0 ? (booked / contacted) * 100 : 0
         const avgResponseSpeed = stats.responseSpeeds.length > 0
           ? stats.responseSpeeds.reduce((sum, speed) => sum + speed, 0) / stats.responseSpeeds.length
           : 0
@@ -132,7 +140,9 @@ export async function GET(request: NextRequest) {
         return {
           name,
           totalLeads,
+          contacted,
           booked,
+          contactRate: Math.round(contactRate * 100) / 100,
           bookingRate: Math.round(bookingRate * 100) / 100,
           totalCallTime: stats.totalCallTime,
           avgResponseSpeed: Math.round(avgResponseSpeed * 100) / 100

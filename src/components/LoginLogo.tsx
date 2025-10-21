@@ -6,49 +6,42 @@ interface LoginLogoProps {
   className?: string
 }
 
-export default function LoginLogo({ className = '' }: LoginLogoProps) {
+export default function LoginLogo({ }: LoginLogoProps) {
   const [imageError, setImageError] = useState(false)
-  const [imageLoaded, setImageLoaded] = useState(false)
 
   const handleImageError = () => {
-    // Failed to load logo image, showing fallback text
     setImageError(true)
-  }
-
-  const handleImageLoad = () => {
-    setImageLoaded(true)
   }
 
   // Fallback component with consistent styling
   if (imageError) {
     return (
-      <div
-        className={`${className} mx-auto flex items-center justify-center h-24 text-2xl font-bold text-blue-600 drop-shadow-2xl`}
-        style={{
-          maxHeight: '96px',
-          width: 'auto',
-          filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3))'
-        }}
-      >
-        Dominate Local Leads AI
+      <div className="flex items-center justify-center min-h-[120px]">
+        <div className="text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-white drop-shadow-2xl tracking-tight">
+            Jenn's Roofing
+          </h1>
+          <p className="text-white/70 text-sm mt-2">Professional Roofing Services</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <img
-      src="/images/DominateLocalLeadsLogoLogIn.webp"
-      alt="Dominate Local Leads AI"
-      className={`${className} mx-auto h-auto max-h-24 object-contain drop-shadow-2xl transition-opacity duration-300 ${
-        imageLoaded ? 'opacity-100' : 'opacity-0'
-      }`}
-      style={{ 
-        maxHeight: '96px', 
-        width: 'auto',
-        filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3))'
-      }}
-      onError={handleImageError}
-      onLoad={handleImageLoad}
-    />
+    <div className="flex items-center justify-center min-h-[120px]">
+      <img
+        src="/images/jennsLogo.png"
+        alt="Jenn's Roofing"
+        className="mx-auto object-contain"
+        style={{
+          maxHeight: '120px',
+          maxWidth: '100%',
+          width: 'auto',
+          height: 'auto'
+        }}
+        onError={handleImageError}
+        loading="eager"
+      />
+    </div>
   )
 }

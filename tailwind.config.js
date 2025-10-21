@@ -12,20 +12,33 @@ module.exports = {
         sans: ['var(--font-plus-jakarta-sans)', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // Brand Orange (from logo) - Split-complementary harmony
+        // Brand Orange (from Jenn's Roofing logo) - #E2724D
         'brand-orange': {
-          50: '#FFF4ED',
-          100: '#FFE4CC',
-          200: '#FFC599',
-          300: '#FF9F66',
-          400: '#FF7A33',
-          500: '#FF6B35', // Logo match
-          600: '#E55B2B',
-          700: '#CC4C22',
-          800: '#B23E1A',
-          900: '#993312',
+          50: '#FEF6F2',
+          100: '#FDECE5',
+          200: '#FBD9CC',
+          300: '#F9C5B2',
+          400: '#F79E80',
+          500: '#E2724D', // Primary logo orange
+          600: '#D15A35',
+          700: '#B64725',
+          800: '#923819',
+          900: '#6E2A13',
         },
-        // Professional Slate (replaces blue theme)
+        // Brand Blue - #1B365D
+        'brand-blue': {
+          50: '#EBF0F7',
+          100: '#D7E1EF',
+          200: '#AFC3DF',
+          300: '#87A5CF',
+          400: '#5F87BF',
+          500: '#1B365D', // Primary brand blue
+          600: '#162B4A',
+          700: '#102038',
+          800: '#0B1625',
+          900: '#050B13',
+        },
+        // Professional Slate (supporting colors)
         'brand-slate': {
           50: '#F8FAFC',
           100: '#F1F5F9',
@@ -38,19 +51,6 @@ module.exports = {
           800: '#1E293B',
           900: '#0F172A',
         },
-        // Coral accent colors for loading system
-        'coral': {
-          50: '#FFF5F5',
-          100: '#FED7D7',
-          200: '#FEB2B2',
-          300: '#FC8181',
-          400: '#F87171', // Primary coral color from spec
-          500: '#F56565',
-          600: '#E53E3E',
-          700: '#C53030',
-          800: '#9B2C2C',
-          900: '#742A2A',
-        }
       },
       animation: {
         'gradient': 'gradient 15s ease infinite',

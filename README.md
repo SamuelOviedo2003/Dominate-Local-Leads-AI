@@ -149,16 +149,16 @@ WHERE id = $userId;
 
 #### Visual Design
 - **Requirement**: Login forms must be centered on screen
-- **Requirement**: Background must use animated gradient (blue to indigo to purple)
+- **Requirement**: Background must use animated gradient (blue-orange gradient: `from-brand-blue-800 via-brand-slate-700 to-brand-orange-900`)
 - **Requirement**: Forms must use glass morphism effect with backdrop blur
 - **Requirement**: Company logo must display above form using LoginLogo component
 - **Requirement**: Logo must maintain natural aspect ratio
-- **Fixed**: Logo implementation completely redesigned for production reliability:
-  - Uses custom LoginLogo component with robust fallback system
+- **Updated**: Logo implementation simplified for immediate display:
+  - Uses custom LoginLogo component with error handling
   - Implements plain HTML img tags instead of Next.js Image component
-  - Primary logo: `/images/DominateLocalLeadsLogo.png`
-  - Fallback options: Multiple image formats with error handling
-  - Enhanced loading states and visual feedback
+  - Primary logo: `/images/jennsLogo.png` (Jenn's Roofing branding)
+  - Removed fade effects, loading states, and white glow for instant display
+  - Logo displays immediately without transitions
   - Resolves Docker deployment static asset serving issues
 
 #### Authentication Flow
@@ -2120,7 +2120,7 @@ const Component = ({ loading, data }) => {
 ### Production Deployment Requirements
 - **Build Type**: Next.js standalone build optimized for production
 - **Static Assets**: Public folder assets automatically copied to standalone build
-- **Logo Requirements**: Production logo path must resolve to `/images/DominateLocalLeadsLogo.png`
+- **Logo Requirements**: Production logo path must resolve to `/images/jennsLogo.png` (Jenn's Roofing branding)
 - **Post-Build Processing**: Automated script copies public assets to standalone build directory
 - **Environment Configuration**: Production NEXT_PUBLIC_SITE_URL must be set to actual domain
 - **Docker Build Requirements**: 

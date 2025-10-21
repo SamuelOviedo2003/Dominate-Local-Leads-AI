@@ -140,6 +140,21 @@ function AppointmentSettersComponent({ setters, isLoading, error }: AppointmentS
                 </div>
 
                 <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Contacted</div>
+                    <div className="flex items-baseline space-x-2">
+                      <div className="text-xl font-bold text-gray-900">{setter.contacted}</div>
+                      <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                        {setter.contactRate.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                     <CheckCircle className="w-4 h-4 text-green-600" />
                   </div>

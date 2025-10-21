@@ -123,7 +123,7 @@ export default function UniversalHeader({
   // Initialize fallback color extraction only once
   useEffect(() => {
     if (availableBusinesses.length === 0) {
-      extractColors('/images/DominateLocalLeadsLogo.png', 'main-logo')
+      extractColors('/images/jennsLogo.png', 'main-logo')
     }
   }, [availableBusinesses.length, extractColors])
 
@@ -156,11 +156,11 @@ export default function UniversalHeader({
                 /* Fallback to main logo if no accessible businesses */
                 <div className="relative group">
                   <ImageWithFallback
-                    src="/images/DominateLocalLeadsLogo.png"
-                    alt="Dominate Local Leads AI"
+                    src="/images/jennsLogo.png"
+                    alt="Jenn's Roofing"
                     className="h-10 w-auto object-contain drop-shadow-lg transition-transform duration-300 group-hover:scale-105"
                     fallbackBehavior="placeholder"
-                    fallbackText="Dominate Local Leads AI"
+                    fallbackText="Jenn's Roofing"
                     extractColors={true}
                     onColorsExtracted={handleFallbackColorsExtracted}
                     businessId="main-logo"

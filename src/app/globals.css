@@ -24,7 +24,7 @@
 
   /* Accessibility improvements */
   *:focus {
-    outline: 2px solid #FF7A33;
+    outline: 2px solid #E2724D;
     outline-offset: 2px;
   }
 
@@ -239,19 +239,19 @@
 
   /* Shadow Utilities */
   .shadow-glass {
-    box-shadow: 0 8px 32px 0 rgba(71, 85, 105, 0.37);
+    box-shadow: 0 8px 32px 0 rgba(13, 13, 13, 0.15);
   }
 
   .shadow-glow {
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.3);
+    box-shadow: 0 0 20px rgba(226, 114, 77, 0.3);
   }
 
   .shadow-glow-orange {
-    box-shadow: 0 0 20px rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 20px rgba(226, 114, 77, 0.4);
   }
 
-  .shadow-glow-slate {
-    box-shadow: 0 0 20px rgba(71, 85, 105, 0.3);
+  .shadow-glow-black {
+    box-shadow: 0 0 20px rgba(13, 13, 13, 0.3);
   }
 
   /* Safe Area Utilities for mobile devices */
@@ -293,10 +293,10 @@
 
   /* CSS Custom Properties for Dynamic Theming */
   :root {
-    --dynamic-primary: #FF6B35;
-    --dynamic-primary-dark: #B23E1A;
-    --dynamic-primary-light: #FF9F66;
-    --dynamic-accent: #334155;
+    --dynamic-primary: #E2724D;
+    --dynamic-primary-dark: #923819;
+    --dynamic-primary-light: #F79E80;
+    --dynamic-accent: #1A1A1A;
     --dynamic-text: #FFFFFF;
     --dynamic-is-light: 0;
   }

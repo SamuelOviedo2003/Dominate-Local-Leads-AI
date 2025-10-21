@@ -9,6 +9,7 @@ export interface Lead {
   service: string
   source?: string | null // Lead source information
   how_soon?: string | null // How soon the customer needs the service
+  contacted?: boolean // Whether the lead has been contacted
   start_time: string | null
   show: boolean
   closed_amount: number | null
@@ -64,14 +65,18 @@ export interface LeadWithClient extends Lead {
 
 export interface LeadMetrics {
   total: number
+  contacted: number
   booked: number
+  contactRate: number
   bookingRate: number
 }
 
 export interface AppointmentSetter {
   name: string
   totalLeads: number
+  contacted: number
   booked: number
+  contactRate: number
   bookingRate: number
   totalCallTime: number
   avgResponseSpeed: number
