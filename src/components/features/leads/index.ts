@@ -2,6 +2,7 @@ export { LeadMetrics } from './LeadMetrics'
 // TEMPORARILY DISABLED: AppointmentSetters export commented out due to missing time_speed column
 // export { AppointmentSetters } from './AppointmentSetters'
 export { LeadsTable } from './LeadsTable'
+export { WaitingToCallTable } from './WaitingToCallTable'
 export { TimePeriodFilter } from './TimePeriodFilter'
 export { AudioPlayer } from './AudioPlayer'
 export { CommunicationsHistory } from './CommunicationsHistory'

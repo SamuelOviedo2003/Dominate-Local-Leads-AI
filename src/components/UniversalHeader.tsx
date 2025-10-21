@@ -196,10 +196,8 @@ export default function UniversalHeader({
 
             {/* Far Right: Profile Section */}
             <div className="flex items-center space-x-3">
-              {/* User Dropdown with Glass Effect */}
-              <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-1 shadow-lg">
-                <UserDropdown user={user} logoutAction={logoutAction} />
-              </div>
+              {/* User Dropdown - Perfect Circle */}
+              <UserDropdown user={user} logoutAction={logoutAction} />
 
               {/* Mobile Menu Button */}
               <button

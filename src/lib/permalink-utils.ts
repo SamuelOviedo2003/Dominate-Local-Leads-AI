@@ -152,6 +152,7 @@ export const NAVIGATION_SECTIONS = [
   { name: 'Dashboard', section: 'dashboard' },
   { name: 'New Leads', section: 'new-leads' },
   { name: 'Follow Up', section: 'follow-up' },
+  { name: 'Waiting to Call', section: 'waiting-to-call' },
   { name: 'Bookings', section: 'bookings' },
   { name: 'Incoming Calls', section: 'incoming-calls' }
 ] as const

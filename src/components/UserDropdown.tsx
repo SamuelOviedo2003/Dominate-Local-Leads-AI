@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, LogOut, Settings } from 'lucide-react'
+import { LogOut, Settings } from 'lucide-react'
 import { AuthUser } from '@/types/auth'
 import { useSecureLogout } from '@/hooks/useSecureLogout'
 import { useClickOutside } from '@/hooks/useClickOutside'
@@ -62,25 +62,16 @@ export default function UserDropdown({ user, logoutAction }: UserDropdownProps) 
 
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Dropdown Trigger */}
+      {/* Dropdown Trigger - Circle with First Letter Only */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-all duration-300"
+        className="w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 cursor-pointer border-0 p-0"
+        style={{ aspectRatio: '1/1' }}
         aria-expanded={isOpen}
         aria-haspopup="menu"
         aria-label="User menu"
-      >        
-        {/* User Email */}
-        <span className="text-sm text-white font-medium max-w-32 truncate">
-          {user?.email || 'Unknown User'}
-        </span>
-        
-        {/* Chevron Icon */}
-        <ChevronDown 
-          className={`w-4 h-4 text-white/80 transition-transform ${
-            isOpen ? 'rotate-180' : ''
-          }`} 
-        />
+      >
+        {getInitials(user?.email)}
       </button>
 
       {/* Dropdown Menu */}

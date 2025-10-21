@@ -63,6 +63,13 @@ export interface LeadWithClient extends Lead {
   callWindows?: CallWindow[]
 }
 
+// WaitingToCallLead is just a LeadWithClient with additional business info for cross-business display
+// Leads with stage=1 and call_now_status=3 are considered "waiting to call"
+export interface WaitingToCallLead extends LeadWithClient {
+  business_name: string // Business name for cross-business display
+  business_permalink?: string // Business permalink for navigation
+}
+
 export interface LeadMetrics {
   total: number
   contacted: number

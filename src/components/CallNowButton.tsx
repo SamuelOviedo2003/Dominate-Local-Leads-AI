@@ -33,26 +33,17 @@ export const CallNowButton: React.FC<CallNowButtonProps> = ({
   }
 
   return (
-    <div className="flex flex-col items-start gap-2">
-      <button
-        onClick={handleCall}
-        className={`inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 ${className}`}
-      >
-        <div className="flex items-center space-x-3">
-          <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-            <Phone className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-lg font-bold">Call Now</span>
+    <button
+      onClick={handleCall}
+      className={`inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 ${className}`}
+    >
+      <div className="flex items-center space-x-3">
+        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+          <Phone className="w-4 h-4 text-white" />
         </div>
-      </button>
-
-      {/* Debug Info - Discreet URL display */}
-      {dialpadUrl && (
-        <div className="text-[10px] font-mono text-gray-400 break-all max-w-full">
-          {dialpadUrl}
-        </div>
-      )}
-    </div>
+        <span className="text-lg font-bold">Call Now</span>
+      </div>
+    </button>
   )
 }
 

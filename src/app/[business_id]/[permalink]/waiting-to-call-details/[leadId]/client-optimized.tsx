@@ -6,10 +6,10 @@ import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { CallWindows } from '@/components/features/leads/CallWindows'
 import { CallNowButton } from '@/components/CallNowButton'
+import { CallNextLeadButton } from '@/components/CallNextLeadButton'
 import { LeadStageDropdown } from '@/components/LeadStageDropdown'
 import { BookingButton } from '@/components/BookingButton'
 import { CircularTimer } from '@/components/features/leads/CircularTimer'
-import { useCurrentBusiness } from '@/contexts/BusinessContext'
 import { useLeadDetailsDataOptimized } from '@/hooks/useLeadDetailsDataOptimized'
 import { usePermalinkNavigation } from '@/lib/permalink-navigation'
 import { ComponentLoading } from '@/components/LoadingSystem'
@@ -49,7 +49,7 @@ function ErrorDisplay({ message, onRetry, onGoBack }: { message: string; onRetry
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to New Leads
+            Back to Waiting to Call
           </button>
         </div>
 
@@ -79,13 +79,12 @@ function ErrorDisplay({ message, onRetry, onGoBack }: { message: string; onRetry
   )
 }
 
-const LeadDetailsPageOptimized = () => {
+const WaitingToCallDetailsPageOptimized = () => {
   const params = useParams()
-  const selectedCompany = useCurrentBusiness()
   const { navigateToSection } = usePermalinkNavigation()
 
   const leadId = params.leadId as string
-  const businessId = selectedCompany?.business_id
+  const businessId = params.business_id as string
 
   const {
     leadDetails,
@@ -101,12 +100,12 @@ const LeadDetailsPageOptimized = () => {
   // IMPORTANT: This useEffect must be before any conditional returns to follow React hooks rules
   useEffect(() => {
     if (error && error.includes('Lead not found')) {
-      navigateToSection('new-leads')
+      navigateToSection('waiting-to-call')
     }
   }, [error, navigateToSection])
 
   const handleGoBack = () => {
-    navigateToSection('new-leads')
+    navigateToSection('waiting-to-call')
   }
 
   // Handle cases where we don't have required data yet
@@ -142,7 +141,7 @@ const LeadDetailsPageOptimized = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header with Back Navigation, Circular Timer, Stage Dropdown, and Call Now Button */}
+        {/* Header with Back Navigation, Call Next Lead, Circular Timer, Stage Dropdown, and Call Now Button */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -152,10 +151,18 @@ const LeadDetailsPageOptimized = () => {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to New Leads
+              Back to Waiting to Call
             </button>
 
-            {/* Circular Timer */}
+            {/* Call Next Lead Button - ONLY shown in this route */}
+            {businessId && (
+              <CallNextLeadButton
+                businessId={businessId}
+                currentLeadId={leadId}
+              />
+            )}
+
+            {/* Circular Timer - centered between buttons and Stage dropdown */}
             <CircularTimer
               callWindows={leadDetails?.callWindows || null}
               businessTimezone={leadDetails?.businessTimezone}
@@ -225,4 +232,4 @@ const LeadDetailsPageOptimized = () => {
 }
 
 // Export the memoized component to prevent unnecessary re-renders
-export default memo(LeadDetailsPageOptimized)
+export default memo(WaitingToCallDetailsPageOptimized)

@@ -204,11 +204,10 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           const statusConfig = hasStatus ? getStatusConfig(window.status) : null
 
           // Check conditions for showing called_at time (applies to all calls)
-          // Show called_at if: active=true AND Call #1's working_hours=true AND calledAt exists
-          // Note: Only Call #1 has working_hours field populated, but it applies to all calls for the lead
+          // Show called_at if: active=true AND calledAt exists
+          // Working hours condition has been removed - display call time regardless of working hours
           const shouldShowCalledAt =
             window.active === true &&
-            callOneWorkingHours === true &&
             window.calledAt
 
           const calledAtTime = shouldShowCalledAt ? formatTimeOnly(window.calledAt!, businessTimezone) : null
@@ -217,8 +216,6 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
           logger.debug('Call Window called_at logic', {
             active: window.active,
             callNumber: window.callNumber,
-            callOneWorkingHours: callOneWorkingHours,
-            windowWorkingHours: window.working_hours,
             hasCalledAt: !!window.calledAt,
             shouldShow: shouldShowCalledAt,
             calledAtTime
