@@ -205,15 +205,6 @@ const WaitingToCallDetailsPageOptimized = () => {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left Column - Communications History (60% width) */}
           <div className="lg:col-span-3 w-full">
-            {(() => {
-              console.log('[WaitingToCallDetailsClient] Phone data:', {
-                leadPhone: leadDetails?.lead?.phone,
-                businessPhone: leadDetails?.dialpadPhone,
-                hasLead: !!leadDetails?.lead,
-                leadData: leadDetails?.lead
-              })
-              return null
-            })()}
             <CommunicationsHistory
               communications={leadDetails?.communications || null}
               callWindows={leadDetails?.callWindows || null}
