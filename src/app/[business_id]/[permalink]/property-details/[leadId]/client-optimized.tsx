@@ -209,6 +209,9 @@ const PropertyDetailsPageOptimized = () => {
               error={null} // No individual errors since we handle errors globally
               leadId={leadId}
               businessId={businessId}
+              businessTimezone={leadDetails?.businessTimezone}
+              leadPhone={leadDetails?.lead?.phone}
+              businessPhone={leadDetails?.dialpadPhone}
             />
           </div>
 

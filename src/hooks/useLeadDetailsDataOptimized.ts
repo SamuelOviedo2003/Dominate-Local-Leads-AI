@@ -50,6 +50,14 @@ export function useLeadDetailsDataOptimized({ leadId, businessId }: UseLeadDetai
 
       const result: ApiResponse<LeadDetails> = await response.json()
 
+      console.log('[useLeadDetailsDataOptimized] API response:', {
+        success: result.success,
+        hasData: !!result.data,
+        leadPhone: result.data?.lead?.phone,
+        dialpadPhone: result.data?.dialpadPhone,
+        fullLeadData: result.data?.lead
+      })
+
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch lead details')
       }

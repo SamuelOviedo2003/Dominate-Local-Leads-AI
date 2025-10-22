@@ -55,13 +55,25 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
    */
   const handleSendMessage = useCallback(async () => {
     if (!message.trim()) {
+      console.log('[CommunicationsHistory] Message is empty')
       return
     }
 
     if (!leadId || !leadPhone || !businessPhone) {
-      // Missing required fields
+      console.error('[CommunicationsHistory] Missing required fields:', {
+        leadId,
+        leadPhone,
+        businessPhone
+      })
       return
     }
+
+    console.log('[CommunicationsHistory] Sending message:', {
+      from_number: businessPhone,
+      to_number: leadPhone,
+      text: message.trim(),
+      lead_id: leadId
+    })
 
     try {
       // Send the message via webhook with Dialpad SMS format
@@ -72,15 +84,17 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
         lead_id: leadId
       })
 
+      console.log('[CommunicationsHistory] Send result:', result)
+
       if (result.success) {
         // Clear the message input on success
         setMessage('')
-        // Message sent successfully
+        console.log('[CommunicationsHistory] Message sent successfully')
       } else {
-        // Failed to send message
+        console.error('[CommunicationsHistory] Failed to send message:', result.error)
       }
     } catch (error) {
-      // Error sending message
+      console.error('[CommunicationsHistory] Error sending message:', error)
     }
   }, [message, leadId, leadPhone, businessPhone, sendMessage])
 
