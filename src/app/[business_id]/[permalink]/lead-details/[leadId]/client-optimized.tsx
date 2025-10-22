@@ -191,6 +191,7 @@ const LeadDetailsPageOptimized = () => {
             property={leadDetails?.property || null}
             isLoading={false} // No individual loading since we have unified loading
             error={null} // No individual errors since we handle errors globally
+            businessTimezone={leadDetails?.businessTimezone}
           />
         </div>
 
@@ -205,6 +206,7 @@ const LeadDetailsPageOptimized = () => {
               error={null} // No individual errors since we handle errors globally
               leadId={leadId}
               businessId={businessId}
+              businessTimezone={leadDetails?.businessTimezone}
             />
           </div>
 

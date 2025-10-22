@@ -4,12 +4,14 @@ import React, { useMemo, useCallback, memo } from 'react'
 import { Lead, PropertyInfo } from '@/types/leads'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { createDialpadUrl, isValidDialpadPhone, createBusinessDialpadUrl } from '@/lib/utils/phoneUtils'
+import { formatReceivedTimestamp } from '@/lib/utils/dateFormat'
 
 interface LeadInformationProps {
   lead?: Lead | null
   property?: PropertyInfo | null
   isLoading?: boolean
   error?: string | null
+  businessTimezone?: string // IANA timezone identifier (e.g., 'America/New_York')
 }
 
 interface InfoCardProps {
@@ -36,7 +38,7 @@ const InfoCard = ({ icon, title, value }: InfoCardProps) => (
   </div>
 )
 
-const LeadInformationComponent = ({ lead, property, isLoading = false, error = null }: LeadInformationProps) => {
+const LeadInformationComponent = ({ lead, property, isLoading = false, error = null, businessTimezone = 'UTC' }: LeadInformationProps) => {
   // All hooks must be called before any conditional returns
 
   const getSourceDisplay = useCallback((source: string | null | undefined) => {
@@ -209,17 +211,10 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
             )}
           </div>
 
-          {/* Received Date (Feature 5 - Format: Fri Oct 3, 3:50PM) */}
+          {/* Received Date (Feature 5 - Format: Fri Oct 3, 3:50PM) - Using Business Timezone */}
           <div className="hidden sm:block">
             <p className="text-sm text-gray-500">
-              <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleString('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              })}
+              <span className="font-semibold uppercase">RECEIVED</span> {formatReceivedTimestamp(lead.created_at, businessTimezone)}
             </p>
           </div>
         </div>
@@ -251,17 +246,10 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
           </div>
         </div>
 
-        {/* Mobile: Show received date (Feature 5 - Format: Fri Oct 3, 3:50PM) */}
+        {/* Mobile: Show received date (Feature 5 - Format: Fri Oct 3, 3:50PM) - Using Business Timezone */}
         <div className="sm:hidden mt-2">
           <p className="text-sm text-gray-500">
-            <span className="font-semibold uppercase">RECEIVED</span> {new Date(lead.created_at).toLocaleString('en-US', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            })}
+            <span className="font-semibold uppercase">RECEIVED</span> {formatReceivedTimestamp(lead.created_at, businessTimezone)}
           </p>
         </div>
       </div>

@@ -161,3 +161,112 @@ export function formatMultipleCallTimes(
     timestamp ? formatCallWindowTime(timestamp, timezone) : null
   )
 }
+
+/**
+ * Format a date for "RECEIVED" timestamp display with timezone support
+ * @param dateString - ISO 8601 date string
+ * @param timezone - IANA timezone identifier (e.g., 'America/New_York')
+ * @returns Formatted string like "Wed, Oct 22, 2:38 PM"
+ */
+export function formatReceivedTimestamp(
+  dateString: string,
+  timezone: string = 'UTC'
+): string {
+  logger.debug('formatReceivedTimestamp called', { dateString, timezone })
+
+  if (!dateString) {
+    logger.debug('Empty dateString provided', { dateString })
+    return 'Invalid date'
+  }
+
+  try {
+    const date = new Date(dateString)
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date'
+    }
+
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      timeZone: timezone,
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }
+
+    const formatter = new Intl.DateTimeFormat('en-US', formatOptions)
+    const formatted = formatter.format(date)
+
+    logger.debug('Successfully formatted received timestamp', { input: dateString, output: formatted, timezone })
+    return formatted
+
+  } catch (error) {
+    logger.error('Received timestamp formatting failed', { dateString, timezone, error })
+    return 'Invalid date'
+  }
+}
+
+/**
+ * Format a date for Communications History with timezone support
+ * @param dateString - ISO 8601 date string
+ * @param timezone - IANA timezone identifier (e.g., 'America/New_York')
+ * @returns Formatted string like "Oct 22, 2025, 2:52 PM"
+ */
+export function formatCommunicationTimestamp(
+  dateString: string,
+  timezone: string = 'UTC'
+): string {
+  logger.debug('formatCommunicationTimestamp called', { dateString, timezone })
+
+  if (!dateString) {
+    logger.debug('Empty dateString provided', { dateString })
+    return 'Invalid date'
+  }
+
+  try {
+    const date = new Date(dateString)
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid date'
+    }
+
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      timeZone: timezone,
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }
+
+    const formatter = new Intl.DateTimeFormat('en-US', formatOptions)
+    const formatted = formatter.format(date)
+
+    logger.debug('Successfully formatted communication timestamp', { input: dateString, output: formatted, timezone })
+    return formatted
+
+  } catch (error) {
+    logger.error('Communication timestamp formatting failed', { dateString, timezone, error })
+    return 'Invalid date'
+  }
+}
+
+/**
+ * Format a date for table display with timezone support
+ * Used in LeadsTable, RecentLeadsTable, WaitingToCallTable, FollowUpTable
+ * @param dateString - ISO 8601 date string
+ * @param timezone - IANA timezone identifier (e.g., 'America/New_York')
+ * @returns Formatted string like "Wed, Oct 22, 2:38 PM" (same format as Received timestamp)
+ */
+export function formatTableTimestamp(
+  dateString: string,
+  timezone: string = 'UTC'
+): string {
+  // Use the same format as Received timestamp for consistency
+  return formatReceivedTimestamp(dateString, timezone)
+}
