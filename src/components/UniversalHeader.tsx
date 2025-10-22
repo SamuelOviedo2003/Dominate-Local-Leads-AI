@@ -20,6 +20,7 @@ import {
   extractCurrentSection,
   getBusinessUrl
 } from '@/lib/permalink-utils'
+import { useSmsCount } from '@/hooks/useSmsCount'
 
 interface UniversalHeaderProps {
   user: AuthUser | null
@@ -41,16 +42,17 @@ const getLegacyNavigationItemsForUser = (isSuperAdmin: boolean): NavigationItem[
   return [...legacyNavigationItems]
 }
 
-export default function UniversalHeader({ 
-  user, 
-  logoutAction, 
-  availableBusinesses = [] 
+export default function UniversalHeader({
+  user,
+  logoutAction,
+  availableBusinesses = []
 }: UniversalHeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const { state: themeState, extractColors } = useDynamicTheme()
   const themeStyles = useThemeStyles()
+  const { count: smsCount } = useSmsCount()
 
   // NEW: Memoize business detection to prevent recalculation on every render
   const isUsingBusiness = useMemo(() => isBusinessPath(pathname), [pathname])
@@ -207,6 +209,14 @@ export default function UniversalHeader({
                   title="Waiting to Call"
                 >
                   <UserPlus className="h-5 w-5" aria-hidden="true" />
+
+                  {/* SMS Notification Badge */}
+                  {smsCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-md ring-1 ring-white">
+                      {smsCount}
+                    </span>
+                  )}
+
                   {/* Glow effect on hover */}
                   <div
                     className="absolute inset-0 -z-10 rounded-full blur-md scale-150 opacity-0 group-hover:opacity-70 transition-opacity duration-500"
@@ -286,7 +296,15 @@ export default function UniversalHeader({
                   type="button"
                   style={{ pointerEvents: 'auto' }}
                 >
-                  <UserPlus className="h-5 w-5 mr-3" aria-hidden="true" />
+                  <div className="relative inline-flex">
+                    <UserPlus className="h-5 w-5 mr-3" aria-hidden="true" />
+                    {/* SMS Notification Badge - Mobile */}
+                    {smsCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-md">
+                        {smsCount}
+                      </span>
+                    )}
+                  </div>
                   Waiting to Call
                 </button>
               )}

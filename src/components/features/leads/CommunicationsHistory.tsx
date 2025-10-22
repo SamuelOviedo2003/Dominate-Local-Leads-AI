@@ -6,6 +6,7 @@ import { AudioPlayer } from './AudioPlayer'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { CallWindowIcon } from '@/components/ui/CallWindowIcon'
 import { useChatWebhook } from '@/hooks/useChatWebhook'
+import { formatCommunicationTimestamp } from '@/lib/utils/dateFormat'
 
 interface CommunicationsHistoryProps {
   communications?: Communication[] | null
@@ -14,9 +15,10 @@ interface CommunicationsHistoryProps {
   error?: string | null
   leadId?: string
   businessId?: string
+  businessTimezone?: string // IANA timezone identifier (e.g., 'America/New_York')
 }
 
-const CommunicationsHistoryComponent = ({ communications = [], callWindows = [], isLoading = false, error = null, leadId, businessId }: CommunicationsHistoryProps) => {
+const CommunicationsHistoryComponent = ({ communications = [], callWindows = [], isLoading = false, error = null, leadId, businessId, businessTimezone = 'UTC' }: CommunicationsHistoryProps) => {
   // All hooks must be declared at the top, before any conditional logic
   const [message, setMessage] = useState('')
   const { sendMessage, getCurrentUserId, isLoading: isSending, error: webhookError } = useChatWebhook()
@@ -91,16 +93,8 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
   }, [])
 
   const formatDate = useCallback((dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    })
-  }, [])
+    return formatCommunicationTimestamp(dateString, businessTimezone)
+  }, [businessTimezone])
 
   const formatMessageType = useCallback((messageType: string): string => {
     const type = messageType.toLowerCase()
@@ -156,7 +150,7 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
   const renderChatInterface = useCallback(() => (
     <div className="mt-6 pt-6 border-t border-gray-200">
       <h4 className="text-sm font-semibold text-gray-700 mb-3">Send New Message</h4>
-      <div className="flex space-x-3">
+      <div className="flex items-center space-x-3">
         <div className="flex-1">
           <textarea
             value={message}
@@ -172,7 +166,7 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
           type="button"
           onClick={handleSendMessage}
           disabled={isSending || !message.trim()}
-          className="self-end px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSending ? (
             <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">

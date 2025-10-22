@@ -184,8 +184,10 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
       </div>
 
       {/* Active Call Windows - New Simplified Design */}
-      <div className="flex-1 space-y-3">
-        {activeCallWindows.map((window) => {
+      <div className="flex-1 flex flex-col">
+        {activeCallWindows.length > 0 && (
+          <div className="space-y-3">
+            {activeCallWindows.map((window) => {
           const timeRange = formatTimeRange(window.window_start_at, window.window_end_at)
           const hasStatus = window.status !== null && window.status !== undefined
           const statusConfig = hasStatus ? getStatusConfig(window.status) : null
@@ -256,44 +258,26 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
             </div>
           )
         })}
+          </div>
+        )}
+
+        {/* Empty State for No Active Call Windows */}
+        {activeCallWindows.length === 0 && (
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="mb-4">
+              <Headphones className="w-12 h-12 text-gray-400 mx-auto" />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-gray-500 font-medium flex items-center gap-2 justify-center">
+                <Phone className="w-4 h-4" />
+                No Active Call Windows
+              </p>
+              <p className="text-gray-400 text-sm">Scheduled call windows will appear here when they become active</p>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Empty State for No Active Call Windows */}
-      {activeCallWindows.length === 0 && (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 text-center flex-1 flex flex-col items-center justify-center border border-blue-100">
-          <div className="relative mb-4">
-            {/* Phone Icon with Animation */}
-            <div className="relative">
-              <Headphones className="w-12 h-12 text-blue-400 mx-auto" />
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-ping" />
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full" />
-            </div>
-            {/* Sound Waves */}
-            <div className="absolute -left-8 top-1/2 transform -translate-y-1/2">
-              <div className="flex items-center gap-1">
-                <div className="w-1 h-2 bg-blue-300 rounded animate-pulse" style={{animationDelay: '0ms'}} />
-                <div className="w-1 h-4 bg-blue-400 rounded animate-pulse" style={{animationDelay: '150ms'}} />
-                <div className="w-1 h-3 bg-blue-300 rounded animate-pulse" style={{animationDelay: '300ms'}} />
-              </div>
-            </div>
-            <div className="absolute -right-8 top-1/2 transform -translate-y-1/2">
-              <div className="flex items-center gap-1">
-                <div className="w-1 h-3 bg-blue-300 rounded animate-pulse" style={{animationDelay: '100ms'}} />
-                <div className="w-1 h-4 bg-blue-400 rounded animate-pulse" style={{animationDelay: '250ms'}} />
-                <div className="w-1 h-2 bg-blue-300 rounded animate-pulse" style={{animationDelay: '400ms'}} />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-gray-600 font-medium flex items-center gap-2 justify-center">
-              <Phone className="w-4 h-4" />
-              No Active Call Windows
-            </p>
-            <p className="text-gray-500 text-sm">Scheduled call windows will appear here when they become active</p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
