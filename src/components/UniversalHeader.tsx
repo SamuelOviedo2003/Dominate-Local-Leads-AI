@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Menu, X, ChevronDown } from 'lucide-react'
+import { Menu, X, ChevronDown, UserPlus } from 'lucide-react'
 import { AuthUser, NavigationItem, BusinessSwitcherData } from '@/types/auth'
 import ImageWithFallback from './ImageWithFallback'
 import UserDropdown from './UserDropdown'
@@ -17,7 +17,8 @@ import {
   extractPermalinkFromPath,
   isBusinessPath,
   isPermalinkPath,
-  extractCurrentSection
+  extractCurrentSection,
+  getBusinessUrl
 } from '@/lib/permalink-utils'
 
 interface UniversalHeaderProps {
@@ -196,6 +197,26 @@ export default function UniversalHeader({
 
             {/* Far Right: Profile Section */}
             <div className="flex items-center space-x-3">
+              {/* Waiting to Call Icon Button - Round */}
+              {isUsingBusiness && businessId && currentPermalink && (
+                <button
+                  type="button"
+                  onClick={(e) => handleNavigation(getBusinessUrl('waiting-to-call', businessId, currentPermalink), e)}
+                  className="relative inline-flex items-center justify-center w-10 h-10 rounded-full text-white/90 hover:text-white bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 hover:border-white/50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 group"
+                  aria-label="Waiting to Call"
+                  title="Waiting to Call"
+                >
+                  <UserPlus className="h-5 w-5" aria-hidden="true" />
+                  {/* Glow effect on hover */}
+                  <div
+                    className="absolute inset-0 -z-10 rounded-full blur-md scale-150 opacity-0 group-hover:opacity-70 transition-opacity duration-500"
+                    style={{
+                      background: `radial-gradient(circle, ${themeState.colors.primary}66, ${themeState.colors.primaryLight}4d)`
+                    }}
+                  ></div>
+                </button>
+              )}
+
               {/* User Dropdown - Perfect Circle */}
               <UserDropdown user={user} logoutAction={logoutAction} />
 
@@ -250,6 +271,26 @@ export default function UniversalHeader({
 
             {/* Mobile Navigation Links */}
             <nav className="px-6 py-6 space-y-3">
+              {/* Waiting to Call Button - Mobile Only */}
+              {isUsingBusiness && businessId && currentPermalink && (
+                <button
+                  onClick={(e) => {
+                    handleNavigation(getBusinessUrl('waiting-to-call', businessId, currentPermalink), e)
+                    setIsMobileMenuOpen(false)
+                  }}
+                  className={`flex items-center w-full text-left px-5 py-4 rounded-xl text-base font-semibold transition-all duration-300 backdrop-blur-sm touch-target cursor-pointer relative z-10 ${
+                    currentSection === 'waiting-to-call'
+                      ? 'bg-white/25 text-white shadow-lg border border-white/40'
+                      : 'text-white/85 hover:text-white hover:bg-white/15 hover:border-white/30 border border-transparent'
+                  }`}
+                  type="button"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <UserPlus className="h-5 w-5 mr-3" aria-hidden="true" />
+                  Waiting to Call
+                </button>
+              )}
+
               {navigationItems.map((item) => (
                 <button
                   key={item.name}
