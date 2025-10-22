@@ -16,12 +16,14 @@ interface CommunicationsHistoryProps {
   leadId?: string
   businessId?: string
   businessTimezone?: string // IANA timezone identifier (e.g., 'America/New_York')
+  leadPhone?: string | null // Lead's phone number
+  businessPhone?: string | null // Business dialpad phone number
 }
 
-const CommunicationsHistoryComponent = ({ communications = [], callWindows = [], isLoading = false, error = null, leadId, businessId, businessTimezone = 'UTC' }: CommunicationsHistoryProps) => {
+const CommunicationsHistoryComponent = ({ communications = [], callWindows = [], isLoading = false, error = null, leadId, businessId, businessTimezone = 'UTC', leadPhone, businessPhone }: CommunicationsHistoryProps) => {
   // All hooks must be declared at the top, before any conditional logic
   const [message, setMessage] = useState('')
-  const { sendMessage, getCurrentUserId, isLoading: isSending, error: webhookError } = useChatWebhook()
+  const { sendMessage, isLoading: isSending, error: webhookError } = useChatWebhook()
 
   /**
    * Pre-fill message input with AI response from most recent SMS inbound
@@ -56,25 +58,18 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
       return
     }
 
-    if (!leadId || !businessId) {
-      // Missing leadId or businessId
+    if (!leadId || !leadPhone || !businessPhone) {
+      // Missing required fields
       return
     }
 
     try {
-      // Get current user ID
-      const accountId = await getCurrentUserId()
-      if (!accountId) {
-        // Could not get current user ID
-        return
-      }
-
-      // Send the message via webhook
+      // Send the message via webhook with Dialpad SMS format
       const result = await sendMessage({
-        account_id: accountId,
-        lead_id: leadId,
-        message: message.trim(),
-        business_id: businessId
+        from_number: businessPhone,
+        to_number: leadPhone,
+        text: message.trim(),
+        lead_id: leadId
       })
 
       if (result.success) {
@@ -87,7 +82,7 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
     } catch (error) {
       // Error sending message
     }
-  }, [message, leadId, businessId, sendMessage, getCurrentUserId])
+  }, [message, leadId, leadPhone, businessPhone, sendMessage])
 
   /**
    * Handle Enter key press in textarea

@@ -207,6 +207,8 @@ const LeadDetailsPageOptimized = () => {
               leadId={leadId}
               businessId={businessId}
               businessTimezone={leadDetails?.businessTimezone}
+              leadPhone={leadDetails?.lead?.phone}
+              businessPhone={leadDetails?.dialpadPhone}
             />
           </div>
 

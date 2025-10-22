@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 interface WebhookPayload {
-  account_id: string
+  from_number: string
+  to_number: string
+  text: string
   lead_id: string
-  message: string
-  business_id: string
 }
 
 interface WebhookResponse {
@@ -16,26 +15,26 @@ interface WebhookResponse {
 }
 
 /**
- * Custom hook for handling chat webhook calls
- * Sends messages to the n8n webhook endpoint with proper error handling and loading states
+ * Custom hook for handling SMS webhook calls via Dialpad
+ * Sends messages to the n8n dialpad-sms-outgoing webhook endpoint with proper error handling and loading states
  */
 export function useChatWebhook() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   const sendMessage = useCallback(async (payload: WebhookPayload): Promise<WebhookResponse> => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
       // Validate required fields
-      if (!payload.account_id || !payload.lead_id || !payload.message || !payload.business_id) {
+      if (!payload.from_number || !payload.to_number || !payload.text || !payload.lead_id) {
         throw new Error('Missing required fields for webhook call')
       }
 
-      // Webhook endpoint URL
-      const webhookUrl = 'https://n8nio-n8n-pbq4r3.sliplane.app/webhook/bf425f50-2d65-4cfd-a529-faea3b682288'
-      
+      // Webhook endpoint URL - Dialpad SMS Outgoing
+      const webhookUrl = 'https://n8nio-n8n-pbq4r3.sliplane.app/webhook/dialpad-sms-outgoing'
+
       // Make the webhook call
       const response = await fetch(webhookUrl, {
         method: 'POST',
@@ -74,30 +73,9 @@ export function useChatWebhook() {
       setIsLoading(false)
     }
   }, [])
-  
-  /**
-   * Get the current authenticated user's account ID
-   */
-  const getCurrentUserId = useCallback(async (): Promise<string | null> => {
-    try {
-      const supabase = createClient()
-      const { data: { user }, error } = await supabase.auth.getUser()
-      
-      if (error || !user) {
-        // Failed to get current user
-        return null
-      }
-      
-      return user.id
-    } catch (error) {
-      // Error getting current user
-      return null
-    }
-  }, [])
-  
+
   return {
     sendMessage,
-    getCurrentUserId,
     isLoading,
     error
   }
