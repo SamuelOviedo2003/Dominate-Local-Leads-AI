@@ -145,10 +145,11 @@ export interface ApiResponse<T> {
 export interface Communication {
   communication_id: string
   created_at: string
-  message_type: 'email' | 'sms' | 'call' | 'voicemail' | string
-  summary: string
+  message_type: 'email' | 'sms' | 'call' | 'voicemail' | 'SMS inbound' | string
+  summary: string | null
   recording_url: string | null
   call_window?: number | null // Call window number (1-6) when communication is associated with a call window
+  ai_response?: string | null // AI-generated suggested response for SMS inbound messages
 }
 
 export interface PropertyInfo {

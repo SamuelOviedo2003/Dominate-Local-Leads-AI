@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useCallback, memo, useState } from 'react'
+import React, { useMemo, useCallback, memo, useState, useEffect } from 'react'
 import { Communication, CallWindow } from '@/types/leads'
 import { AudioPlayer } from './AudioPlayer'
 import { LoadingSystem } from '@/components/LoadingSystem'
@@ -22,6 +22,31 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
   // All hooks must be declared at the top, before any conditional logic
   const [message, setMessage] = useState('')
   const { sendMessage, getCurrentUserId, isLoading: isSending, error: webhookError } = useChatWebhook()
+
+  /**
+   * Pre-fill message input with AI response from most recent SMS inbound
+   */
+  useEffect(() => {
+    if (!communications || communications.length === 0) {
+      return
+    }
+
+    // Get the most recent communication (communications are sorted by created_at)
+    const mostRecent = communications[communications.length - 1]
+
+    // Check if mostRecent exists and is SMS inbound with non-null summary
+    if (
+      mostRecent &&
+      mostRecent.message_type === 'SMS inbound' &&
+      mostRecent.summary !== null &&
+      mostRecent.summary !== undefined
+    ) {
+      // Pre-fill with ai_response if available
+      if (mostRecent.ai_response) {
+        setMessage(mostRecent.ai_response)
+      }
+    }
+  }, [communications])
 
   /**
    * Handle sending a message via webhook
