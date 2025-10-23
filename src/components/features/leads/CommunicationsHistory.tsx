@@ -18,9 +18,10 @@ interface CommunicationsHistoryProps {
   businessTimezone?: string // IANA timezone identifier (e.g., 'America/New_York')
   leadPhone?: string | null // Lead's phone number
   businessPhone?: string | null // Business dialpad phone number
+  assignedId?: string | null // Lead's assigned_id from leads table
 }
 
-const CommunicationsHistoryComponent = ({ communications = [], callWindows = [], isLoading = false, error = null, leadId, businessId, businessTimezone = 'UTC', leadPhone, businessPhone }: CommunicationsHistoryProps) => {
+const CommunicationsHistoryComponent = ({ communications = [], callWindows = [], isLoading = false, error = null, leadId, businessId, businessTimezone = 'UTC', leadPhone, businessPhone, assignedId }: CommunicationsHistoryProps) => {
   // All hooks must be declared at the top, before any conditional logic
   const [message, setMessage] = useState('')
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -70,7 +71,8 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
         from_number: businessPhone,
         to_number: leadPhone,
         text: message.trim(),
-        lead_id: leadId
+        lead_id: leadId,
+        assigned_id: assignedId
       })
 
       if (result.success) {
@@ -82,7 +84,7 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
     } catch (error) {
       console.error('[CommunicationsHistory] Error sending message:', error)
     }
-  }, [message, leadId, leadPhone, businessPhone, sendMessage])
+  }, [message, leadId, leadPhone, businessPhone, assignedId, sendMessage])
 
   /**
    * Handle Enter key press in textarea

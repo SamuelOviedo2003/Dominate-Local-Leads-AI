@@ -212,6 +212,7 @@ const PropertyDetailsPageOptimized = () => {
               businessTimezone={leadDetails?.businessTimezone}
               leadPhone={leadDetails?.lead?.phone}
               businessPhone={leadDetails?.dialpadPhone}
+              assignedId={leadDetails?.lead?.assigned_id}
             />
           </div>
 

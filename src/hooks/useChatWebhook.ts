@@ -7,6 +7,7 @@ interface WebhookPayload {
   to_number: string
   text: string
   lead_id: string
+  assigned_id?: string | null
 }
 
 interface WebhookResponse {

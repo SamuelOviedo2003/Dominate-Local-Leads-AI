@@ -442,13 +442,38 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
     setError(null)
 
     try {
-      // Call the GHL booking creation webhook
+      // Phase 3: Fetch lead data to get first_name and last_name for full_name
+      let full_name = ''
+      try {
+        const leadResponse = await fetch(`/api/leads/${leadId}?businessId=${selectedCompany?.business_id}`)
+        if (leadResponse.ok) {
+          const leadData = await leadResponse.json()
+          const lead = leadData.data?.lead
+          if (lead) {
+            const firstName = lead.first_name || ''
+            const lastName = lead.last_name || ''
+            full_name = `${firstName} ${lastName}`.trim()
+          }
+        }
+      } catch (error) {
+        logger.warn('Failed to fetch lead data for full_name', { error, leadId })
+      }
+
+      // Phase 3: Format start_time in ISO 8601 format with timezone
+      const start_time = bookingSelection.selectedTime || ''
+
+      // Call the GHL booking creation webhook with Phase 3 parameters
       const webhookPayload = {
         lead_id: leadId,
         account_id: accountId,
         business_id: selectedCompany?.business_id?.toString() || '',
         street_name: formData.street_name.trim(),
-        postal_code: formData.postal_code.trim()
+        postal_code: formData.postal_code.trim(),
+        // Phase 3: New parameters
+        full_name: full_name,
+        service: leadAttributes.service || '',
+        address: bookingResponse?.address || '',
+        start_time: start_time
       }
 
       logger.debug('Calling booking webhook', {
@@ -634,7 +659,17 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
     const availableTimes = bookingSelection.selectedDate ? getAvailableTimesForDate(bookingSelection.selectedDate) : []
 
     return (
-      <div className="h-full flex flex-col py-6">
+      <div className="h-full flex flex-col">
+        {/* Phase 2: Display address from webhook response */}
+        {bookingResponse?.address && (
+          <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="text-sm text-green-800">
+              <p className="font-medium mb-1">Confirmed Address</p>
+              <p>{bookingResponse.address}</p>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl mx-auto w-full">
           {/* Left Column - Calendar */}
           <div className="flex flex-col">
