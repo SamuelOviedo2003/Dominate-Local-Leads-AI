@@ -5,6 +5,8 @@ import { Lead, PropertyInfo } from '@/types/leads'
 import { LoadingSystem } from '@/components/LoadingSystem'
 import { createDialpadUrl, isValidDialpadPhone, createBusinessDialpadUrl } from '@/lib/utils/phoneUtils'
 import { formatReceivedTimestamp } from '@/lib/utils/dateFormat'
+import { TimezoneBadge } from '@/components/TimezoneIndicator'
+import { logTimezoneOperation } from '@/lib/utils/timezoneDebug'
 
 interface LeadInformationProps {
   lead?: Lead | null
@@ -212,10 +214,11 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
           </div>
 
           {/* Received Date (Feature 5 - Format: Fri Oct 3, 3:50PM) - Using Business Timezone */}
-          <div className="hidden sm:block">
+          <div className="hidden sm:flex items-center gap-2">
             <p className="text-sm text-gray-500">
               <span className="font-semibold uppercase">RECEIVED</span> {formatReceivedTimestamp(lead.created_at, businessTimezone)}
             </p>
+            <TimezoneBadge timezone={businessTimezone} />
           </div>
         </div>
 
@@ -247,10 +250,11 @@ const LeadInformationComponent = ({ lead, property, isLoading = false, error = n
         </div>
 
         {/* Mobile: Show received date (Feature 5 - Format: Fri Oct 3, 3:50PM) - Using Business Timezone */}
-        <div className="sm:hidden mt-2">
+        <div className="sm:hidden mt-2 flex items-center gap-2">
           <p className="text-sm text-gray-500">
             <span className="font-semibold uppercase">RECEIVED</span> {formatReceivedTimestamp(lead.created_at, businessTimezone)}
           </p>
+          <TimezoneBadge timezone={businessTimezone} />
         </div>
       </div>
 

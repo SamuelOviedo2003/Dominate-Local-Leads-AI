@@ -134,7 +134,7 @@ export async function GET(request: NextRequest, context: RouteParams) {
       // Fetch communications history
       supabase
         .from('communications')
-        .select('communication_id, created_at, message_type, summary, recording_url, call_window, ai_response')
+        .select('communication_id, created_at, message_type, summary, recording_url, call_window, ai_response, mms')
         .eq('account_id', lead.account_id)
         .order('created_at', { ascending: true }),
 

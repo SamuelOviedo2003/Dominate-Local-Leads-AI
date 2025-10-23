@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Search, ChevronDown, Edit, Trash, X, ArrowLeft, Plus, Key, Eye, EyeOff, AlertTriangle } from 'lucide-react'
+import { Users, Search, ChevronDown, Edit, Trash, X, ArrowLeft, Plus, Key, Eye, EyeOff, AlertTriangle, Mail } from 'lucide-react'
 import { ComponentLoading } from '@/components/LoadingSystem'
 import { authGet, authPost, authDelete, authPatch } from '@/lib/auth-fetch'
 import { createClient } from '@/lib/supabase/client'
@@ -68,6 +68,8 @@ export default function ProfileManagementClientNew() {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false)
   const [resettingPassword, setResettingPassword] = useState(false)
 
+  // Email Verification Resend State
+  const [resendingVerification, setResendingVerification] = useState(false)
 
   // Create User Panel
   const [showCreatePanel, setShowCreatePanel] = useState(false)
@@ -291,6 +293,35 @@ export default function ProfileManagementClientNew() {
       setTimeout(() => setError(null), 3000)
     } finally {
       setResettingPassword(false)
+    }
+  }
+
+  const handleResendVerificationEmail = async () => {
+    if (!selectedUser) return
+
+    try {
+      setResendingVerification(true)
+      setError(null)
+      setSuccess(null)
+
+      const response = await authPost('/api/admin/users/resend-verification', {
+        userId: selectedUser.id
+      })
+
+      if (response.success) {
+        setSuccess('Verification email sent successfully!')
+        setTimeout(() => {
+          setSuccess(null)
+        }, 3000)
+      } else {
+        setError(response.error || 'Failed to send verification email')
+        setTimeout(() => setError(null), 3000)
+      }
+    } catch (err) {
+      setError('Failed to send verification email')
+      setTimeout(() => setError(null), 3000)
+    } finally {
+      setResendingVerification(false)
     }
   }
 
@@ -766,6 +797,46 @@ export default function ProfileManagementClientNew() {
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                           )}
                           <span>{resettingPassword ? 'Resetting...' : 'Reset Password'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Email Verification Section */}
+                {activeTab === 'info' && (
+                  <div className="border-t border-gray-200 pt-6">
+                    <div className="mb-4">
+                      <h3 className="text-base font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <Mail className="w-5 h-5 text-blue-600" />
+                        Email Verification
+                      </h3>
+                      <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
+                        <div className="flex items-start space-x-3">
+                          <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-blue-700">
+                              As a super admin, you can resend the email verification link to this user if they haven't verified their email yet.
+                              This will send a new verification link to their registered email address.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      {/* Resend Verification Email Button */}
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={handleResendVerificationEmail}
+                          disabled={resendingVerification}
+                          className="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          {resendingVerification && (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          )}
+                          <Mail className="w-4 h-4" />
+                          <span>{resendingVerification ? 'Sending...' : 'Resend Verification Email'}</span>
                         </button>
                       </div>
                     </div>

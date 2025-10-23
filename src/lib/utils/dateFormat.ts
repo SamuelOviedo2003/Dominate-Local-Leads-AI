@@ -3,6 +3,7 @@
  */
 
 import { logger } from '@/lib/logging'
+import { logTimezoneOperation } from './timezoneDebug'
 
 /**
  * Format a date string to a user-friendly format using the specified timezone
@@ -201,6 +202,10 @@ export function formatReceivedTimestamp(
     const formatted = formatter.format(date)
 
     logger.debug('Successfully formatted received timestamp', { input: dateString, output: formatted, timezone })
+
+    // Enhanced timezone debug logging
+    logTimezoneOperation('Lead Received Timestamp', timezone, dateString, formatted)
+
     return formatted
 
   } catch (error) {

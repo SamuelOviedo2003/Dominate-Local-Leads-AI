@@ -8,9 +8,10 @@ interface CircularTimerProps {
   callWindows?: CallWindow[] | null
   businessTimezone?: string
   size?: 'sm' | 'md' | 'lg'
+  workingHours?: boolean // Working hours value from leads table
 }
 
-export function CircularTimer({ callWindows, businessTimezone = 'UTC', size = 'md' }: CircularTimerProps) {
+export function CircularTimer({ callWindows, businessTimezone = 'UTC', size = 'md', workingHours }: CircularTimerProps) {
   const [currentTime, setCurrentTime] = useState<Date>(new Date())
 
   // Size configurations
@@ -61,8 +62,8 @@ export function CircularTimer({ callWindows, businessTimezone = 'UTC', size = 'm
       return { shouldShow: false, timeLeft: 0, formattedTime: '00:00', progress: 0 }
     }
 
-    // Timer only shows if call_window = 1 AND working_hours = true
-    if (callWindow1.working_hours !== true) {
+    // Timer only shows if call_window = 1 AND working_hours = true (from leads table)
+    if (workingHours !== true) {
       return { shouldShow: false, timeLeft: 0, formattedTime: '00:00', progress: 0 }
     }
 
@@ -105,7 +106,7 @@ export function CircularTimer({ callWindows, businessTimezone = 'UTC', size = 'm
       logger.error('Circular timer calculation error', { error, callWindow1 })
       return { shouldShow: false, timeLeft: 0, formattedTime: '00:00', progress: 0 }
     }
-  }, [callWindow1, currentTime])
+  }, [callWindow1, currentTime, workingHours])
 
   if (!timerData.shouldShow) {
     return null

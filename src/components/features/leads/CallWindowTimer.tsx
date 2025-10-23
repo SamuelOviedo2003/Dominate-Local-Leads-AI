@@ -8,9 +8,10 @@ import { logger } from '@/lib/logging'
 interface CallWindowTimerProps {
   callWindows?: CallWindow[] | null
   businessTimezone?: string
+  workingHours?: boolean // Working hours value from leads table
 }
 
-export function CallWindowTimer({ callWindows, businessTimezone = 'UTC' }: CallWindowTimerProps) {
+export function CallWindowTimer({ callWindows, businessTimezone = 'UTC', workingHours }: CallWindowTimerProps) {
   const [currentTime, setCurrentTime] = useState<Date>(new Date())
 
   // Find call window 1 data
@@ -34,8 +35,8 @@ export function CallWindowTimer({ callWindows, businessTimezone = 'UTC' }: CallW
       return { shouldShow: false, timeLeft: 0, formattedTime: '00:00' }
     }
 
-    // NEW CONDITION: Timer only shows if call_window = 1 AND working_hours = true
-    if (callWindow1.working_hours !== true) {
+    // Timer only shows if call_window = 1 AND working_hours = true (from leads table)
+    if (workingHours !== true) {
       return { shouldShow: false, timeLeft: 0, formattedTime: '00:00' }
     }
 
@@ -82,7 +83,7 @@ export function CallWindowTimer({ callWindows, businessTimezone = 'UTC' }: CallW
 
       logger.debug('Timer calculation (30-minute count-up)', {
         callWindow: callWindow1.callNumber,
-        working_hours: callWindow1.working_hours,
+        working_hours: workingHours,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         currentTime: now.toISOString(),
@@ -103,7 +104,7 @@ export function CallWindowTimer({ callWindows, businessTimezone = 'UTC' }: CallW
       logger.error('Timer calculation error', { error, callWindow1 })
       return { shouldShow: false, timeLeft: 0, formattedTime: '00:00' }
     }
-  }, [callWindow1, currentTime, businessTimezone])
+  }, [callWindow1, currentTime, businessTimezone, workingHours])
 
   // Don't render if timer shouldn't be shown
   if (!timerData.shouldShow) {

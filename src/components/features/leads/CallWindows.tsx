@@ -18,29 +18,30 @@ interface CallWindowsProps {
 const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, businessTimezone = 'UTC', workingHours }: CallWindowsProps) => {
   // ALL HOOKS MUST BE DECLARED FIRST - React Rules of Hooks requirement
 
-  // Determine working hours status display for Call Window 1 only
-  // Based on call_window = 1 and its working_hours attribute
-  const getWorkingHoursStatusForCallOne = useCallback(() => {
-    const callWindowOne = callWindows?.find(cw => cw.callNumber === 1)
+  // Determine working hours status display
+  // Based on working_hours from leads table (single source of truth)
+  const getWorkingHoursStatus = useCallback(() => {
+    // Only show working hours status if we have at least one call window
+    const hasCallWindows = callWindows && callWindows.length > 0
 
-    if (!callWindowOne) {
-      return null // No Call Window 1, don't show any tag
+    if (!hasCallWindows) {
+      return null // No call windows, don't show any tag
     }
 
-    // If call_window = 1 AND working_hours = TRUE -> "Working Hours"
-    if (callWindowOne.working_hours === true) {
+    // If working_hours = TRUE -> "Working Hours"
+    if (workingHours === true) {
       return { isWorkingHours: true, label: 'Working Hours', color: 'text-green-600 bg-green-50' }
     }
 
-    // If call_window = 1 AND (working_hours = FALSE OR working_hours IS NULL) -> "After Hours"
-    if (callWindowOne.working_hours === false || callWindowOne.working_hours === null) {
+    // If working_hours = FALSE OR working_hours IS NULL -> "After Hours"
+    if (workingHours === false || workingHours === null || workingHours === undefined) {
       return { isWorkingHours: false, label: 'After Hours', color: 'text-orange-600 bg-orange-50' }
     }
 
     return null
-  }, [callWindows])
+  }, [callWindows, workingHours])
 
-  const workingHoursStatus = getWorkingHoursStatusForCallOne()
+  const workingHoursStatus = getWorkingHoursStatus()
 
   // Format time range for display (time only, no date)
   const formatTimeRange = useCallback((startTime: string | null, endTime: string | null) => {
@@ -85,13 +86,6 @@ const CallWindowsComponent = ({ callWindows, isLoading = false, error = null, bu
     return callWindows
       .filter(window => window.active === true)
       .sort((a, b) => a.callNumber - b.callNumber)
-  }, [callWindows])
-
-  // Get working_hours status from Call Window #1 to apply to all calls
-  // Only Call #1 has working_hours populated, but it applies to entire lead
-  const callOneWorkingHours = useMemo(() => {
-    const callWindowOne = callWindows?.find(cw => cw.callNumber === 1)
-    return callWindowOne?.working_hours ?? null
   }, [callWindows])
 
   // Debug logging

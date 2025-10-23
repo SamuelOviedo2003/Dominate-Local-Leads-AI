@@ -23,6 +23,7 @@ interface CommunicationsHistoryProps {
 const CommunicationsHistoryComponent = ({ communications = [], callWindows = [], isLoading = false, error = null, leadId, businessId, businessTimezone = 'UTC', leadPhone, businessPhone }: CommunicationsHistoryProps) => {
   // All hooks must be declared at the top, before any conditional logic
   const [message, setMessage] = useState('')
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const { sendMessage, isLoading: isSending, error: webhookError } = useChatWebhook()
 
   /**
@@ -286,10 +287,24 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
                 </div>
               </div>
               
-              <div className="mb-3">
-                <p className="text-sm text-gray-700 leading-relaxed">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <p className="text-sm text-gray-700 leading-relaxed flex-1">
                   {communication.summary}
                 </p>
+                {communication.message_type === 'SMS inbound' && communication.mms && (
+                  <button
+                    onClick={() => setSelectedImage(communication.mms!)}
+                    className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="button"
+                    aria-label="View MMS image"
+                  >
+                    <img
+                      src={communication.mms}
+                      alt="MMS attachment"
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                )}
               </div>
 
               {communication.recording_url && (
@@ -309,6 +324,26 @@ const CommunicationsHistoryComponent = ({ communications = [], callWindows = [],
       )}
 
       {renderChatInterface()}
+
+      {/* MMS Image Popup */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedImage(null)}
+          style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] rounded-lg overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={selectedImage}
+              alt="MMS attachment full view"
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

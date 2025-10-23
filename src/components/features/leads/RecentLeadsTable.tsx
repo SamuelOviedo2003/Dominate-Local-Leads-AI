@@ -320,6 +320,7 @@ function RecentLeadsTableComponent({
                           <CircularTimer
                             callWindows={lead.callWindows}
                             size="sm"
+                            workingHours={lead.working_hours}
                           />
                         </div>
                       </td>

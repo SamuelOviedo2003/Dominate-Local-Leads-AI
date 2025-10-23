@@ -167,6 +167,7 @@ const WaitingToCallDetailsPageOptimized = () => {
               callWindows={leadDetails?.callWindows || null}
               businessTimezone={leadDetails?.businessTimezone}
               size="lg"
+              workingHours={leadDetails?.lead?.working_hours}
             />
           </div>
 

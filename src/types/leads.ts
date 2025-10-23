@@ -150,6 +150,7 @@ export interface Communication {
   recording_url: string | null
   call_window?: number | null // Call window number (1-6) when communication is associated with a call window
   ai_response?: string | null // AI-generated suggested response for SMS inbound messages
+  mms?: string | null // MMS image URL for SMS inbound messages with media attachments
 }
 
 export interface PropertyInfo {
@@ -169,7 +170,7 @@ export interface CallWindow {
   status: number | null // Numeric status that determines the tag styling (1=Green, 2=Orange, 3=Yellow, 4=Red, 10=Diamond, 11=Gold, 12=Silver, 13=Bronze)
   calledAt: string | null // Exact timestamp when call was made
   calledOut: string | null // Called out value for Call 1 when called_at is null
-  working_hours: boolean | null // Working hours indicator for this specific call window
+  // Note: working_hours is now sourced from leads table, not call_windows
 }
 
 export interface LeadDetails {

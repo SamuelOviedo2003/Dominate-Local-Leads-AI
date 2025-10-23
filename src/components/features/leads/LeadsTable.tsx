@@ -336,6 +336,7 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                         <CircularTimer
                           callWindows={lead.callWindows}
                           size="sm"
+                          workingHours={lead.working_hours}
                         />
                       </div>
                     </td>
