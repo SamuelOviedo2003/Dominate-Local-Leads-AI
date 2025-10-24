@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Building2, Search, ChevronDown, ChevronUp, Edit, X, ArrowLeft, Plus } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Building2, Search, ChevronDown, ChevronUp, Edit, X, ArrowLeft, Plus, Upload, Image as ImageIcon } from 'lucide-react'
 import { ComponentLoading } from '@/components/LoadingSystem'
 import { authGet, authPost, authPatch } from '@/lib/auth-fetch'
+import { createClient } from '@/lib/supabase/client'
 
 interface Business {
   business_id: number
@@ -123,6 +124,12 @@ export default function BusinessManagement() {
   })
 
   // Create Business Panel
+  // Image upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [showCreatePanel, setShowCreatePanel] = useState(false)
   const [creatingBusiness, setCreatingBusiness] = useState(false)
   const [newBusinessForm, setNewBusinessForm] = useState<BusinessFormData>({
@@ -348,6 +355,101 @@ export default function BusinessManagement() {
     setShowOptionalEdit(false)
     setError(null)
     setSuccess(null)
+    setSelectedFile(null)
+    setImagePreview(null)
+  }
+
+  // Handle file selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setError('Invalid file type. Only images are allowed (JPEG, PNG, GIF, WebP)')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      setError('File size exceeds 5MB limit')
+      return
+    }
+
+    setSelectedFile(file)
+    setError(null)
+
+    // Create preview
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Handle image upload
+  const handleUploadImage = async () => {
+    if (!selectedFile || !selectedBusiness) return
+
+    try {
+      setUploadingImage(true)
+      setError(null)
+
+      // Get JWT token from Supabase session
+      const supabase = createClient()
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+
+      if (sessionError || !session?.access_token) {
+        throw new Error('Authentication failed - please refresh and try again')
+      }
+
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+      formData.append('businessId', selectedBusiness.business_id.toString())
+      formData.append('permalink', selectedBusiness.permalink || '')
+
+      const response = await fetch('/api/admin/upload-logo', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to upload image')
+      }
+
+      setSuccess('Business logo updated successfully')
+      setSelectedFile(null)
+      setImagePreview(null)
+
+      // Update the selected business with new avatar URL
+      setSelectedBusiness({
+        ...selectedBusiness,
+        avatar_url: data.avatarUrl
+      })
+
+      // Reload data to refresh the list
+      setTimeout(() => {
+        setSuccess(null)
+        loadData()
+      }, 2000)
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload image')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  // Trigger file input click
+  const handleSelectImageClick = () => {
+    fileInputRef.current?.click()
   }
 
   // Get unique states and types for filters
@@ -856,6 +958,74 @@ export default function BusinessManagement() {
         {/* Form */}
         <div className="p-6">
           <div className="max-w-4xl mx-auto">
+            {/* Business Logo Upload Section */}
+            <div className="mb-6 pb-6 border-b border-gray-200">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Business Logo
+              </label>
+              <div className="flex items-start gap-4">
+                {/* Current/Preview Image */}
+                <div className="flex-shrink-0">
+                  {imagePreview || selectedBusiness.avatar_url ? (
+                    <img
+                      src={imagePreview || selectedBusiness.avatar_url || ''}
+                      alt="Business logo"
+                      className="w-24 h-24 rounded-lg object-cover border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+                      <ImageIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Controls */}
+                <div className="flex-1">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSelectImageClick}
+                      disabled={uploadingImage}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {selectedFile ? 'Change Image' : 'Select Image'}
+                    </button>
+
+                    {selectedFile && (
+                      <button
+                        type="button"
+                        onClick={handleUploadImage}
+                        disabled={uploadingImage}
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {uploadingImage && (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        )}
+                        <span>{uploadingImage ? 'Uploading...' : 'Upload'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* File input (hidden) */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+
+                  {/* Help text - only show when file is selected */}
+                  {selectedFile && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Required Fields */}
             <div className="space-y-4">
               <div>
@@ -1426,7 +1596,7 @@ export default function BusinessManagement() {
                         <img
                           src={business.avatar_url}
                           alt={business.company_name}
-                          className="w-8 h-8 rounded object-cover"
+                          className="w-8 h-8 rounded object-contain bg-white p-0.5"
                         />
                       ) : (
                         <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white text-sm font-medium">

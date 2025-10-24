@@ -4,12 +4,12 @@ import { authenticateApiRequest } from '@/lib/api-auth-optimized'
 export const dynamic = 'force-dynamic'
 
 /**
- * GET /api/communications/sms-count
+ * GET /api/leads/waiting-to-call-count
  *
- * Fetches the count of SMS inbound messages for today where summary OR mms is not null
+ * Fetches the count of leads in "waiting to call" status
+ * - Filters by stage=1 and call_now_status=1
  * - Filters by accessible businesses based on user permissions
- * - Returns count of messages with message_type='SMS inbound' and (summary IS NOT NULL OR mms IS NOT NULL)
- * - Only counts messages created today (based on UTC timezone)
+ * - Returns count of leads matching criteria
  */
 export async function GET(request: NextRequest) {
   try {
@@ -73,33 +73,25 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Get today's date range in UTC (we'll filter on the database side)
-    // The database will handle timezone conversion if needed
-    const now = new Date()
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0)
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
-
-    // Query communications table for SMS inbound messages with non-null summary OR mms
-    // Using Postgres OR condition: (summary IS NOT NULL OR mms IS NOT NULL)
-    const { data: messages, error: countError } = await supabase
-      .from('communications')
-      .select('communication_id')
+    // Query leads table for waiting to call leads
+    // stage = 1 AND call_now_status = 1
+    const { count, error: countError } = await supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
       .in('business_id', accessibleBusinessIds)
-      .eq('message_type', 'SMS inbound')
-      .gte('created_at', startOfToday.toISOString())
-      .lte('created_at', endOfToday.toISOString())
-      .or('summary.not.is.null,mms.not.is.null')
+      .eq('stage', 1)
+      .eq('call_now_status', 1)
 
     if (countError) {
-      console.error('Database error fetching SMS count:', countError)
+      console.error('Database error fetching waiting to call count:', countError)
       return Response.json(
-        { error: 'Failed to fetch SMS count' },
+        { error: 'Failed to fetch waiting to call count' },
         { status: 500 }
       )
     }
 
     return Response.json({
-      count: messages?.length || 0,
+      count: count || 0,
       success: true
     })
 

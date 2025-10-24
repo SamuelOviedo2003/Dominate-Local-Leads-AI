@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { MapPin, Clock } from 'lucide-react'
 import { useCurrentBusiness } from '@/contexts/BusinessContext'
 import { logger } from '@/lib/logging'
 
@@ -645,9 +646,12 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
           type="submit"
           onClick={handleAddressSubmit}
           disabled={isSubmitting || !formData.street_name.trim() || !formData.postal_code.trim()}
-          className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
         >
-          {isSubmitting ? 'Verifying...' : 'Next'}
+          {isSubmitting && (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          )}
+          <span>{isSubmitting ? 'Verifying...' : 'Next'}</span>
         </button>
       </div>
       </div>
@@ -665,7 +669,21 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
           <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
             <div className="text-sm text-green-800">
               <p className="font-medium mb-1">Confirmed Address</p>
-              <p>{bookingResponse.address}</p>
+              <p className="mb-2">{bookingResponse.address}</p>
+              <div className="flex items-center gap-4 text-xs text-green-700">
+                {bookingResponse.distance && (
+                  <div className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>{bookingResponse.distance} mi</span>
+                  </div>
+                )}
+                {bookingResponse.duration && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{bookingResponse.duration} min</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -817,9 +835,12 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
             type="button"
             onClick={handleCalendarNext}
             disabled={isSubmitting || !bookingSelection.selectedDate || !bookingSelection.selectedTime || !selectedProfile}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
-            Next
+            {isSubmitting && (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            )}
+            <span>Next</span>
           </button>
         </div>
       </div>
@@ -907,9 +928,12 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
             type="button"
             onClick={handleBookingConfirm}
             disabled={isSubmitting}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
-            {isSubmitting ? 'Booking...' : 'Confirm'}
+            {isSubmitting && (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            )}
+            <span>{isSubmitting ? 'Booking...' : 'Confirm'}</span>
           </button>
         </div>
       </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { authGet } from '@/lib/auth-fetch'
 
-interface UseSmsCountReturn {
+interface UseWaitingToCallCountReturn {
   count: number
   isLoading: boolean
   error: string | null
@@ -11,29 +11,29 @@ interface UseSmsCountReturn {
 }
 
 /**
- * Hook to fetch the count of unread SMS inbound messages for today
- * Returns count of messages with message_type='SMS inbound' and (summary IS NOT NULL OR mms IS NOT NULL)
- * Refetches every 30 seconds to keep the count updated
+ * Hook to fetch the count of leads waiting to call
+ * Returns count of leads with stage=1 and call_now_status=1
+ * Filtered by businesses accessible to the logged-in user
  */
-export function useSmsCount(): UseSmsCountReturn {
+export function useWaitingToCallCount(): UseWaitingToCallCountReturn {
   const [count, setCount] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchSmsCount = async () => {
+  const fetchCount = async () => {
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await authGet('/api/communications/sms-count')
+      const response = await authGet('/api/leads/waiting-to-call-count')
 
       if (response.success) {
         setCount(response.count || 0)
       } else {
-        throw new Error(response.error || 'Failed to fetch SMS count')
+        throw new Error(response.error || 'Failed to fetch waiting to call count')
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch SMS count'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch waiting to call count'
       setError(errorMessage)
       setCount(0)
     } finally {
@@ -42,10 +42,10 @@ export function useSmsCount(): UseSmsCountReturn {
   }
 
   useEffect(() => {
-    fetchSmsCount()
+    fetchCount()
 
     // Refetch every 30 seconds to keep the count updated
-    const interval = setInterval(fetchSmsCount, 30000)
+    const interval = setInterval(fetchCount, 30000)
 
     return () => clearInterval(interval)
   }, [])
@@ -54,6 +54,6 @@ export function useSmsCount(): UseSmsCountReturn {
     count,
     isLoading,
     error,
-    refetch: fetchSmsCount
+    refetch: fetchCount
   }
 }
