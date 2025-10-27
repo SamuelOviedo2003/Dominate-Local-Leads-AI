@@ -311,10 +311,13 @@ function LeadsTableComponent({ leads, isLoading, error, navigationTarget = 'lead
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center gap-2">
                         <span>{formatDateTime(lead.created_at)}</span>
-                        <CallWindowHistoryIcons
-                          callWindows={lead.callWindows}
-                          className="flex-shrink-0"
-                        />
+                        {/* Hide call window icons for Follow Up section */}
+                        {title !== "Follow Up" && (
+                          <CallWindowHistoryIcons
+                            callWindows={lead.callWindows}
+                            className="flex-shrink-0"
+                          />
+                        )}
                         {lead.ai_recap_purposes && (
                           <div className="flex flex-wrap gap-1">
                             {parsePurposes(lead.ai_recap_purposes).map((purpose, index) => (

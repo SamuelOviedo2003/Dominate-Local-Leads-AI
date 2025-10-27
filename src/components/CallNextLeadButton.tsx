@@ -79,12 +79,12 @@ export const CallNextLeadButton: React.FC<CallNextLeadButtonProps> = ({
     if (dialpadUrl) {
       // Open dialpad in a new window/tab
       window.open(dialpadUrl, '_blank')
-
-      // Navigate to the next lead's details page
-      navigate(`/lead-details/${nextLead.id}`)
     } else {
       console.warn('Unable to create Dialpad URL - invalid phone number')
     }
+
+    // Navigate to the next lead's details page (always use standard lead-details route)
+    navigate(`/lead-details/${nextLead.id}`)
   }
 
   // Don't render if loading, error, or no next lead
