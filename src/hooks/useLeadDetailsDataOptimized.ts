@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { LeadDetails, ApiResponse } from '@/types/leads'
 
 interface UseLeadDetailsDataOptimizedProps {
@@ -26,11 +27,23 @@ export function useLeadDetailsDataOptimized({ leadId, businessId }: UseLeadDetai
   const [leadDetails, setLeadDetails] = useState<LeadDetails | null>(null)
   const [isLoading, setIsLoading] = useState(true) // Start as true to prevent empty state flicker
   const [error, setError] = useState<string | null>(null)
+  const searchParams = useSearchParams()
 
   // Optimized fetch function with unified loading state
   const fetchLeadDetails = useCallback(async () => {
-    if (!leadId || !businessId) {
+    if (!leadId) {
       setError('Missing required parameters')
+      return
+    }
+
+    // IMPORTANT: Support for cross-business lead viewing in Waiting to Call mode
+    // If leadBusinessId is present in URL query params, use it instead of the URL's businessId
+    // This allows viewing leads from other businesses while keeping the current business context in the URL
+    const leadBusinessId = searchParams.get('leadBusinessId')
+    const effectiveBusinessId = leadBusinessId || businessId
+
+    if (!effectiveBusinessId) {
+      setError('Missing business ID')
       return
     }
 
@@ -39,7 +52,7 @@ export function useLeadDetailsDataOptimized({ leadId, businessId }: UseLeadDetai
 
     try {
       const url = new URL(`/api/leads/${leadId}`, window.location.origin)
-      url.searchParams.set('businessId', businessId)
+      url.searchParams.set('businessId', effectiveBusinessId)
 
       const response = await fetch(url.toString())
 
@@ -64,7 +77,7 @@ export function useLeadDetailsDataOptimized({ leadId, businessId }: UseLeadDetai
       // Unified loading completion - no artificial delays
       setIsLoading(false)
     }
-  }, [leadId, businessId])
+  }, [leadId, businessId, searchParams])
 
   // Fetch data when dependencies change
   useEffect(() => {

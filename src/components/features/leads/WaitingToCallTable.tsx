@@ -112,7 +112,7 @@ function WaitingToCallTableComponent({
     }
   }
 
-  const handleRowClick = async (e: React.MouseEvent, leadId: string, businessId: string, permalink: string) => {
+  const handleRowClick = async (e: React.MouseEvent, leadId: string, leadBusinessId: string, leadPermalink: string) => {
     // Prevent navigation if clicking on links or buttons
     const target = e.target as HTMLElement
     if (target.tagName === 'A' || target.tagName === 'BUTTON' || target.closest('a') || target.closest('button')) {
@@ -122,25 +122,57 @@ function WaitingToCallTableComponent({
     // Set loading state
     setNavigatingId(leadId)
 
-    // Navigate with business context - use router.push for absolute navigation
-    const url = `/${businessId}/${permalink}/${navigationTarget}/${leadId}`
-    router.push(url)
+    // IMPORTANT: For Waiting to Call, we need to preserve the CURRENT business context in the URL
+    // while passing the LEAD's business_id as a query parameter for data fetching
+    // This prevents the app from switching businesses when clicking leads from different businesses
+
+    // Get current business context from URL
+    const pathSegments = window.location.pathname.split('/').filter(Boolean)
+    const currentBusinessId = pathSegments[0] // Current business_id from URL
+    const currentPermalink = pathSegments[1] // Current permalink from URL
+
+    // Check if we're in "Waiting to Call" mode (navigationTarget is 'waiting-to-call-details')
+    const isWaitingToCallMode = navigationTarget === 'waiting-to-call-details'
+
+    if (isWaitingToCallMode && currentBusinessId && currentPermalink) {
+      // Stay in the current business context, but pass the lead's actual business_id as query param
+      const url = `/${currentBusinessId}/${currentPermalink}/${navigationTarget}/${leadId}?leadBusinessId=${leadBusinessId}`
+      router.push(url)
+    } else {
+      // For other navigation targets (lead-details, property-details, actions), use the lead's business context
+      const url = `/${leadBusinessId}/${leadPermalink}/${navigationTarget}/${leadId}`
+      router.push(url)
+    }
   }
 
-  const handleContextMenu = (e: React.MouseEvent, leadId: string, businessId: string, permalink: string) => {
+  const handleContextMenu = (e: React.MouseEvent, leadId: string, leadBusinessId: string, leadPermalink: string) => {
     e.preventDefault()
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
       leadId,
-      businessId,
-      permalink
+      businessId: leadBusinessId,
+      permalink: leadPermalink
     })
   }
 
   const handleOpenInNewTab = () => {
     if (contextMenu) {
-      const leadUrl = `/${contextMenu.businessId}/${contextMenu.permalink}/${navigationTarget}/${contextMenu.leadId}`
+      // Get current business context for Waiting to Call mode
+      const pathSegments = window.location.pathname.split('/').filter(Boolean)
+      const currentBusinessId = pathSegments[0]
+      const currentPermalink = pathSegments[1]
+      const isWaitingToCallMode = navigationTarget === 'waiting-to-call-details'
+
+      let leadUrl: string
+      if (isWaitingToCallMode && currentBusinessId && currentPermalink) {
+        // Preserve current business context with query param
+        leadUrl = `/${currentBusinessId}/${currentPermalink}/${navigationTarget}/${contextMenu.leadId}?leadBusinessId=${contextMenu.businessId}`
+      } else {
+        // Use lead's business context for other modes
+        leadUrl = `/${contextMenu.businessId}/${contextMenu.permalink}/${navigationTarget}/${contextMenu.leadId}`
+      }
+
       window.open(leadUrl, '_blank')
       setContextMenu(null)
     }

@@ -83,8 +83,24 @@ export const CallNextLeadButton: React.FC<CallNextLeadButtonProps> = ({
       console.warn('Unable to create Dialpad URL - invalid phone number')
     }
 
-    // Navigate to the next lead's details page (always use standard lead-details route)
-    navigate(`/lead-details/${nextLead.id}`)
+    // IMPORTANT: Check if we're in Waiting to Call mode by looking at the current URL
+    // If we're in waiting-to-call-details, preserve the current business context with query param
+    const currentPath = window.location.pathname
+    const isWaitingToCallMode = currentPath.includes('/waiting-to-call-details/')
+
+    if (isWaitingToCallMode) {
+      // Get current business context from URL to preserve it
+      const pathSegments = currentPath.split('/').filter(Boolean)
+      const currentBusinessId = pathSegments[0]
+      const currentPermalink = pathSegments[1]
+
+      // Navigate with current business context preserved, pass lead's business in query param
+      const url = `/${currentBusinessId}/${currentPermalink}/waiting-to-call-details/${nextLead.id}?leadBusinessId=${businessId}`
+      window.location.href = url
+    } else {
+      // For standard lead-details route, use normal navigation
+      navigate(`/lead-details/${nextLead.id}`)
+    }
   }
 
   // Don't render if loading, error, or no next lead

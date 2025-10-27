@@ -43,11 +43,11 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
 
   // Memoize filtered leads for each table to prevent recalculation on every render
   const callNowLeads = useMemo(
-    () => recentLeads ? recentLeads.filter(lead => lead.stage === 1 && (lead.call_now_status === 1 || lead.call_now_status === 2)) : [],
+    () => recentLeads ? recentLeads.filter(lead => lead.stage === 2) : [],  // Call Now (high priority)
     [recentLeads]
   )
   const waitingToCallLeads = useMemo(
-    () => recentLeads ? recentLeads.filter(lead => lead.stage === 1 && lead.call_now_status === 3) : [],
+    () => recentLeads ? recentLeads.filter(lead => lead.stage === 3) : [],  // Waiting to Call (normal priority)
     [recentLeads]
   )
 

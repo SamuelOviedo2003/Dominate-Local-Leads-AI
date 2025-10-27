@@ -1,7 +1,7 @@
 'use client'
 
 import { memo, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { CallWindows } from '@/components/features/leads/CallWindows'
@@ -81,10 +81,15 @@ function ErrorDisplay({ message, onRetry, onGoBack }: { message: string; onRetry
 
 const WaitingToCallDetailsPageOptimized = () => {
   const params = useParams()
+  const searchParams = useSearchParams()
   const { navigateToSection } = usePermalinkNavigation()
 
   const leadId = params.leadId as string
   const businessId = params.business_id as string
+
+  // IMPORTANT: Get the actual lead's business_id for cross-business functionality
+  // In Waiting to Call mode, the URL businessId stays the same, but we need the lead's actual businessId
+  const leadBusinessId = searchParams.get('leadBusinessId') || businessId
 
   const {
     leadDetails,
@@ -155,9 +160,10 @@ const WaitingToCallDetailsPageOptimized = () => {
             </button>
 
             {/* Call Next Lead Button - ONLY shown in this route */}
-            {businessId && (
+            {/* Use leadBusinessId to ensure we get the next lead from the correct business */}
+            {leadBusinessId && (
               <CallNextLeadButton
-                businessId={businessId}
+                businessId={leadBusinessId}
                 currentLeadId={leadId}
               />
             )}

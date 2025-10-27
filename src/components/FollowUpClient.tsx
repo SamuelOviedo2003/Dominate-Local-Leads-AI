@@ -36,9 +36,9 @@ export function FollowUpClient() {
     [businessContextLoading, isRecentLeadsLoading, effectiveBusinessId]
   )
 
-  // Memoize filtered leads for Follow Up table (Stage 2)
+  // Memoize filtered leads for Follow Up table (Stage 20)
   const followUpLeads = useMemo(
-    () => recentLeads ? recentLeads.filter(lead => lead.stage === 2) : [],
+    () => recentLeads ? recentLeads.filter(lead => lead.stage === 20) : [],  // Follow Up
     [recentLeads]
   )
 

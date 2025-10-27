@@ -14,11 +14,12 @@ interface BusinessClient {
 /**
  * GET /api/leads/waiting-to-call
  *
- * Fetches all "waiting to call" leads (stage=1, call_now_status=1) for businesses the user has access to.
- * - Super admins (role = 0): See all waiting to call leads
- * - Regular users: See waiting to call leads only for businesses they have access to via profile_businesses
+ * Fetches all "Speed to Lead" leads (stage=1) for businesses the user has access to.
+ * - Super admins (role = 0): See all Speed to Lead leads from all businesses
+ * - Regular users: See Speed to Lead leads only for businesses they have access to via profile_businesses
  *
  * This endpoint does NOT filter by a single business_id - it returns all leads across accessible businesses.
+ * Stage 1 = Speed to Lead (highest priority, cross-business view)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Fetch leads with stage=1 and call_now_status=1 (waiting to call)
+    // Fetch leads with stage=1 (Speed to Lead - highest priority)
     const { data: leads, error: leadsError } = await supabase
       .from('leads')
       .select(`
@@ -97,8 +98,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .in('business_id', accessibleBusinessIds)
-      .eq('stage', 1)
-      .eq('call_now_status', 1)
+      .eq('stage', 1)  // Speed to Lead
       .order('created_at', { ascending: false })
       .limit(100)
 
