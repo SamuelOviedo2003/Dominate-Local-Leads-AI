@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Menu, X, ChevronDown, UserPlus, MessageSquare } from 'lucide-react'
+import { Menu, X, ChevronDown, Flame, MessageSquare } from 'lucide-react'
 import { AuthUser, NavigationItem, BusinessSwitcherData } from '@/types/auth'
 import ImageWithFallback from './ImageWithFallback'
 import UserDropdown from './UserDropdown'
@@ -210,7 +210,7 @@ export default function UniversalHeader({
                   aria-label="Speed to Lead"
                   title="Speed to Lead"
                 >
-                  <UserPlus className="h-5 w-5" aria-hidden="true" />
+                  <Flame className="h-5 w-5" aria-hidden="true" />
 
                   {/* Speed to Lead Count Badge */}
                   {waitingToCallCount > 0 && (
@@ -327,7 +327,7 @@ export default function UniversalHeader({
                   style={{ pointerEvents: 'auto' }}
                 >
                   <div className="relative inline-flex">
-                    <UserPlus className="h-5 w-5 mr-3" aria-hidden="true" />
+                    <Flame className="h-5 w-5 mr-3" aria-hidden="true" />
                     {/* Speed to Lead Count Badge - Mobile */}
                     {waitingToCallCount > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-md">
