@@ -350,13 +350,16 @@ AND business_id = $businessId;
 - **REQUIREMENT**: Must support Actions navigation target for Follow Up table integration
 - **REQUIREMENT**: Must use `useLeadsData` hook for metrics data with 30-day default period
 
-#### Three-Table Structure Implementation (Latest Update)
-- **RESTRUCTURED**: New Leads section now contains three distinct tables instead of two
-- **TABLE 1 - "Call now"**: Displays leads where `stage === 1 AND (call_now_status === 1 OR call_now_status === 2)`
-- **TABLE 2 - "Follow Up"**: Displays leads where `stage === 2` (unchanged from original logic)
-- **TABLE 3 - "Waiting to call"**: Displays leads where `stage === 1 AND call_now_status === 3`
+#### Two-Table Structure Implementation (Latest Update - 2025-10-28)
+- **SIMPLIFIED**: New Leads section contains two distinct tables using unified stage system
+- **TABLE 1 - "Call now"**: Displays highest and high priority leads where `stage === 1 OR stage === 2`
+  - Stage 1: Speed to Lead (absolute highest priority)
+  - Stage 2: Call Now (high priority)
+- **TABLE 2 - "Waiting to call"**: Displays normal priority leads where `stage === 3`
+- **NOTE**: Follow-up leads (stage=20) now have their own dedicated section
+- **NOTE**: Stage 1 leads also appear in the cross-business "Speed to Lead" section (accessible via header icon)
 - **CONDITIONAL RENDERING**: Tables with zero leads are completely hidden to provide a cleaner UI experience
-- **AESTHETIC CONSISTENCY**: All three tables maintain identical styling, spacing, and responsive design
+- **AESTHETIC CONSISTENCY**: Both tables maintain identical styling, spacing, and responsive design
 - **DATA SOURCE**: All tables use the same `/api/leads/recent` endpoint with frontend filtering for performance
 - **LOADING STATES**: Tables appear during data loading to prevent layout shifts, but hide when empty after loading completes
 

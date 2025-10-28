@@ -201,18 +201,18 @@ export default function UniversalHeader({
 
             {/* Far Right: Profile Section */}
             <div className="flex items-center space-x-3">
-              {/* Waiting to Call Icon Button - Round */}
+              {/* Speed to Lead Icon Button - Round */}
               {isUsingBusiness && businessId && currentPermalink && (
                 <button
                   type="button"
                   onClick={(e) => handleNavigation(getBusinessUrl('waiting-to-call', businessId, currentPermalink), e)}
                   className="relative inline-flex items-center justify-center w-10 h-10 rounded-full text-white/90 hover:text-white bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 hover:border-white/50 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110 group"
-                  aria-label="Waiting to Call"
-                  title="Waiting to Call"
+                  aria-label="Speed to Lead"
+                  title="Speed to Lead"
                 >
                   <UserPlus className="h-5 w-5" aria-hidden="true" />
 
-                  {/* Waiting to Call Count Badge */}
+                  {/* Speed to Lead Count Badge */}
                   {waitingToCallCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-md ring-1 ring-white">
                       {waitingToCallCount}
@@ -311,7 +311,7 @@ export default function UniversalHeader({
 
             {/* Mobile Navigation Links */}
             <nav className="px-6 py-6 space-y-3">
-              {/* Waiting to Call Button - Mobile Only */}
+              {/* Speed to Lead Button - Mobile Only */}
               {isUsingBusiness && businessId && currentPermalink && (
                 <button
                   onClick={(e) => {
@@ -328,14 +328,14 @@ export default function UniversalHeader({
                 >
                   <div className="relative inline-flex">
                     <UserPlus className="h-5 w-5 mr-3" aria-hidden="true" />
-                    {/* Waiting to Call Count Badge - Mobile */}
+                    {/* Speed to Lead Count Badge - Mobile */}
                     {waitingToCallCount > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-md">
                         {waitingToCallCount}
                       </span>
                     )}
                   </div>
-                  Waiting to Call
+                  Speed to Lead
                 </button>
               )}
 

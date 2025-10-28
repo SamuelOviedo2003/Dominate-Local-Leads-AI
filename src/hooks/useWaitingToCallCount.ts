@@ -11,8 +11,8 @@ interface UseWaitingToCallCountReturn {
 }
 
 /**
- * Hook to fetch the count of leads waiting to call
- * Returns count of leads with stage=1 and call_now_status=1
+ * Hook to fetch the count of Speed to Lead leads
+ * Returns count of leads with stage=1 (highest priority)
  * Filtered by businesses accessible to the logged-in user
  */
 export function useWaitingToCallCount(): UseWaitingToCallCountReturn {
@@ -30,10 +30,10 @@ export function useWaitingToCallCount(): UseWaitingToCallCountReturn {
       if (response.success) {
         setCount(response.count || 0)
       } else {
-        throw new Error(response.error || 'Failed to fetch waiting to call count')
+        throw new Error(response.error || 'Failed to fetch speed to lead count')
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch waiting to call count'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch speed to lead count'
       setError(errorMessage)
       setCount(0)
     } finally {

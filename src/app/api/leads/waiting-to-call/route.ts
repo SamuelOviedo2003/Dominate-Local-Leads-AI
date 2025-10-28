@@ -103,9 +103,9 @@ export async function GET(request: NextRequest) {
       .limit(100)
 
     if (leadsError) {
-      console.error('Database error fetching waiting to call leads:', leadsError)
+      console.error('Database error fetching speed to lead leads:', leadsError)
       return Response.json(
-        { error: 'Failed to fetch waiting to call leads' },
+        { error: 'Failed to fetch speed to lead leads' },
         { status: 500 }
       )
     }

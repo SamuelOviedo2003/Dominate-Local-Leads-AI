@@ -6,8 +6,8 @@ export const dynamic = 'force-dynamic'
 /**
  * GET /api/leads/waiting-to-call-count
  *
- * Fetches the count of leads in "waiting to call" status
- * - Filters by stage=1 and call_now_status=1
+ * Fetches the count of leads in "Speed to Lead" status
+ * - Filters by stage=1 (Speed to Lead - highest priority)
  * - Filters by accessible businesses based on user permissions
  * - Returns count of leads matching criteria
  */
@@ -73,19 +73,18 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Query leads table for waiting to call leads
-    // stage = 1 AND call_now_status = 1
+    // Query leads table for Speed to Lead leads
+    // stage = 1 (Speed to Lead - highest priority)
     const { count, error: countError } = await supabase
       .from('leads')
       .select('*', { count: 'exact', head: true })
       .in('business_id', accessibleBusinessIds)
-      .eq('stage', 1)
-      .eq('call_now_status', 1)
+      .eq('stage', 1)  // Speed to Lead only
 
     if (countError) {
-      console.error('Database error fetching waiting to call count:', countError)
+      console.error('Database error fetching speed to lead count:', countError)
       return Response.json(
-        { error: 'Failed to fetch waiting to call count' },
+        { error: 'Failed to fetch speed to lead count' },
         { status: 500 }
       )
     }

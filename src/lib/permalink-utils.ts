@@ -147,7 +147,7 @@ export function isPermalinkRoute(pathname: string): boolean {
 /**
  * Navigation items with their section names
  * Used to generate permalink-aware navigation links
- * NOTE: 'Waiting to Call' removed from nav menu - now a round icon button in header
+ * NOTE: 'Speed to Lead' removed from nav menu - now a round icon button in header
  */
 export const NAVIGATION_SECTIONS = [
   { name: 'Dashboard', section: 'dashboard' },

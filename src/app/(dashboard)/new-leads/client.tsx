@@ -43,7 +43,7 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
 
   // Memoize filtered leads for each table to prevent recalculation on every render
   const callNowLeads = useMemo(
-    () => recentLeads ? recentLeads.filter(lead => lead.stage === 2) : [],  // Call Now (high priority)
+    () => recentLeads ? recentLeads.filter(lead => lead.stage === 1 || lead.stage === 2) : [],  // Speed to Lead + Call Now
     [recentLeads]
   )
   const waitingToCallLeads = useMemo(
@@ -106,7 +106,7 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           </div>
         )}
 
-        {/* Call now Table (Stage 1 AND call_now_status in [1,2]) */}
+        {/* Call now Table (Stage 1 - Speed to Lead AND Stage 2 - Call Now) */}
         {callNowLeads.length > 0 && (
           <div className="mb-8">
             <LeadsTable
@@ -118,7 +118,7 @@ export function NewLeadsClient({ businessId, userRole }: NewLeadsClientProps) {
           </div>
         )}
 
-        {/* Waiting to call Table (Stage 1 AND call_now_status = 3) */}
+        {/* Waiting to call Table (Stage 3 - Waiting to Call) */}
         {waitingToCallLeads.length > 0 && (
           <LeadsTable
             leads={waitingToCallLeads}

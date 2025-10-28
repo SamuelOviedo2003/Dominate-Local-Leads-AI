@@ -26,13 +26,13 @@ export function WaitingToCallClient() {
 
         if (!response.ok) {
           const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to fetch waiting to call leads')
+          throw new Error(errorData.error || 'Failed to fetch speed to lead leads')
         }
 
         const result = await response.json()
         setLeads(result.data || [])
       } catch (err) {
-        console.error('Error fetching waiting to call leads:', err)
+        console.error('Error fetching speed to lead leads:', err)
         setError(err instanceof Error ? err.message : 'An error occurred')
       } finally {
         setIsLoading(false)
@@ -55,7 +55,7 @@ export function WaitingToCallClient() {
         <div className="max-w-7xl mx-auto">
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Waiting to Call</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Speed to Lead</h3>
             </div>
             <div className="p-6">
               <div className="flex items-center justify-center py-8">
@@ -74,9 +74,9 @@ export function WaitingToCallClient() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Waiting to Call</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Speed to Lead</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Leads marked for calling across all your accessible businesses
+              Highest priority leads across all your accessible businesses
             </p>
           </div>
         </div>
@@ -98,12 +98,12 @@ export function WaitingToCallClient() {
           </div>
         )}
 
-        {/* Waiting to Call Table */}
+        {/* Speed to Lead Table */}
         <WaitingToCallTable
           leads={leads}
           isLoading={isLoading}
           error={error}
-          title="All Waiting to Call Leads"
+          title="All Speed to Lead Leads"
         />
       </div>
     </div>
