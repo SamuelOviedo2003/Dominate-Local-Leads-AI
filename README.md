@@ -1073,7 +1073,7 @@ AND business_id = $businessId;
 - **REQUIREMENT**: Must display AI recap purpose tags in Next Step column
 - **REQUIREMENT**: Must support proper array-like string parsing for `ai_recap_purposes` field
 - **REQUIREMENT**: Bookings table must show leads from all time periods (no time filtering)
-- **REQUIREMENT**: Bookings table must filter by stage = 3 (booking stage only)
+- **REQUIREMENT**: Bookings table must filter by stage = 30 (booking stage only)
 - **REQUIREMENT**: AI recap purposes tags display correctly in stages where data exists (Follow up, not Call now)
 - **REQUIREMENT**: Date filter UI completely removed from Bookings section (no TimePeriodFilter component)
 - **REQUIREMENT**: All Bookings APIs updated to remove startDate parameter dependency

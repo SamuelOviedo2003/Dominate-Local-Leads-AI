@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
     const { user, supabase, businessId } = authResult
 
-    // Fetch leads with call windows data - only show stage 3 leads (bookings) from all time periods
+    // Fetch leads with call windows data - only show stage 30 leads (bookings) from all time periods
     const { data: leadsData, error: leadsError } = await supabase
       .from('leads')
       .select(`
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('business_id', businessId)
-      .eq('stage', 3)
+      .eq('stage', 30)
       .order('created_at', { ascending: false })
 
     if (leadsError) {
