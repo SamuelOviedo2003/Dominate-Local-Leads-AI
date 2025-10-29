@@ -14,12 +14,14 @@ interface LeadHistoryRecord {
   business_id: number;
   business_name: string | null;
   business_avatar_url: string | null;
+  business_permalink: string | null;
 }
 
 interface BusinessClient {
   business_id: number;
   company_name: string;
   avatar_url: string | null;
+  permalink: string | null;
 }
 
 interface LeadFromDB {
@@ -58,7 +60,7 @@ export async function GET(request: NextRequest) {
     // Query 1: Fetch business information for all accessible businesses
     const { data: businesses, error: businessError } = await supabase
       .from('business_clients')
-      .select('business_id, company_name, avatar_url')
+      .select('business_id, company_name, avatar_url, permalink')
       .in('business_id', accessibleBusinessIds);
 
     if (businessError) {
@@ -119,6 +121,7 @@ export async function GET(request: NextRequest) {
         business_id: lead.business_id,
         business_name: businessInfo?.company_name || 'Unknown Business',
         business_avatar_url: businessInfo?.avatar_url || null,
+        business_permalink: businessInfo?.permalink || null,
       };
     });
 

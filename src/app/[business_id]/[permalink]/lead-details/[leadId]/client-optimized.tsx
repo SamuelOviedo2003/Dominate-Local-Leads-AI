@@ -1,7 +1,7 @@
 'use client'
 
-import { memo, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { memo, useEffect, useMemo } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { LeadInformation } from '@/components/features/leads/LeadInformation'
 import { CommunicationsHistory } from '@/components/features/leads/CommunicationsHistory'
 import { CallWindows } from '@/components/features/leads/CallWindows'
@@ -38,7 +38,7 @@ function UnifiedLoadingState() {
 }
 
 // Error component
-function ErrorDisplay({ message, onRetry, onGoBack }: { message: string; onRetry: () => void; onGoBack: () => void }) {
+function ErrorDisplay({ message, onRetry, onGoBack, backLabel }: { message: string; onRetry: () => void; onGoBack: () => void; backLabel: string }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -50,7 +50,7 @@ function ErrorDisplay({ message, onRetry, onGoBack }: { message: string; onRetry
             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to New Leads
+            {backLabel}
           </button>
         </div>
 
@@ -82,11 +82,13 @@ function ErrorDisplay({ message, onRetry, onGoBack }: { message: string; onRetry
 
 const LeadDetailsPageOptimized = () => {
   const params = useParams()
+  const searchParams = useSearchParams()
   const selectedCompany = useCurrentBusiness()
   const { navigateToSection } = usePermalinkNavigation()
 
   const leadId = params.leadId as string
   const businessId = selectedCompany?.business_id
+  const source = searchParams.get('source') // Get the source query parameter
 
   const {
     leadDetails,
@@ -98,16 +100,28 @@ const LeadDetailsPageOptimized = () => {
     businessId: businessId || ''
   })
 
+  // Determine back navigation based on source parameter
+  const { backSection, backLabel } = useMemo(() => {
+    switch (source) {
+      case 'lead-history':
+        return { backSection: 'lead-history', backLabel: 'Back to Lead History' }
+      case 'follow-up':
+        return { backSection: 'follow-up', backLabel: 'Back to Follow Up' }
+      default:
+        return { backSection: 'new-leads', backLabel: 'Back to New Leads' }
+    }
+  }, [source])
+
   // Handle global error (like "Lead not found") - use useEffect for navigation
   // IMPORTANT: This useEffect must be before any conditional returns to follow React hooks rules
   useEffect(() => {
     if (error && error.includes('Lead not found')) {
-      navigateToSection('new-leads')
+      navigateToSection(backSection)
     }
-  }, [error, navigateToSection])
+  }, [error, navigateToSection, backSection])
 
   const handleGoBack = () => {
-    navigateToSection('new-leads')
+    navigateToSection(backSection)
   }
 
   // Handle cases where we don't have required data yet
@@ -137,7 +151,7 @@ const LeadDetailsPageOptimized = () => {
 
   // Show error state for other errors
   if (error && !error.includes('Lead not found')) {
-    return <ErrorDisplay message={error} onRetry={refetch} onGoBack={handleGoBack} />
+    return <ErrorDisplay message={error} onRetry={refetch} onGoBack={handleGoBack} backLabel={backLabel} />
   }
 
   return (
@@ -153,7 +167,7 @@ const LeadDetailsPageOptimized = () => {
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to New Leads
+              {backLabel}
             </button>
 
             {/* Call Next Lead Button */}

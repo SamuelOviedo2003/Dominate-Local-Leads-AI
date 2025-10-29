@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useBusinessContext } from '@/contexts/BusinessContext';
 import ImageWithFallback from '@/components/ImageWithFallback';
 
@@ -15,15 +16,18 @@ interface LeadHistoryRecord {
   business_id: number;
   business_name: string | null;
   business_avatar_url: string | null;
+  business_permalink: string | null;
 }
 
 export default function LeadHistoryClient() {
+  const router = useRouter();
   const { availableBusinesses, currentBusinessId } = useBusinessContext();
   const [leads, setLeads] = useState<LeadHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>('all');
   const [total, setTotal] = useState(0);
+  const [navigatingId, setNavigatingId] = useState<number | null>(null);
 
   // Fetch lead history
   useEffect(() => {
@@ -101,6 +105,45 @@ export default function LeadHistoryClient() {
       100: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
     };
     return colorMap[stage] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+  };
+
+  // Handle row click with proper business context preservation
+  const handleRowClick = (e: React.MouseEvent, leadId: number, leadBusinessId: number, leadPermalink: string | null) => {
+    // Prevent navigation if clicking on links or buttons
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'A' || target.tagName === 'BUTTON' || target.closest('a') || target.closest('button')) {
+      return;
+    }
+
+    // Set loading state
+    setNavigatingId(leadId);
+
+    // IMPORTANT: For Lead History, we need to preserve the CURRENT business context in the URL
+    // while passing the LEAD's business_id as a query parameter for data fetching
+    // This prevents the app from switching businesses when clicking leads from different businesses
+
+    // Get current business context from URL
+    const pathSegments = window.location.pathname.split('/').filter(Boolean);
+    const currentBusinessId = pathSegments[0]; // Current business_id from URL
+    const currentPermalink = pathSegments[1]; // Current permalink from URL
+
+    if (!leadPermalink) {
+      console.error('Lead permalink is missing');
+      setNavigatingId(null);
+      return;
+    }
+
+    // Navigate to lead-details with source=lead-history to enable proper back navigation
+    if (currentBusinessId && currentPermalink) {
+      // Stay in the current business context, but pass the lead's actual business_id as query param
+      // Also add source=lead-history so the back button knows where to return
+      const url = `/${currentBusinessId}/${currentPermalink}/lead-details/${leadId}?leadBusinessId=${leadBusinessId}&source=lead-history`;
+      router.push(url);
+    } else {
+      // Fallback: use the lead's business context directly
+      const url = `/${leadBusinessId}/${leadPermalink}/lead-details/${leadId}?source=lead-history`;
+      router.push(url);
+    }
   };
 
   return (
@@ -182,12 +225,19 @@ export default function LeadHistoryClient() {
                   {leads.map((lead) => (
                     <tr
                       key={lead.lead_id}
-                      className="hover:bg-gray-50 dark:hover:bg-slate-900/50 transition-colors"
+                      onClick={(e) => handleRowClick(e, lead.lead_id, lead.business_id, lead.business_permalink)}
+                      className={`cursor-pointer transition-all duration-200 hover:bg-gray-50 dark:hover:bg-slate-900/50 ${
+                        navigatingId === lead.lead_id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500' : ''
+                      }`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
-                            {lead.business_avatar_url ? (
+                            {navigatingId === lead.lead_id ? (
+                              <div className="h-10 w-10 rounded-full flex items-center justify-center">
+                                <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                              </div>
+                            ) : lead.business_avatar_url ? (
                               <ImageWithFallback
                                 src={lead.business_avatar_url}
                                 alt={lead.business_name || 'Business'}
