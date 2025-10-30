@@ -29,12 +29,21 @@ export async function GET(request: NextRequest) {
     const { businessId } = authResult
     const supabase = getSupabaseClient()
 
-    // Fetch profiles where role = 5
+    // Fetch profiles where role = 5 and associated with the business via profile_businesses table
     const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, full_name, business_id, role')
-      .eq('role', 5)
-      .order('full_name')
+      .from('profile_businesses')
+      .select(`
+        profile_id,
+        profiles!inner (
+          id,
+          full_name,
+          role,
+          ghl_id
+        )
+      `)
+      .eq('business_id', businessId)
+      .eq('profiles.role', 5)
+      .order('profiles(full_name)')
 
     if (profilesError) {
       logger.error('Failed to fetch profiles with role = 5', {
@@ -47,15 +56,27 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Transform the data structure to match the expected format
+    const transformedProfiles = profiles?.map(pb => {
+      const profile = Array.isArray(pb.profiles) ? pb.profiles[0] : pb.profiles
+      return {
+        id: profile?.id || '',
+        full_name: profile?.full_name || '',
+        business_id: businessId,
+        role: profile?.role || 5,
+        ghl_id: profile?.ghl_id || null
+      }
+    }).filter(p => p.id) || []
+
     logger.debug('Profiles with role = 5 fetched successfully', {
       businessId,
-      profileCount: profiles?.length || 0,
-      profiles: profiles?.map(p => ({ id: p.id, name: p.full_name, business_id: p.business_id }))
+      profileCount: transformedProfiles.length,
+      profiles: transformedProfiles.map(p => ({ id: p.id, name: p.full_name, business_id: p.business_id }))
     })
 
     return NextResponse.json({
       success: true,
-      profiles: profiles || []
+      profiles: transformedProfiles
     })
 
   } catch (error) {

@@ -38,6 +38,7 @@ interface ProfileOption {
   full_name: string
   business_id: number
   role: number
+  ghl_id: string | null
 }
 
 type BookingStage = 'address' | 'calendar' | 'details' | 'success'
@@ -423,8 +424,8 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
   }
 
   const handleCalendarNext = () => {
-    if (!bookingSelection.selectedDate || !bookingSelection.selectedTime || !selectedProfile) {
-      setError('Please select date, time, and profile')
+    if (!bookingSelection.selectedDate || !bookingSelection.selectedTime) {
+      setError('Please select date and time')
       return
     }
     setError(null)
@@ -463,6 +464,11 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
       // Phase 3: Format start_time in ISO 8601 format with timezone
       const start_time = bookingSelection.selectedTime || ''
 
+      // Get assigned_user_id from selected profile's ghl_id
+      const assigned_user_id = selectedProfile === 'default'
+        ? ''
+        : profileOptions.find(p => p.id === selectedProfile)?.ghl_id || ''
+
       // Call the GHL booking creation webhook with Phase 3 parameters
       const webhookPayload = {
         lead_id: leadId,
@@ -474,7 +480,8 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
         full_name: full_name,
         service: leadAttributes.service || '',
         address: bookingResponse?.address || '',
-        start_time: start_time
+        start_time: start_time,
+        assigned_user_id: assigned_user_id
       }
 
       logger.debug('Calling booking webhook', {
@@ -503,6 +510,7 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
         date: bookingSelection.selectedDate,
         time: bookingSelection.selectedTime,
         profile: selectedProfile,
+        assigned_user_id: assigned_user_id,
         leadAttributes: leadAttributes,
         address: bookingResponse?.address || ''
       })
@@ -531,7 +539,7 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
     setBookingResponse(null)
     setBookingSelection({ selectedDate: '', selectedTime: '' })
     setProfileOptions([])
-    setSelectedProfile('')
+    setSelectedProfile('default')
     setBusinessTimezone('America/New_York')
     setLeadAttributes({ service: '', how_soon: '', payment_type: '', roof_age: '' })
     setAvailableAttributes([])
@@ -550,7 +558,7 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
     setBookingResponse(null)
     setBookingSelection({ selectedDate: '', selectedTime: '' })
     setProfileOptions([])
-    setSelectedProfile('')
+    setSelectedProfile('default')
     setBusinessTimezone('America/New_York')
     setLeadAttributes({ service: '', how_soon: '', payment_type: '', roof_age: '' })
     setAvailableAttributes([])
@@ -834,7 +842,7 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
           <button
             type="button"
             onClick={handleCalendarNext}
-            disabled={isSubmitting || !bookingSelection.selectedDate || !bookingSelection.selectedTime || !selectedProfile}
+            disabled={isSubmitting || !bookingSelection.selectedDate || !bookingSelection.selectedTime}
             className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
             {isSubmitting && (
