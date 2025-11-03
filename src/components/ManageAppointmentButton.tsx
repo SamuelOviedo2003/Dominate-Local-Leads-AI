@@ -7,6 +7,7 @@ interface ManageAppointmentButtonProps {
   leadId: string
   accountId: string
   businessId: string
+  eventId?: string | null // GHL event ID for appointment bookings
   className?: string
 }
 
@@ -14,6 +15,7 @@ export function ManageAppointmentButton({
   leadId,
   accountId,
   businessId,
+  eventId,
   className = ''
 }: ManageAppointmentButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -44,6 +46,7 @@ export function ManageAppointmentButton({
         leadId={leadId}
         accountId={accountId}
         businessId={businessId}
+        eventId={eventId}
       />
     </>
   )

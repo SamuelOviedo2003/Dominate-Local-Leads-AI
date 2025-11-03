@@ -36,6 +36,7 @@ export interface Lead {
   assigned_id?: string | null
   client_id?: number | null
   sales_id?: string | null
+  event_id?: string | null // GHL event ID for appointment bookings
 }
 
 export interface Client {

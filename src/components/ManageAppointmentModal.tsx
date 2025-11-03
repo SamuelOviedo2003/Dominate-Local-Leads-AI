@@ -9,6 +9,7 @@ interface ManageAppointmentModalProps {
   leadId: string
   accountId: string
   businessId: string
+  eventId?: string | null // GHL event ID for appointment bookings
 }
 
 export function ManageAppointmentModal({
@@ -16,7 +17,8 @@ export function ManageAppointmentModal({
   onClose,
   leadId,
   accountId,
-  businessId
+  businessId,
+  eventId
 }: ManageAppointmentModalProps) {
   const [activeAction, setActiveAction] = useState<'select' | 'reschedule' | 'cancel'>('select')
   const [streetName, setStreetName] = useState('')
@@ -71,10 +73,8 @@ export function ManageAppointmentModal({
         },
         body: JSON.stringify({
           lead_id: leadId,
-          account_id: accountId,
-          street_name: streetName,
-          postal_code: postalCode,
-          business_id: businessId
+          business_id: businessId,
+          event_id: eventId
         })
       })
 
@@ -112,19 +112,21 @@ export function ManageAppointmentModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
         {/* Background overlay */}
         <div
           className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
           onClick={handleClose}
         />
 
-        {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        {/* Modal panel - Fixed size matching BookingModal */}
+        <div className="relative inline-block w-[720px] h-[580px] text-left align-bottom transition-all transform bg-white rounded-xl shadow-xl sm:my-8 sm:align-middle flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Header */}
-          <div className="bg-white px-6 pt-5 pb-4">
+          <div className="flex-shrink-0 px-6 pt-6 pb-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900">
                 Manage Appointment
               </h3>
               <button
@@ -138,12 +140,72 @@ export function ManageAppointmentModal({
           </div>
 
           {/* Content */}
-          <div className="px-6 pb-6">
+          <div className="flex-1 px-6 pb-6 overflow-hidden">
+            {activeAction === 'cancel' ? (
+              <div className="h-full flex flex-col">
+                {/* Back button at top for cancel view */}
+                <button
+                  onClick={() => setActiveAction('select')}
+                  className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1 mb-4"
+                  disabled={isSubmitting}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back
+                </button>
+
+                {/* Centered content for cancel view */}
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full max-w-2xl">
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-4">
+                        Cancel Appointment
+                      </h4>
+
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-600">
+                          Are you sure you want to cancel this appointment? This action will send a cancellation request to the booking system.
+                        </p>
+
+                        {message && (
+                          <div
+                            className={`p-3 rounded-md ${
+                              message.type === 'success'
+                                ? 'bg-green-50 text-green-800 border border-green-200'
+                                : 'bg-red-50 text-red-800 border border-red-200'
+                            }`}
+                          >
+                            {message.text}
+                          </div>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                          <button
+                            onClick={handleCancel}
+                            disabled={isSubmitting}
+                            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                          >
+                            {isSubmitting ? 'Sending...' : 'Cancel Booking'}
+                          </button>
+                          <button
+                            onClick={handleClose}
+                            disabled={isSubmitting}
+                            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border-2 border-blue-600 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="w-full max-w-2xl">
             {activeAction === 'select' && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  What would you like to do with this appointment?
-                </p>
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => setActiveAction('reschedule')}
@@ -163,7 +225,7 @@ export function ManageAppointmentModal({
               </div>
             )}
 
-            {(activeAction === 'reschedule' || activeAction === 'cancel') && (
+            {activeAction === 'reschedule' && (
               <div className="space-y-4">
                 <button
                   onClick={() => setActiveAction('select')}
@@ -178,7 +240,7 @@ export function ManageAppointmentModal({
 
                 <div>
                   <h4 className="font-medium text-gray-900 mb-4">
-                    {activeAction === 'reschedule' ? 'Reschedule Appointment' : 'Cancel Appointment'}
+                    Reschedule Appointment
                   </h4>
 
                   <div className="space-y-4">
@@ -226,27 +288,26 @@ export function ManageAppointmentModal({
 
                     <div className="flex gap-3 pt-2">
                       <button
-                        onClick={activeAction === 'reschedule' ? handleReschedule : handleCancel}
+                        onClick={handleReschedule}
                         disabled={isSubmitting || !streetName || !postalCode}
-                        className={`flex-1 px-4 py-2 text-white rounded-md shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                          activeAction === 'reschedule'
-                            ? 'bg-blue-600 hover:bg-blue-700'
-                            : 'bg-red-600 hover:bg-red-700'
-                        }`}
+                        className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
                       >
-                        {isSubmitting ? 'Sending...' : activeAction === 'reschedule' ? 'Send Reschedule Request' : 'Send Cancellation Request'}
+                        {isSubmitting ? 'Sending...' : 'Save'}
                       </button>
                       <button
                         onClick={handleClose}
                         disabled={isSubmitting}
-                        className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border-2 border-blue-600 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Close
+                        Cancel
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
+            )}
+            </div>
+            </div>
             )}
           </div>
         </div>

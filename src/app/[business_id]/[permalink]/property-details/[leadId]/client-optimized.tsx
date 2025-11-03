@@ -166,6 +166,7 @@ const PropertyDetailsPageOptimized = () => {
                 leadId={leadId}
                 accountId={leadDetails.lead.account_id}
                 businessId={businessId.toString()}
+                eventId={leadDetails.lead.event_id}
               />
             )}
             <CallNowButton
