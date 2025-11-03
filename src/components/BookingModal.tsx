@@ -117,12 +117,14 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
   }
 
   const formatDate = (dateStr: string): string => {
-    const date = new Date(dateStr)
+    // Parse date in business timezone to avoid off-by-one errors
+    const date = new Date(dateStr + 'T00:00:00')
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone: businessTimezone
     })
   }
 
@@ -952,34 +954,36 @@ export function BookingModal({ isOpen, onClose, leadId, accountId }: BookingModa
     const selectedProfileName = selectedProfile === 'default' ? 'Default' : profileOptions.find(p => p.id === selectedProfile)?.full_name || 'Not selected'
 
     return (
-      <div className="text-center">
-        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-          <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Booking Confirmed!</h3>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p><strong>Date:</strong> {formatDate(bookingSelection.selectedDate)}</p>
+            <p><strong>Time:</strong> {formatTime(bookingSelection.selectedTime)}</p>
+            <p><strong>Assigned to:</strong> {selectedProfileName}</p>
+            {availableAttributes.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <p><strong>Lead Details Updated:</strong></p>
+                {availableAttributes.map(attr => {
+                  const value = leadAttributes[attr as keyof LeadAttributes]
+                  const label = {
+                    service: 'Service',
+                    how_soon: 'How Soon',
+                    payment_type: 'Payment Type',
+                    roof_age: 'Roof Age'
+                  }[attr]
+                  return value ? <p key={attr}><strong>{label}:</strong> {value}</p> : null
+                })}
+              </div>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 mt-4">You will receive a confirmation email shortly.</p>
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Booking Confirmed!</h3>
-        <div className="text-sm text-gray-600 space-y-1">
-          <p><strong>Date:</strong> {formatDate(bookingSelection.selectedDate)}</p>
-          <p><strong>Time:</strong> {formatTime(bookingSelection.selectedTime)}</p>
-          <p><strong>Assigned to:</strong> {selectedProfileName}</p>
-          {availableAttributes.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <p><strong>Lead Details Updated:</strong></p>
-              {availableAttributes.map(attr => {
-                const value = leadAttributes[attr as keyof LeadAttributes]
-                const label = {
-                  service: 'Service',
-                  how_soon: 'How Soon',
-                  payment_type: 'Payment Type',
-                  roof_age: 'Roof Age'
-                }[attr]
-                return value ? <p key={attr}><strong>{label}:</strong> {value}</p> : null
-              })}
-            </div>
-          )}
-        </div>
-        <p className="text-sm text-gray-500 mt-4">You will receive a confirmation email shortly.</p>
       </div>
     )
   }

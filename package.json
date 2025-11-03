@@ -31,6 +31,7 @@
     "@supabase/supabase-js": "^2.57.4",
     "colorthief": "^2.6.0",
     "lucide-react": "^0.451.0",
+    "luxon": "^3.7.2",
     "next": "^14.2.31",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -41,6 +42,7 @@
   "devDependencies": {
     "@playwright/test": "^1.54.2",
     "@types/colorthief": "^2.6.0",
+    "@types/luxon": "^3.7.1",
     "@types/node": "^22.8.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
