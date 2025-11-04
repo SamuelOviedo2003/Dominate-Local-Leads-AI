@@ -13,7 +13,7 @@ interface AuthDataContextType {
     avatar_url?: string | null
     city?: string | null
     state?: string | null
-  }
+  } | null
   effectiveRole: number
 }
 
@@ -30,7 +30,7 @@ interface AuthDataProviderProps {
     avatar_url?: string | null
     city?: string | null
     state?: string | null
-  }
+  } | null
   effectiveRole: number
 }
 
