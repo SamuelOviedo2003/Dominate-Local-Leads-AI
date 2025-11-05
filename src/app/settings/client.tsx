@@ -1,9 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthUser, Profile } from '@/types/auth'
-import { ArrowLeft, User, Check, X, Eye, EyeOff, Key } from 'lucide-react'
+import { User, Check, X, Eye, EyeOff, Key } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface SettingsClientProps {
@@ -41,14 +40,10 @@ interface UpdateResponse {
 /**
  * Settings page client component with unique layout
  * No global header - behaves like a completely new page
+ * Shows horizontal navigation for Profile and Password sections
  */
-export default function SettingsClient({ user }: SettingsClientProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+export default function SettingsClient({ user: _user }: SettingsClientProps) {
   const [activeSection, setActiveSection] = useState<'edit-profile' | 'change-password'>('edit-profile')
-
-  // Get the "from" parameter to know which business to return to
-  const fromParam = searchParams.get('from') // e.g., "11/hard-roof"
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [emailVerified, setEmailVerified] = useState<boolean>(false)
@@ -177,24 +172,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
     }
   }
 
-  const handleReturnToDashboard = () => {
-    // If we have a "from" parameter, use it to return to the same business
-    if (fromParam) {
-      router.push(`/${fromParam}/dashboard`)
-      return
-    }
-
-    // Otherwise, use the first accessible business
-    const firstBusiness = user.accessibleBusinesses?.[0]
-
-    if (firstBusiness?.business_id && firstBusiness?.permalink) {
-      router.push(`/${firstBusiness.business_id}/${firstBusiness.permalink}/dashboard`)
-    } else {
-      // Fallback to old dashboard if no business found
-      router.push('/dashboard')
-    }
-  }
-
   const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setPasswordData(prev => ({
@@ -306,60 +283,41 @@ export default function SettingsClient({ user }: SettingsClientProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with return button */}
+      {/* Header with horizontal navigation menu */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="px-4 h-16 flex items-center">
-          <button
-            onClick={handleReturnToDashboard}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Return to Dashboard</span>
-          </button>
+        <div className="px-6 py-4">
+          <h1 className="text-xl font-semibold text-gray-900 mb-4">Account Settings</h1>
+
+          {/* Horizontal Navigation Menu */}
+          <nav className="flex space-x-1">
+            <button
+              onClick={() => setActiveSection('edit-profile')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeSection === 'edit-profile'
+                  ? 'bg-purple-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              <span>Profile</span>
+            </button>
+            <button
+              onClick={() => setActiveSection('change-password')}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                activeSection === 'change-password'
+                  ? 'bg-purple-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Key className="w-4 h-4" />
+              <span>Change Password</span>
+            </button>
+          </nav>
         </div>
       </div>
 
-      <div className="py-8">
-        <div className="flex gap-4">
-          {/* Left Vertical Menu */}
-          <div className="w-48 flex-shrink-0 ml-4">
-            <nav className="bg-white rounded-lg shadow p-3">
-              <h2 className="text-sm font-medium text-gray-900 mb-4">
-                Account Settings
-              </h2>
-              <ul className="space-y-2">
-                <li>
-                  <button
-                    onClick={() => setActiveSection('edit-profile')}
-                    className={`w-full flex items-center space-x-2 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeSection === 'edit-profile'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <User className="w-4 h-4" />
-                    <span>Edit Profile</span>
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => setActiveSection('change-password')}
-                    className={`w-full flex items-center space-x-2 px-2 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeSection === 'change-password'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <Key className="w-4 h-4" />
-                    <span>Change Password</span>
-                  </button>
-                </li>
-              </ul>
-            </nav>
-          </div>
-
-          {/* Right Content Area */}
-          <div className="flex-1 mr-4">
+      {/* Content Area */}
+      <div className="py-6 px-6">
             <div className="bg-white rounded-lg shadow">
               <div className="p-6">
                 {activeSection === 'edit-profile' ? (
@@ -622,8 +580,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                 )}
               </div>
             </div>
-          </div>
-        </div>
       </div>
     </div>
   )

@@ -38,22 +38,10 @@ function UnifiedLoadingState() {
 }
 
 // Error component
-function ErrorDisplay({ message, onRetry, onGoBack, backLabel }: { message: string; onRetry: () => void; onGoBack: () => void; backLabel: string }) {
+function ErrorDisplay({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6 flex items-center">
-          <button
-            onClick={onGoBack}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            {backLabel}
-          </button>
-        </div>
-
         <div className="bg-red-50 border border-red-200 rounded-md p-6">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -100,15 +88,15 @@ const LeadDetailsPageOptimized = () => {
     businessId: businessId || ''
   })
 
-  // Determine back navigation based on source parameter
-  const { backSection, backLabel } = useMemo(() => {
+  // Determine back navigation section based on source parameter (for error redirection only)
+  const backSection = useMemo(() => {
     switch (source) {
       case 'lead-history':
-        return { backSection: 'lead-history', backLabel: 'Back to Lead History' }
+        return 'lead-history'
       case 'follow-up':
-        return { backSection: 'follow-up', backLabel: 'Back to Follow Up' }
+        return 'follow-up'
       default:
-        return { backSection: 'new-leads', backLabel: 'Back to New Leads' }
+        return 'new-leads'
     }
   }, [source])
 
@@ -119,10 +107,6 @@ const LeadDetailsPageOptimized = () => {
       navigateToSection(backSection)
     }
   }, [error, navigateToSection, backSection])
-
-  const handleGoBack = () => {
-    navigateToSection(backSection)
-  }
 
   // Handle cases where we don't have required data yet
   if (!leadId || !businessId) {
@@ -151,25 +135,15 @@ const LeadDetailsPageOptimized = () => {
 
   // Show error state for other errors
   if (error && !error.includes('Lead not found')) {
-    return <ErrorDisplay message={error} onRetry={refetch} onGoBack={handleGoBack} backLabel={backLabel} />
+    return <ErrorDisplay message={error} onRetry={refetch} />
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header with Back Navigation, Call Next Lead, Circular Timer, Stage Dropdown, and Call Now Button */}
+        {/* Header with Call Next Lead, Circular Timer, Stage Dropdown, and Call Now Button */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={handleGoBack}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              {backLabel}
-            </button>
-
             {/* Call Next Lead Button */}
             {businessId && (
               <CallNextLeadButton

@@ -36,22 +36,10 @@ function UnifiedLoadingState() {
 }
 
 // Error component
-function ErrorDisplay({ message, onRetry, onGoBack }: { message: string; onRetry: () => void; onGoBack: () => void }) {
+function ErrorDisplay({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6 flex items-center">
-          <button
-            onClick={onGoBack}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to New Leads
-          </button>
-        </div>
-
         <div className="bg-red-50 border border-red-200 rounded-md p-6">
           <div className="flex">
             <div className="flex-shrink-0">
@@ -104,10 +92,6 @@ const ActionsPageOptimized = () => {
     }
   }, [error, navigateToSection])
 
-  const handleGoBack = () => {
-    navigateToSection('new-leads')
-  }
-
   // Handle cases where we don't have required data yet
   if (!leadId || !businessId) {
     return <UnifiedLoadingState />
@@ -135,24 +119,14 @@ const ActionsPageOptimized = () => {
 
   // Show error state for other errors
   if (error && !error.includes('Lead not found')) {
-    return <ErrorDisplay message={error} onRetry={refetch} onGoBack={handleGoBack} />
+    return <ErrorDisplay message={error} onRetry={refetch} />
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Header with Back Navigation, Stage Dropdown, and Call Now Button */}
-        <div className="mb-6 flex items-center justify-between">
-          <button
-            onClick={handleGoBack}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to New Leads
-          </button>
-
+        {/* Header with Stage Dropdown and Call Now Button */}
+        <div className="mb-6 flex items-center justify-end">
           <div className="flex items-center gap-4">
             {leadDetails?.lead && (
               <LeadStageDropdown
